@@ -1,0 +1,9 @@
+use Test;
+
+{
+    use App::Rak;
+}
+
+pass "replace me";
+
+done-testing;

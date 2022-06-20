@@ -1,0 +1,5 @@
+my %*SUB-MAIN-OPTS = :named-anywhere;
+
+use App::Rak;
+
+# vim: expandtab shiftwidth=4
