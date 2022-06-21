@@ -8,14 +8,24 @@ App::Rak - a CLI for searching strings in files
 SYNOPSIS
 ========
 
-```raku
-use App::Rak;
+```bash
+$ rak foo      # look for "foo" in current directory recursively
+
+$ rak foo bar  # look for "foo" in directory "bar" recursively
+
+$ rak '/ << foo >> /'    # look for "foo" as word in current directory
+
+$ raku foo --files-only  # look for "foo", only produce filenames
+
+$ raku foo --before=2 --after=2  # also produce 2 lines before and after
 ```
 
 DESCRIPTION
 ===========
 
-App::Rak is ...
+App::Rak provides a CLI called `rak` that allows you to look for a needle in (a selection of files) from a given directory recursively.
+
+Note: this is still very much in alpha development phase. Comments and suggestions are more than welcome!
 
 AUTHOR
 ======

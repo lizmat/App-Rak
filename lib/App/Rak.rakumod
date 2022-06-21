@@ -44,6 +44,8 @@ my sub MAIN(
          :$human  = $*OUT.t,
   UInt:D :$before = 0,       
   UInt:D :$after  = 0,       
+         :$batch,
+         :$degree,
 ) is export {
 
     $needle .= trim;
@@ -60,7 +62,9 @@ my sub MAIN(
       $dir,
       :$files-only,
       :extensions(),
-      :offset(1)
+      :offset(1),
+      :$batch,
+      :$degree,
     ;
 
     if $files-only {
@@ -130,15 +134,27 @@ App::Rak - a CLI for searching strings in files
 
 =head1 SYNOPSIS
 
-=begin code :lang<raku>
+=begin code :lang<bash>
 
-use App::Rak;
+$ rak foo      # look for "foo" in current directory recursively
+
+$ rak foo bar  # look for "foo" in directory "bar" recursively
+
+$ rak '/ << foo >> /'    # look for "foo" as word in current directory
+
+$ raku foo --files-only  # look for "foo", only produce filenames
+
+$ raku foo --before=2 --after=2  # also produce 2 lines before and after
 
 =end code
 
 =head1 DESCRIPTION
 
-App::Rak is ...
+App::Rak provides a CLI called C<rak> that allows you to look for a needle
+in (a selection of files) from a given directory recursively.
+
+Note: this is still very much in alpha development phase.  Comments and
+suggestions are more than welcome!
 
 =head1 AUTHOR
 
