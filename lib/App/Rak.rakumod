@@ -1,14 +1,50 @@
-use highlighter:ver<0.0.3>:auth<zef:lizmat>;
-use Files::Containing:ver<0.0.1>:auth<zef:lizmat>;
+use highlighter:ver<0.0.5>:auth<zef:lizmat>;
+use paths:ver<10.0.4>:auth<zef:lizmat>;
+use Files::Containing:ver<0.0.5>:auth<zef:lizmat>;
 
 my constant BON  = "\e[1m";
 my constant BOFF = "\e[22m";
+
+# Make sure we remember if there's a human watching (terminal connected)
+my $isa-tty := $*OUT.t;
 
 my constant @raku-extensions = <
    raku rakumod rakutest nqp t pm6 pl6
 >;
 
-sub add-before-after($io, @initially-selected, int $before, int $after) {
+# sane way of quitting
+my sub meh($message) { exit note $message }
+
+# quit if unexpected named arguments
+my sub meh-if-unexpected(%_) {
+    meh "Unexpected parameters: %_.keys()";
+
+# is a needle a simple Callable?
+my sub is-simple-Callable($needle) {
+    Callable.ACCEPTS($needle) && !Regex.ACCEPTS($needle)
+}
+
+# process all alternate names / values into a single value
+my sub named-arg(%args, *@names) {
+    return %args.DELETE-KEY($_) if %args.EXISTS-KEY($_) for @names;
+    Nil
+}
+
+# process all alternate names / values into a Map
+my sub named-args(%args, *%wanted) {
+    Map.new: %wanted.kv.map: -> $name, $keys {
+        if $keys =:= True {
+            Pair.new($name, %args.DELETE-KEY($name)) if %args.EXISTS-KEY($name)
+        }
+        else {
+            Pair.new($name, %args.DELETE-KEY($_))
+              with $keys.first: { %args.EXISTS-KEY($_) }
+        }
+    }
+}
+
+# add any lines before / after in a result
+my sub add-before-after($io, @initially-selected, int $before, int $after) {
     my str @lines = $io.lines;
     @lines.unshift: "";   # make 1-base indexing natural
     my int $last-linenr = @lines.end;
@@ -37,17 +73,7 @@ sub add-before-after($io, @initially-selected, int $before, int $after) {
     @selected
 }
 
-my sub MAIN(
-          $needle is copy,
-          $dir = ".",
-  Bool() :l($files-only),
-         :$human  = $*OUT.t,
-  UInt:D :$before = 0,       
-  UInt:D :$after  = 0,       
-         :$batch,
-         :$degree,
-) is export {
-
+my sub MAIN($needle is copy, $dir = ".", *%_) is export {
     $needle .= trim;
     if $needle.starts-with('/') && $needle.ends-with('/')
       || $needle.indices('*') == 1 {
@@ -57,39 +83,88 @@ my sub MAIN(
         $needle = ('-> $_ ' ~ $needle).EVAL;
     }
 
+    temp $*OUT;
+    $*OUT = open($_, :w) with named-arg %_, <output-file>;
+
+    my $file;
+    my $dir;
+
+    named-arg(%_, <l files-only files-with-matches>)
+      ?? files-only($needle, $dir, $file, $dir, %_)
+      !! want-lines($needle, $dir, $file, $dir, %_)
+}
+
+my sub files-only($needle, $root, $file, $dir, %_ --> Nil) {
+    my $additional := named-args %_,
+      ignorecase   => <i ignorecase ignore-case>,
+      ignoremark   => <m ignoremark ignore-mark>,
+      invert-match => <v invert-match>,
+      :batch, :degree,
+    ;
+    meh-if-unexpected(%_);
+
+    .say for files-containing
+       $needle, $root, :$file, :$dir, :files-only, :offset(1), |$additional,
+    ;
+}
+
+my sub want-lines($needle, $root, $file, $dir, %_ --> Nil) {
     my $seq := files-containing
-      $needle,
-      $dir,
-      :$files-only,
-      :extensions(),
-      :offset(1),
-      :$batch,
-      :$degree,
+      $needle, $root, :$file, :$dir, :offset(1), |named-args
+        ignorecase   => <i ignorecase ignore-case>,
+        ignoremark   => <m ignoremark ignore-mark>,
+        invert-match => <v invert-match>,
+        :max-count, :batch, :degree,
     ;
 
-    if $files-only {
-        say .relative for $seq;
+    my UInt() $before = $_ with named-arg %_, <B before-context>;
+    my UInt() $after  = $_ with named-arg %_, <A after-context>;
+    $before = $after  = $_ with named-arg %_, <C context>;
+
+    my Bool() $line-number;
+    my Bool() $highlight;
+    my Bool() $no-filename;
+    my Bool() $only-matching;
+
+    if %_<human> // $isa-tty {
+        $line-number = $highlight     = True;
+        $no-filename = $only-matching = False;
     }
-    elsif $human {
+
+    $line-number   = $_ with named-arg %_, <n line-number>
+    $highlight     = $_ with named-arg %_, <highlight>;
+    $no-filename   = $_ with named-arg %_, <h no-filename>
+    $only-matching = $_ with named-arg %_, <o only-matching>;
+
+    ($before || $after)  && !$only-matching;
+      ?? lines-with-context($seq, $needle, $before, $after, %_)
+      !! just-lines($seq, $needle, %_);
+}
+
+my sub lines-with-context($seq, $needle, $before, $after, %_) {
+    my int $nr-files;
+
+    for $seq {
+        say "" if $nr-files++;
+
+        my $io := .key;
+        say $io.relative;
+
+        my @selected := add-before-after($io, .value, $before, $after);
+        my $format   := '%' ~ (@selected.tail.key.chars + 1) ~ 'd:';
+
+        say sprintf($format, .key) ~ highlighter .value, $needle, BON, BOFF
+          for @selected;
+    }
+}
+
+    if $human {
         if $before || $after {
-            for $seq {
-                my $io := .key;
-                say $io.relative;
-
-                my @selected := add-before-after($io, .value, $before, $after);
-                my $width := @selected.tail.key.chars + 1;
-
-                for @selected {
-                    say sprintf('%' ~ $width ~ 'd', .key)
-                      ~ ': '
-                      ~ highlighter .value, $needle, BON, BOFF
-                }
-                say "";
-            }
         }
         else {
             for $seq {
                 say .key.relative;
+                my @selected = $seq;
                 my $width := .value.tail.key.chars + 1;
                 for .value {
                     say sprintf('%' ~ $width ~ 'd', .key)
@@ -122,7 +197,7 @@ my sub MAIN(
                 my $file := .key.relative;
                 say "$file: " ~ .value.trim for .value;
             }
-    }
+        }
     }
 }
 
