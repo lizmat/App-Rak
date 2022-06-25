@@ -37,11 +37,14 @@ my sub named-arg(%args, *@names) {
 my sub named-args(%args, *%wanted) {
     Map.new: %wanted.kv.map: -> $name, $keys {
         if $keys =:= True {
-            Pair.new($name, %args.DELETE-KEY($name)) if %args.EXISTS-KEY($name)
+            Pair.new($name, %args.DELETE-KEY($name))
+              if %args.EXISTS-KEY($name);
         }
-        else {
+        orwith $keys.first: { %args.EXISTS-KEY($_) }, :k {
             Pair.new($name, %args.DELETE-KEY($_))
-              with $keys.first: { %args.EXISTS-KEY($_) }
+        }
+        elsif %args.EXISTS-KEY($name) {
+            Pair.new($name, %args.DELETE-KEY($name))
         }
     }
 }
@@ -108,7 +111,9 @@ my multi sub MAIN($needle is copy, $root = ".", *%_) {
     }
 
     temp $*OUT;
-    $*OUT = open($_, :w) with named-arg %_, <output-file>;
+    with named-arg %_, <output-file> -> $path {
+        $*OUT = open($path, :w) if $path ne "-";
+    }
 
     my $file;
     my $dir;
@@ -120,52 +125,79 @@ my multi sub MAIN($needle is copy, $root = ".", *%_) {
 
 my sub files-only($needle, $root, $file, $dir, %_ --> Nil) {
     my $additional := named-args %_,
-      ignorecase   => <i ignorecase ignore-case>,
-      ignoremark   => <m ignoremark ignore-mark>,
-      invert-match => <v invert-match>,
-      :batch, :degree,
+      :ignorecase<i ignore-case>,
+      :ignoremark<m ignore-mark>,
+      :invert-match<v>,
+      :batch,
+      :degree,
     ;
     meh-if-unexpected(%_);
 
     .relative.say for files-containing
-       $needle, $root, :$file, :$dir, :files-only, :offset(1), |$additional,
-    ;
+       $needle, $root, :$file, :$dir, :files-only, |$additional;
 }
 
 my sub want-lines($needle, $root, $file, $dir, %_ --> Nil) {
     my $seq := files-containing
-      $needle, $root, :$file, :$dir, :offset(1), |named-args
-        ignorecase   => <i ignorecase ignore-case>,
-        ignoremark   => <m ignoremark ignore-mark>,
-        invert-match => <v invert-match>,
-        :max-count, :batch, :degree,
+      $needle, $root, :$file, :$dir, :offset(1), |named-args %_,
+        :ignorecase<i ignore-case>,
+        :ignoremark<m ignore-mark>,
+        :invert-match<v>,
+        :max-count,
+        :batch,
+        :degree,
     ;
 
-    my UInt() $before = $_ with named-arg %_, <B before-context>;
-    my UInt() $after  = $_ with named-arg %_, <A after-context>;
+    my UInt() $before = $_ with named-arg %_, <B before before-context>;
+    my UInt() $after  = $_ with named-arg %_, <A after after-context>;
     $before = $after  = $_ with named-arg %_, <C context>;
 
     my Bool() $line-number;
     my Bool() $highlight;
+    my Bool() $trim;
     my Bool() $no-filename;
-    my Bool() $only-matching;
+    my Bool() $only;
 
     if %_<human> // $isa-tty {
-        $line-number = $highlight     = True;
-        $no-filename = $only-matching = False;
+        $line-number = $highlight = True;
+        $no-filename = $only      = False;
+        $trim = !($before || $after);
+    }
+
+    $highlight = $_ with named-arg %_, <highlight>;
+    $trim      = $_ with named-arg %_, <trim>;
+    $only      = $_ with named-arg %_, <o only-matching>;
+    $before = $after = 0 if $only;
+
+    my &show-line;
+    if $highlight {
+        my Str() $pre = my Str() $post = named-arg(%_, <highlight-before>);
+        $post = $_ with named-arg %_, <highlight-after>;
+        $pre  = $only ?? " " !! BON  without $pre;
+        $post = $only ?? ""  !! BOFF without $post;
+        &show-line = $trim 
+          ?? -> $line { highlighter $line.trim, $needle, $pre, $post, :$only }
+          !! -> $line { highlighter $line,      $needle, $pre, $post ,:$only }
+        ;
+    }
+    else {
+        &show-line = $only
+          ?? -> $line { highlighter $line, $needle, "", " ", :$only }
+          !! $trim
+            ?? *.trim
+            !! -> $line { $line }
+        ;
     }
 
     $line-number   = $_ with named-arg %_, <n line-number>;
-    $highlight     = $_ with named-arg %_, <highlight>;
     $no-filename   = $_ with named-arg %_, <h no-filename>;
-    $only-matching = $_ with named-arg %_, <o only-matching>;
 
-    ($before || $after)  && !$only-matching
-      ?? lines-with-context($seq, $needle, $before, $after, %_)
-      !! just-lines($seq, $needle, %_);
+    $before || $after
+      ?? lines-with-context($seq, &show-line, $before, $after, %_)
+      !! just-lines($seq, &show-line, %_);
 }
 
-my sub lines-with-context($seq, $needle, $before, $after, %_) {
+my sub lines-with-context($seq is raw, &show-line, $before, $after, %_) {
     my int $nr-files;
 
     for $seq {
@@ -174,15 +206,26 @@ my sub lines-with-context($seq, $needle, $before, $after, %_) {
         my $io := .key;
         say $io.relative;
 
-        my @selected := add-before-after($io, .value, $before, $after);
+        my @selected := add-before-after($io, .value, $before//0, $after//0);
         my $format   := '%' ~ (@selected.tail.key.chars + 1) ~ 'd:';
 
-        say sprintf($format, .key) ~ highlighter .value, $needle, BON, BOFF
-          for @selected;
+        say sprintf($format, .key) ~ show-line .value for @selected;
     }
 }
 
-my sub just-lines($seq, $needle, %_) { }
+my sub just-lines($seq is raw, &show-line, %_) {
+    my int $nr-files;
+
+    for $seq {
+        say "" if $nr-files++;
+
+        my $io := .key;
+        say $io.relative;
+
+        my $format := '%' ~ (.value.tail.key.chars + 1) ~ 'd:';
+        say sprintf($format, .key) ~ show-line .value for .value;
+    }
+}
 
 #    if $human {
 #        if $before || $after {
