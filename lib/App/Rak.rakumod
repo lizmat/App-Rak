@@ -17,7 +17,10 @@ my sub meh($message) { exit note $message }
 
 # quit if unexpected named arguments
 my sub meh-if-unexpected(%_) {
-    meh "Unexpected parameters: %_.keys()";
+    if %_.keys -> @unexpected {
+        meh "Unexpected parameters: @unexpected[]";
+    }
+}
 
 # is a needle a simple Callable?
 my sub is-simple-Callable($needle) {
@@ -73,7 +76,28 @@ my sub add-before-after($io, @initially-selected, int $before, int $after) {
     @selected
 }
 
-my sub MAIN($needle is copy, $dir = ".", *%_) is export {
+my proto sub MAIN(|) is export {*}
+my multi sub MAIN(:V(:$version)!) {
+    my %meta     := $?DISTRIBUTION.meta;
+    my $compiler := Compiler.new;
+    say $*PROGRAM.basename
+      ~ ' - based on '
+      ~ %meta<name>
+      ~ ' '
+      ~ %meta<ver>
+      ~ ', running '
+      ~ $*RAKU.name
+      ~ ' '
+      ~ $*RAKU.version
+      ~ ' on '
+      ~ $compiler.name.tc
+      ~ ' '
+      ~ $compiler.version.Str.subst(/ '.' g .+/)
+    ;
+    exit;
+}
+
+my multi sub MAIN($needle is copy, $root = ".", *%_) {
     $needle .= trim;
     if $needle.starts-with('/') && $needle.ends-with('/')
       || $needle.indices('*') == 1 {
@@ -90,8 +114,8 @@ my sub MAIN($needle is copy, $dir = ".", *%_) is export {
     my $dir;
 
     named-arg(%_, <l files-only files-with-matches>)
-      ?? files-only($needle, $dir, $file, $dir, %_)
-      !! want-lines($needle, $dir, $file, $dir, %_)
+      ?? files-only($needle, $root, $file, $dir, %_)
+      !! want-lines($needle, $root, $file, $dir, %_)
 }
 
 my sub files-only($needle, $root, $file, $dir, %_ --> Nil) {
@@ -103,7 +127,7 @@ my sub files-only($needle, $root, $file, $dir, %_ --> Nil) {
     ;
     meh-if-unexpected(%_);
 
-    .say for files-containing
+    .relative.say for files-containing
        $needle, $root, :$file, :$dir, :files-only, :offset(1), |$additional,
     ;
 }
@@ -131,12 +155,12 @@ my sub want-lines($needle, $root, $file, $dir, %_ --> Nil) {
         $no-filename = $only-matching = False;
     }
 
-    $line-number   = $_ with named-arg %_, <n line-number>
+    $line-number   = $_ with named-arg %_, <n line-number>;
     $highlight     = $_ with named-arg %_, <highlight>;
-    $no-filename   = $_ with named-arg %_, <h no-filename>
+    $no-filename   = $_ with named-arg %_, <h no-filename>;
     $only-matching = $_ with named-arg %_, <o only-matching>;
 
-    ($before || $after)  && !$only-matching;
+    ($before || $after)  && !$only-matching
       ?? lines-with-context($seq, $needle, $before, $after, %_)
       !! just-lines($seq, $needle, %_);
 }
@@ -158,48 +182,50 @@ my sub lines-with-context($seq, $needle, $before, $after, %_) {
     }
 }
 
-    if $human {
-        if $before || $after {
-        }
-        else {
-            for $seq {
-                say .key.relative;
-                my @selected = $seq;
-                my $width := .value.tail.key.chars + 1;
-                for .value {
-                    say sprintf('%' ~ $width ~ 'd', .key)
-                      ~ ': '
-                      ~ highlighter .value.trim, $needle, BON, BOFF
-                }
-                say "";
-            }
-        }
-    }
-    else {
-        if $before || $after {
-            for $seq {
-                my $io   := .key;
-                my $file := $io.relative;
-                my @selected := add-before-after($io, .value, $before, $after);
-                my int $last-linenr = @selected[0].key - 1;
+my sub just-lines($seq, $needle, %_) { }
 
-                for @selected {
-                    my int $linenr = .key;
-                    say "--" if $last-linenr != $linenr - 1;
-                    say "$file: " ~ .value;
-                    $last-linenr = $linenr;
-                }
-                say "--";
-            }
-        }
-        else {
-            for $seq {
-                my $file := .key.relative;
-                say "$file: " ~ .value.trim for .value;
-            }
-        }
-    }
-}
+#    if $human {
+#        if $before || $after {
+#        }
+#        else {
+#            for $seq {
+#                say .key.relative;
+#                my @selected = $seq;
+#                my $width := .value.tail.key.chars + 1;
+#                for .value {
+#                    say sprintf('%' ~ $width ~ 'd', .key)
+#                      ~ ': '
+#                      ~ highlighter .value.trim, $needle, BON, BOFF
+#                }
+#                say "";
+#            }
+#        }
+#    }
+#    else {
+#        if $before || $after {
+#            for $seq {
+#                my $io   := .key;
+#                my $file := $io.relative;
+#                my @selected := add-before-after($io, .value, $before, $after);
+#                my int $last-linenr = @selected[0].key - 1;
+#
+#                for @selected {
+#                    my int $linenr = .key;
+#                    say "--" if $last-linenr != $linenr - 1;
+#                    say "$file: " ~ .value;
+#                    $last-linenr = $linenr;
+#                }
+#                say "--";
+#            }
+#        }
+#        else {
+#            for $seq {
+#                my $file := .key.relative;
+#                say "$file: " ~ .value.trim for .value;
+#            }
+#        }
+#    }
+#}
 
 =begin pod
 
