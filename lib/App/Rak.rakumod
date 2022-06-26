@@ -79,26 +79,9 @@ my sub add-before-after($io, @initially-selected, int $before, int $after) {
     @selected
 }
 
-my proto sub MAIN(|) is export {*}
-my multi sub MAIN(:V(:$version)!) {
-    my %meta     := $?DISTRIBUTION.meta;
-    my $compiler := Compiler.new;
-    say $*PROGRAM.basename
-      ~ ' - based on '
-      ~ %meta<name>
-      ~ ' '
-      ~ %meta<ver>
-      ~ ', running '
-      ~ $*RAKU.name
-      ~ ' '
-      ~ $*RAKU.version
-      ~ ' on '
-      ~ $compiler.name.tc
-      ~ ' '
-      ~ $compiler.version.Str.subst(/ '.' g .+/)
-    ;
-    exit;
-}
+use CLI::Version:ver<0.0.1>:auth<zef:lizmat>
+  $?DISTRIBUTION,
+  my proto sub MAIN(|) is export {*}
 
 my multi sub MAIN($needle is copy, $root = ".", *%_) {
     $needle .= trim;
