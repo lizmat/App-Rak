@@ -2,5 +2,9 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.2  2022-06-26T15:12:36+02:00
+    - Added a lot of functionality and a lot of pod.  Still a lot
+      of work to do.  Suggestions welcome!
+
 0.0.1  2022-06-21T13:41:02+02:00
     - Initial version
