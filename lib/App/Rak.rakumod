@@ -81,7 +81,7 @@ my sub add-before-after($io, @initially-selected, int $before, int $after) {
 }
 
 # Make sure we can do -V --version
-use CLI::Version:ver<0.0.2>:auth<zef:lizmat>
+use CLI::Version:ver<0.0.3>:auth<zef:lizmat>
   $?DISTRIBUTION,
   my proto sub MAIN(|) is export {*}
 
