@@ -2,6 +2,9 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.4  2022-07-09T14:22:33+02:00
+    - Fix actual dependency on CLI::Version, spotted by CI
+
 0.0.3  2022-07-09T13:59:14+02:00
     - Bump dependency on Files::Containing to get new semantics if
       a Callable is specified as the pattern
