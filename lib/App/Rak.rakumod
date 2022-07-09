@@ -1,9 +1,10 @@
-use highlighter:ver<0.0.5>:auth<zef:lizmat>;
-use paths:ver<10.0.5>:auth<zef:lizmat>;
-use Files::Containing:ver<0.0.6>:auth<zef:lizmat>;
+# The modules that we need here, with their full identities
+use highlighter:ver<0.0.6>:auth<zef:lizmat>;
+use Files::Containing:ver<0.0.8>:auth<zef:lizmat>;
 
-my constant BON  = "\e[1m";
-my constant BOFF = "\e[22m";
+# Defaults for highlighting on terminals
+my constant BON  = "\e[1m";   # BOLD ON
+my constant BOFF = "\e[22m";  # RESET
 
 # Make sure we remember if there's a human watching (terminal connected)
 my $isa-tty := $*OUT.t;
@@ -12,28 +13,28 @@ my constant @raku-extensions = <
    raku rakumod rakutest nqp t pm6 pl6
 >;
 
-# sane way of quitting
+# Sane way of quitting
 my sub meh($message) { exit note $message }
 
-# quit if unexpected named arguments
+# Quit if unexpected named arguments hash
 my sub meh-if-unexpected(%_) {
     if %_.keys -> @unexpected {
         meh "Unexpected parameters: @unexpected[]";
     }
 }
 
-# is a needle a simple Callable?
+# Is a needle a simple Callable?
 my sub is-simple-Callable($needle) {
     Callable.ACCEPTS($needle) && !Regex.ACCEPTS($needle)
 }
 
-# process all alternate names / values into a single value
-my sub named-arg(%args, *@names) {
-    return %args.DELETE-KEY($_) if %args.EXISTS-KEY($_) for @names;
+# Process all alternate names / values into a single value and remove it
+my sub named-arg(%_, *@names) {
+    return %_.DELETE-KEY($_) if %_.EXISTS-KEY($_) for @names;
     Nil
 }
 
-# process all alternate names / values into a Map
+# Process all alternate names / values into a Map and remove them
 my sub named-args(%args, *%wanted) {
     Map.new: %wanted.kv.map: -> $name, $keys {
         if $keys =:= True {
@@ -49,7 +50,7 @@ my sub named-args(%args, *%wanted) {
     }
 }
 
-# add any lines before / after in a result
+# Add any lines before / after in a result
 my sub add-before-after($io, @initially-selected, int $before, int $after) {
     my str @lines = $io.lines;
     @lines.unshift: "";   # make 1-base indexing natural
@@ -79,11 +80,13 @@ my sub add-before-after($io, @initially-selected, int $before, int $after) {
     @selected
 }
 
-use CLI::Version:ver<0.0.1>:auth<zef:lizmat>
+# Make sure we can do -V --version
+use CLI::Version:ver<0.0.2>:auth<zef:lizmat>
   $?DISTRIBUTION,
   my proto sub MAIN(|) is export {*}
 
-my multi sub MAIN($needle is copy, $root = ".", *%_) {
+# The main processor
+my multi sub MAIN($needle is copy, $root? is copy, *%_) {
     $needle .= trim;
     if $needle.starts-with('/') && $needle.ends-with('/')
       || $needle.indices('*') == 1 {
@@ -98,12 +101,22 @@ my multi sub MAIN($needle is copy, $root = ".", *%_) {
         $*OUT = open($path, :w) if $path ne "-";
     }
 
+    unless $*IN.t {
+        meh "Specified '$root' while reading from STDIN"
+          if $root && $root ne '-';
+        meh "Piping not yet implemented.  Sorry";
+    }
+
+    $root = "." without $root;
     my $file;
     my $dir;
 
-    named-arg(%_, <l files-only files-with-matches>)
-      ?? files-only($needle, $root, $file, $dir, %_)
-      !! want-lines($needle, $root, $file, $dir, %_)
+    if named-arg(%_, <l files-only files-with-matches>) {
+        files-only($needle, $root, $file, $dir, %_)
+    }
+    else {
+        want-lines($needle, $root, $file, $dir, %_)
+    }
 }
 
 my sub files-only($needle, $root, $file, $dir, %_ --> Nil) {
@@ -121,8 +134,8 @@ my sub files-only($needle, $root, $file, $dir, %_ --> Nil) {
 }
 
 my sub want-lines($needle, $root, $file, $dir, %_ --> Nil) {
-    my $ignorecase = named-arg %_, <i ignorecase ignore-case>;
-    my $ignoremark = named-arg %_, <m ignoremark ignore-mark>;
+    my $ignorecase := named-arg %_, <i ignorecase ignore-case>;
+    my $ignoremark := named-arg %_, <m ignoremark ignore-mark>;
     my $seq := files-containing
       $needle, $root, :$file, :$dir, :offset(1), :$ignorecase, :$ignoremark,
       |named-args %_,
@@ -141,17 +154,21 @@ my sub want-lines($needle, $root, $file, $dir, %_ --> Nil) {
     my Bool() $trim;
     my Bool() $no-filename;
     my Bool() $only;
+    my Int()  $summary-if-larger-than;
 
     if %_<human> // $isa-tty {
-        $line-number = $highlight = True;
+        $line-number = $highlight = !is-simple-Callable($needle);
         $no-filename = $only      = False;
         $trim = !($before || $after);
+        $summary-if-larger-than = 160;
     }
 
     $highlight = $_ with named-arg %_, <highlight>;
     $trim      = $_ with named-arg %_, <trim>;
     $only      = $_ with named-arg %_, <o only-matching>;
     $before = $after = 0 if $only;
+    $summary-if-larger-than = $_
+      with named-arg %_, <sum summary-if-larger-than>;
 
     my &show-line;
     if $highlight {
@@ -163,11 +180,13 @@ my sub want-lines($needle, $root, $file, $dir, %_ --> Nil) {
         &show-line = $trim 
           ?? -> $line {
                  highlighter $line.trim, $needle, $pre, $post,
-                 :$ignorecase, :$ignoremark, :$only
+                 :$ignorecase, :$ignoremark, :$only,
+                 :$summary-if-larger-than
              }
           !! -> $line {
                  highlighter $line, $needle, $pre, $post,
-                 :$ignorecase, :$ignoremark, :$only
+                 :$ignorecase, :$ignoremark, :$only,
+                 :$summary-if-larger-than
              }
         ;
     }
@@ -274,19 +293,19 @@ changed with the C<--file> named argument.
 All named arguments are optional.  Any unexpected named arguments, will
 cause an exception with the unexpected named arguments listed.
 
-=head2 -A or --after or --after-context
+=head2 -A  --after  --after-context
 
 Indicate the number of lines that should be shown B<after> any line that
 matches.  Defaults to B<0>.  Will be overridden by a C<-C> or C<--context>
 argument.
 
-=head2 -B or --before or --before-context
+=head2 -B  --before  --before-context
 
 Indicate the number of lines that should be shown B<before> any line that
 matches.  Defaults to B<0>.  Will be overridden by a C<-C> or C<--context>
 argument.
 
-=head2 -C or --context
+=head2 -C  --context
 
 Indicate the number of lines that should be shown B<around> any line that
 matches.  Defaults to B<0>.  Overrides any a C<-A>, C<--after>,
@@ -321,12 +340,12 @@ shown, and highlighting performed.  Defaults to C<True> if C<STDOUT> is
 a TTY (aka, someone is actually watching the search results), otherwise
 defaults to C<False>.
 
-=head2 -l or --files-only or --files-with-matches>
+=head2 -l  --files-only  --files-with-matches
 
 If specified with a true value, will only produce the filenames of the
 files in which the pattern was found.  Defaults to C<False>.
 
-=head2 -o or --only-matching
+=head2 -o  --only-matching
 
 Indicate whether only the matched pattern should be produced, rather than
 the line in which the pattern was found.  Defaults to C<False>.
@@ -336,13 +355,20 @@ the line in which the pattern was found.  Defaults to C<False>.
 Indicate the path of the file in which the result of the search should
 be placed.  Defaults to C<STDOUT>.
 
+=head2 --sum  --summary-if-larger-than
+
+Indicate the maximum size a line may have before it will be summarized.
+Defaults to C<160> if C<STDOUT> is a TTY (aka, someone is actually watching
+the search results), otherwise defaults to C<Inf> effectively (indicating
+no summarization will ever occur).
+
 =head2 --trim
 
 Indicate whether lines that have the pattern, should have any whitespace
 at the start and/or end of the line removed.  Defaults to C<True> if no
 context for lines was specified, else defaults to C<False>.
 
-=head2 -V or --version
+=head2 -V  --version
 
 If the only argument, shows the name and version of the script, and the
 system it is running on.

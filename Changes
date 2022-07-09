@@ -2,6 +2,14 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.3  2022-07-09T13:59:14+02:00
+    - Bump dependency on Files::Containing to get new semantics if
+      a Callable is specified as the pattern
+    - Bump dependency on highlighter to be able to use the
+      :summary-if-larger-than feayture
+    - Bump dependency on CLI::Version just for the sake of it
+    - Improved internal documentation
+
 0.0.2  2022-06-26T15:12:36+02:00
     - Added a lot of functionality and a lot of pod.  Still a lot
       of work to do.  Suggestions welcome!

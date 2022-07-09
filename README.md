@@ -49,18 +49,18 @@ SUPPORTED NAMED ARGUMENTS
 
 All named arguments are optional. Any unexpected named arguments, will cause an exception with the unexpected named arguments listed.
 
--A or --after or --after-context
---------------------------------
+-A --after --after-context
+--------------------------
 
 Indicate the number of lines that should be shown **after** any line that matches. Defaults to **0**. Will be overridden by a `-C` or `--context` argument.
 
--B or --before or --before-context
-----------------------------------
+-B --before --before-context
+----------------------------
 
 Indicate the number of lines that should be shown **before** any line that matches. Defaults to **0**. Will be overridden by a `-C` or `--context` argument.
 
--C or --context
----------------
+-C --context
+------------
 
 Indicate the number of lines that should be shown **around** any line that matches. Defaults to **0**. Overrides any a `-A`, `--after`, `--after-context`, `-B`, `--before` or `--before-context` argument. argument.
 
@@ -84,13 +84,13 @@ Indicate the string that should be used at the end of the pattern found in a lin
 
 Indicate that search results should be presented in a human readable manner. This means: filenames shown on a separate line, line numbers shown, and highlighting performed. Defaults to `True` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `False`.
 
--l or --files-only or --files-with-matches>
--------------------------------------------
+-l --files-only --files-with-matches
+------------------------------------
 
 If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
 
--o or --only-matching
----------------------
+-o --only-matching
+------------------
 
 Indicate whether only the matched pattern should be produced, rather than the line in which the pattern was found. Defaults to `False`.
 
@@ -99,13 +99,18 @@ Indicate whether only the matched pattern should be produced, rather than the li
 
 Indicate the path of the file in which the result of the search should be placed. Defaults to `STDOUT`.
 
+--sum --summary-if-larger-than
+------------------------------
+
+Indicate the maximum size a line may have before it will be summarized. Defaults to `160` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `Inf` effectively (indicating no summarization will ever occur).
+
 --trim
 ------
 
 Indicate whether lines that have the pattern, should have any whitespace at the start and/or end of the line removed. Defaults to `True` if no context for lines was specified, else defaults to `False`.
 
--V or --version
----------------
+-V --version
+------------
 
 If the only argument, shows the name and version of the script, and the system it is running on.
 

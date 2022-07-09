@@ -6,9 +6,9 @@
   "build-depends": [
   ],
   "depends": [
-    "CLI::Version:ver<0.0.1>:auth<zef:lizmat>",
-    "highlighter:ver<0.0.5>:auth<zef:lizmat>",
-    "Files::Containing:ver<0.0.6>:auth<zef:lizmat>"
+    "CLI::Version:ver<0.0.3>:auth<zef:lizmat>",
+    "highlighter:ver<0.0.6>:auth<zef:lizmat>",
+    "Files::Containing:ver<0.0.8>:auth<zef:lizmat>"
   ],
   "description": "a CLI for searching strings in files",
   "license": "Artistic-2.0",
@@ -27,5 +27,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.0.2"
+  "version": "0.0.3"
 }
