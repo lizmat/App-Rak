@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.0.5  2022-07-10T15:26:55+02:00
     - No longer follow symlinked directories by default
     - Bump dependency on Files::Containing to get :follow-symlinks capablity
     - Add -S / --follow-symlinks arguments to follow symlinked directories
