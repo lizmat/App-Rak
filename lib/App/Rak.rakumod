@@ -1,6 +1,6 @@
 # The modules that we need here, with their full identities
 use highlighter:ver<0.0.6>:auth<zef:lizmat>;
-use Files::Containing:ver<0.0.8>:auth<zef:lizmat>;
+use Files::Containing:ver<0.0.9>:auth<zef:lizmat>;
 
 # Defaults for highlighting on terminals
 my constant BON  = "\e[1m";   # BOLD ON
@@ -139,6 +139,7 @@ my sub want-lines($needle, $root, $file, $dir, %_ --> Nil) {
     my $seq := files-containing
       $needle, $root, :$file, :$dir, :offset(1), :$ignorecase, :$ignoremark,
       |named-args %_,
+        :follow-symlinks<S>
         :invert-match<v>,
         :max-count,
         :batch,
@@ -361,6 +362,11 @@ Indicate the maximum size a line may have before it will be summarized.
 Defaults to C<160> if C<STDOUT> is a TTY (aka, someone is actually watching
 the search results), otherwise defaults to C<Inf> effectively (indicating
 no summarization will ever occur).
+
+=head2 -S --follow-symlinks
+
+Indicate whether symbolic links to directories should be followed.  Defaults
+to C<False>.
 
 =head2 --trim
 

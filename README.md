@@ -104,6 +104,11 @@ Indicate the path of the file in which the result of the search should be placed
 
 Indicate the maximum size a line may have before it will be summarized. Defaults to `160` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `Inf` effectively (indicating no summarization will ever occur).
 
+-S --follow-symlinks
+--------------------
+
+Indicate whether symbolic links to directories should be followed. Defaults to `False`.
+
 --trim
 ------
 
