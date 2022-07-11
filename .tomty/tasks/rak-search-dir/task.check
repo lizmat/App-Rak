@@ -1,0 +1,7 @@
+begin:
+<<<
+execute: rak foo bar
+bar/file.txt
+regexp: ^^ \s+ '1:foo' \s* $$
+>>>
+end:

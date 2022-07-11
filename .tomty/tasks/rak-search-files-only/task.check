@@ -1,0 +1,6 @@
+begin:
+<<<
+execute: rak foo --files-only
+regexp: ^^ \s* file.txt \s* $$
+>>>
+end:

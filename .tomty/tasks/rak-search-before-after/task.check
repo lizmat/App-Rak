@@ -1,0 +1,11 @@
+begin:
+<<<
+execute: rak foo --before=2 --after=2
+file.txt
+ 1:line1
+ 2:line2
+ 3:foo
+ 4:line3
+ 5:line4
+>>>
+end:
