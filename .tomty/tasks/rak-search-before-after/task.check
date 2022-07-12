@@ -1,11 +1,19 @@
 begin:
 <<<
-execute: rak foo --before=2 --after=2
-file.txt
- 1:line1
- 2:line2
- 3:foo
- 4:line3
- 5:line4
+generator: <<CODE
+!raku
+say "execute: rak foo --before={config()<lines-before>} --after={config()<lines-after>}";
+say "file.txt";
+my $j = 1;
+
+for (1..config()<lines-before>) -> $i {
+  say "regexp: ", '^^\s+', " '{$j++}:line_before{$i}'", ' \s* $$';
+}
+say "regexp: ", '^^\s*', "'{$j++}:foo'", ' \s* $$';
+
+for (1..config()<lines-after>) -> $i {
+  say "regexp: ", '^^\s+', " '{$j++}:line_after{$i}'", ' \s* $$';
+}
+CODE
 >>>
 end:
