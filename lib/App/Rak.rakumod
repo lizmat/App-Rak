@@ -1,6 +1,7 @@
 # The modules that we need here, with their full identities
 use highlighter:ver<0.0.6>:auth<zef:lizmat>;
-use Files::Containing:ver<0.0.9>:auth<zef:lizmat>;
+use Files::Containing:ver<0.0.10>:auth<zef:lizmat>;
+use as-cli-arguments:ver<0.0.3>:auth<zef:lizmat>;
 
 # Defaults for highlighting on terminals
 my constant BON  = "\e[1m";   # BOLD ON
@@ -18,9 +19,7 @@ my sub meh($message) { exit note $message }
 
 # Quit if unexpected named arguments hash
 my sub meh-if-unexpected(%_) {
-    if %_.keys -> @unexpected {
-        meh "Unexpected parameters: @unexpected[]";
-    }
+    meh "Unexpected arguments: &as-cli-arguments(%_)";
 }
 
 # Is a needle a simple Callable?
@@ -86,7 +85,7 @@ use CLI::Version:ver<0.0.3>:auth<zef:lizmat>
   my proto sub MAIN(|) is export {*}
 
 # The main processor
-my multi sub MAIN($needle is copy, $root? is copy, *%_) {
+my multi sub MAIN($needle is copy, *@specs, *%_) {
     $needle .= trim;
     if $needle.starts-with('/') && $needle.ends-with('/')
       || $needle.indices('*') == 1 {
@@ -101,26 +100,27 @@ my multi sub MAIN($needle is copy, $root? is copy, *%_) {
         $*OUT = open($path, :w) if $path ne "-";
     }
 
+    my $root := @specs.head;
     unless $*IN.t {
         meh "Specified '$root' while reading from STDIN"
           if $root && $root ne '-';
         meh "Piping not yet implemented.  Sorry";
     }
 
-    $root = "." without $root;
-    my $file;
-    my $dir;
+    @specs.unshift(".") without $root;
+    my %additional := named-args %_, :follow-symlinks<S>, :file :dir;
+    my @paths = (@specs == 1
+      ?? paths(@specs.head, |%additional)
+      !! @specs.&hyperize(1, %_<degree>).map({ paths($_, |%additional).Slip })
+    ).sort(*.fc);
 
-    if named-arg(%_, <l files-only files-with-matches>) {
-        files-only($needle, $root, $file, $dir, %_)
-    }
-    else {
-        want-lines($needle, $root, $file, $dir, %_)
-    }
+    named-arg(%_, <l files-only files-with-matches>)
+      ?? files-only($needle, @paths, %_)
+      !! want-lines($needle, @paths, %_);
 }
 
-my sub files-only($needle, $root, $file, $dir, %_ --> Nil) {
-    my $additional := named-args %_,
+my sub files-only($needle, @paths, %_ --> Nil) {
+    my %additional := named-args %_,
       :ignorecase<i ignore-case>,
       :ignoremark<m ignore-mark>,
       :invert-match<v>,
@@ -129,26 +129,23 @@ my sub files-only($needle, $root, $file, $dir, %_ --> Nil) {
     ;
     meh-if-unexpected(%_);
 
-    .relative.say for files-containing
-       $needle, $root, :$file, :$dir, :files-only, |$additional;
+    .relative.say
+      for files-containing $needle, @paths, :files-only, |%additional;
 }
 
-my sub want-lines($needle, $root, $file, $dir, %_ --> Nil) {
+my sub want-lines($needle, @paths, %_ --> Nil) {
     my $ignorecase := named-arg %_, <i ignorecase ignore-case>;
     my $ignoremark := named-arg %_, <m ignoremark ignore-mark>;
     my $seq := files-containing
-      $needle, $root, :$file, :$dir, :offset(1), :$ignorecase, :$ignoremark,
-      |named-args %_,
-        :follow-symlinks<S>
-        :invert-match<v>,
-        :max-count,
-        :batch,
-        :degree,
+      $needle, @paths, :$ignorecase, :$ignoremark, :offset(1),
+      |named-args %_, :invert-match<v>, :max-count, :batch, :degree,
     ;
 
     my UInt() $before = $_ with named-arg %_, <B before before-context>;
     my UInt() $after  = $_ with named-arg %_, <A after after-context>;
     $before = $after  = $_ with named-arg %_, <C context>;
+    $before = 0 without $before;
+    $after  = 0 without $after;
 
     my Bool() $line-number;
     my Bool() $highlight;
@@ -157,16 +154,17 @@ my sub want-lines($needle, $root, $file, $dir, %_ --> Nil) {
     my Bool() $only;
     my Int()  $summary-if-larger-than;
 
-    if %_<human> // $isa-tty {
-        $line-number = $highlight = !is-simple-Callable($needle);
-        $no-filename = $only      = False;
+    my $human := %_<human>:delete // $isa-tty;
+    if $human {
+        $highlight = !is-simple-Callable($needle);
+        $no-filename = $only = False;
         $trim = !($before || $after);
         $summary-if-larger-than = 160;
     }
 
-    $highlight = $_ with named-arg %_, <highlight>;
-    $trim      = $_ with named-arg %_, <trim>;
-    $only      = $_ with named-arg %_, <o only-matching>;
+    $highlight  = $_ with named-arg %_, <highlight>;
+    $trim       = $_ with named-arg %_, <trim>;
+    $only       = $_ with named-arg %_, <o only-matching>;
     $before = $after = 0 if $only;
     $summary-if-larger-than = $_
       with named-arg %_, <sum summary-if-larger-than>;
@@ -200,41 +198,44 @@ my sub want-lines($needle, $root, $file, $dir, %_ --> Nil) {
         ;
     }
 
-    $line-number   = $_ with named-arg %_, <n line-number>;
-    $no-filename   = $_ with named-arg %_, <h no-filename>;
-
-    $before || $after
-      ?? lines-with-context($seq, &show-line, $before, $after, %_)
-      !! just-lines($seq, &show-line, %_);
-}
-
-my sub lines-with-context($seq is raw, &show-line, $before, $after, %_) {
-    my int $nr-files;
-
-    for $seq {
-        say "" if $nr-files++;
-
-        my $io := .key;
-        say $io.relative;
-
-        my @selected := add-before-after($io, .value, $before//0, $after//0);
-        my $format   := '%' ~ (@selected.tail.key.chars + 1) ~ 'd:';
-
-        say sprintf($format, .key) ~ show-line .value for @selected;
+    # some twisted historical logic
+    $no-filename = $_ with named-arg %_, <h no-filename>;
+    $no-filename = True without $no-filename;
+    $line-number = $_ with named-arg %_, <n line-number>;
+    without $line-number {
+        $line-number = !$no-filename if $human;
     }
-}
 
-my sub just-lines($seq is raw, &show-line, %_) {
+    meh-if-unexpected(%_);
+
     my int $nr-files;
+    my $before-or-after := $before || $after;
 
     for $seq {
-        say "" if $nr-files++;
+        say "" if $human && $nr-files++;
 
         my $io := .key;
-        say $io.relative;
+        say $io.relative unless $no-filename;
 
-        my $format := '%' ~ (.value.tail.key.chars + 1) ~ 'd:';
-        say sprintf($format, .key) ~ show-line .value for .value;
+        if $before-or-after {
+            my @selected := add-before-after($io, .value, $before, $after);
+            if $line-number {
+                my $format := '%' ~ (@selected.tail.key.chars + 1) ~ 'd: ';
+                say sprintf($format, .key) ~ show-line .value for @selected;
+            }
+            else {
+                say show-line .value for @selected;
+            }
+        }
+        else {
+            if $line-number {
+                my $format := '%' ~ (.value.tail.key.chars + 1) ~ 'd: ';
+                say sprintf($format, .key) ~ show-line .value for .value;
+            }
+            else {
+                say show-line .value for .value;
+            }
+        }
     }
 }
 
@@ -279,7 +280,7 @@ The pattern to search for.  This can either be a string, or a regular
 expression (indicated by a string starting and ending with B</>), or a
 Callable (indicated by a string starting with B<{> and ending with B<}>.  
 
-=head2 path
+=head2 path(s)
 
 Optional.  Either indicates the path of the directory (and its
 sub-directories), or the file that will be searched.  By default, all
@@ -313,6 +314,11 @@ matches.  Defaults to B<0>.  Overrides any a C<-A>, C<--after>,
 C<--after-context>, C<-B>, C<--before> or C<--before-context> argument.
 argument.
 
+=head2 -h --no-filename
+
+Indicate whether filenames should B<not> be shown.  Defaults to C<False> if
+C<--human> is (implicitely) set to C<True>, else defaults to C<True>.
+
 =head2 --highlight
 
 Indicate whether the pattern should be highlighted in the line in which
@@ -345,6 +351,12 @@ defaults to C<False>.
 
 If specified with a true value, will only produce the filenames of the
 files in which the pattern was found.  Defaults to C<False>.
+
+=head2 -n --line-number
+
+Indicate whether line numbers should be shown.  Defaults to C<True> if
+C<--human> is (implicitely) set to C<True> and <-h> is B<not> set to C<True>,
+else defaults to C<False>.
 
 =head2 -o  --only-matching
 

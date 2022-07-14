@@ -2,6 +2,14 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.6  2022-07-14T12:52:34+02:00
+    - Allow for multiple paths to be specified
+    - Bump dependency on Files::Containing to be up-to-date
+    - Add -h / --no-filenames argument to *not* show filenames
+    - Add -n / --line-number argument to show line numbers
+    - Add dependency on "as-cli-arguments" for better error reporting
+    - Remove some premature optimizations
+
 0.0.5  2022-07-10T15:26:55+02:00
     - No longer follow symlinked directories by default
     - Bump dependency on Files::Containing to get :follow-symlinks capablity

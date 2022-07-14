@@ -37,8 +37,8 @@ pattern
 
 The pattern to search for. This can either be a string, or a regular expression (indicated by a string starting and ending with **/**), or a Callable (indicated by a string starting with **{** and ending with **}**. 
 
-path
-----
+path(s)
+-------
 
 Optional. Either indicates the path of the directory (and its sub-directories), or the file that will be searched. By default, all directories that do not start with a period, will be recursed into (but this can be changed with the `--dir` named argument).
 
@@ -64,6 +64,11 @@ Indicate the number of lines that should be shown **before** any line that match
 
 Indicate the number of lines that should be shown **around** any line that matches. Defaults to **0**. Overrides any a `-A`, `--after`, `--after-context`, `-B`, `--before` or `--before-context` argument. argument.
 
+-h --no-filename
+----------------
+
+Indicate whether filenames should **not** be shown. Defaults to `False` if `--human` is (implicitely) set to `True`, else defaults to `True`.
+
 --highlight
 -----------
 
@@ -88,6 +93,11 @@ Indicate that search results should be presented in a human readable manner. Thi
 ------------------------------------
 
 If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
+
+-n --line-number
+----------------
+
+Indicate whether line numbers should be shown. Defaults to `True` if `--human` is (implicitely) set to `True` and <-h> is **not** set to `True`, else defaults to `False`.
 
 -o --only-matching
 ------------------
