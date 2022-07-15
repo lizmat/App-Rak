@@ -2,6 +2,26 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.8  2022-07-15T15:59:26+02:00
+    - Add dependency on "JSON::Fast"
+    - Add support for --save=tag functionality
+    - Add support for --with=tag1,tag2 functionality
+    - Add support for --list-tags functionality
+
+0.0.7  2022-07-15T12:55:35+02:00
+    - Bump dependency on "highlighter" to get "columns" support
+    - Add scaffolding and documentation for --replace-files argument
+    - Add dependency on "Edit::Files"
+    - Add support for "--edit" argument to edit the search result
+
+0.0.6  2022-07-14T12:52:34+02:00
+    - Allow for multiple paths to be specified
+    - Bump dependency on Files::Containing to be up-to-date
+    - Add -h / --no-filenames argument to *not* show filenames
+    - Add -n / --line-number argument to show line numbers
+    - Add dependency on "as-cli-arguments" for better error reporting
+    - Remove some premature optimizations
+
 0.0.5  2022-07-10T15:26:55+02:00
     - No longer follow symlinked directories by default
     - Bump dependency on Files::Containing to get :follow-symlinks capablity

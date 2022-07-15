@@ -1,6 +1,9 @@
 # The modules that we need here, with their full identities
-use highlighter:ver<0.0.6>:auth<zef:lizmat>;
-use Files::Containing:ver<0.0.9>:auth<zef:lizmat>;
+use highlighter:ver<0.0.9>:auth<zef:lizmat>;
+use Files::Containing:ver<0.0.10>:auth<zef:lizmat>;
+use as-cli-arguments:ver<0.0.3>:auth<zef:lizmat>;
+use Edit::Files:ver<0.0.2>:auth<zef:lizmat>;
+use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
 
 # Defaults for highlighting on terminals
 my constant BON  = "\e[1m";   # BOLD ON
@@ -13,14 +16,20 @@ my constant @raku-extensions = <
    raku rakumod rakutest nqp t pm6 pl6
 >;
 
+# Place to keep tagged configurations
+my $config-file := $*HOME.add('.rak-config.json');
+my %config;
+my sub load-config() {
+    %config := from-json($config-file.slurp) if $config-file.e;
+    %config
+}
+
 # Sane way of quitting
 my sub meh($message) { exit note $message }
 
 # Quit if unexpected named arguments hash
 my sub meh-if-unexpected(%_) {
-    if %_.keys -> @unexpected {
-        meh "Unexpected parameters: @unexpected[]";
-    }
+    meh "Unexpected arguments: &as-cli-arguments(%_)" if %_;
 }
 
 # Is a needle a simple Callable?
@@ -85,42 +94,112 @@ use CLI::Version:ver<0.0.3>:auth<zef:lizmat>
   $?DISTRIBUTION,
   my proto sub MAIN(|) is export {*}
 
+# Processing "save" and "list-tags" requests
+my multi sub MAIN(*%n) {  # *%_ causes compilation issues
+    # Saving config
+    if %n<save>:delete -> $tag {
+        load-config;
+        %n ?? (%config{$tag} := %n) !! (%config{$tag}:delete);
+        $config-file.spurt: to-json %config, :!pretty, :sorted-keys;
+        say (%n ?? "Saved" !! "Removed") ~ " configuration for '$tag'";
+        exit;
+    }
+    # Show what we have
+    elsif %n<list-tags>:delete {
+        meh-if-unexpected(%n);
+
+        load-config;
+        my $format := '%' ~ %config.keys>>.chars.max ~ 's: ';
+        say sprintf($format,.key) ~ as-cli-arguments(.value)
+          for %config.sort(*.key.fc);
+        exit;
+    }
+    meh "Must at least specify a pattern";
+}
+
 # The main processor
-my multi sub MAIN($needle is copy, $root? is copy, *%_) {
-    $needle .= trim;
-    if $needle.starts-with('/') && $needle.ends-with('/')
-      || $needle.indices('*') == 1 {
+my multi sub MAIN($needle, *@specs, *%n) {  # *%_ causes compilation issues
+    meh "Saving pattern and/or paths not supported" if %n<save>:delete;
+
+    # Running one or more configs
+    if %n<with>:delete -> $with {
+        my @not-found;
+        load-config;
+        for $with.split(',') -> $tag {
+            if %config{$tag} -> %adding {
+                %n{.key} = .value for %adding;
+            }
+            else {
+                @not-found.push: $tag;
+            }
+        }
+        meh "Attempt to add named arguments from unknown tag(s): @not-found[]" if @not-found;
+    }
+
+    if $needle.starts-with('/') && $needle.ends-with('/') {
         $needle .= EVAL;
     }
     elsif $needle.starts-with('{') && $needle.ends-with('}') {
         $needle = ('-> $_ ' ~ $needle).EVAL;
     }
+    elsif $needle.starts-with('*.') {
+        $needle = $needle.EVAL;
+    }
 
     temp $*OUT;
-    with named-arg %_, <output-file> -> $path {
+    with named-arg %n, <output-file> -> $path {
         $*OUT = open($path, :w) if $path ne "-";
     }
 
+    my $root := @specs.head;
     unless $*IN.t {
         meh "Specified '$root' while reading from STDIN"
           if $root && $root ne '-';
-        meh "Piping not yet implemented.  Sorry";
+        NYI "Under construction";
     }
 
-    $root = "." without $root;
-    my $file;
-    my $dir;
+    @specs.unshift(".") without $root;
+    my %additional := named-args %n, :follow-symlinks<S>, :file :dir;
+    my @paths = (@specs == 1
+      ?? paths(@specs.head, |%additional)
+      !! @specs.&hyperize(1, %n<degree>).map({ paths($_, |%additional).Slip })
+    ).sort(*.fc);
 
-    if named-arg(%_, <l files-only files-with-matches>) {
-        files-only($needle, $root, $file, $dir, %_)
-    }
-    else {
-        want-lines($needle, $root, $file, $dir, %_)
-    }
+    %n<edit>:delete
+      ?? go-edit-files($needle, @paths, %n)
+      !! is-simple-Callable($needle) && (%n<replace-files>:delete)
+        ?? replace-files($needle, @paths, %n)
+        !! named-arg(%n, <l files-only files-with-matches>)
+          ?? files-only($needle, @paths, %n)
+          !! want-lines($needle, @paths, %n);
 }
 
-my sub files-only($needle, $root, $file, $dir, %_ --> Nil) {
-    my $additional := named-args %_,
+my sub go-edit-files($needle, @paths, %_ --> Nil) {
+    my $files-only := named-arg  %_, <l files-only files-with-matches>;
+    my %ignore := named-args %_,
+      :ignorecase<i ignore-case>,
+      :ignoremark<m ignore-mark>,
+    ;
+    my %additional = |(named-args %_, :batch, :degree, :max-count), |%ignore;
+
+    meh-if-unexpected(%_);
+
+    edit-files $files-only
+      ?? files-containing($needle, @paths, :files-only, |%additional)
+      !! files-containing($needle, @paths, |%additional).map: {
+             my $path := .key;
+             .value.map({
+                 $path => .key + 1 => columns(.value, $needle, |%ignore).head
+             }).Slip
+         }
+}
+
+my sub replace-files($needle, @paths, %_ --> Nil) {
+    NYI "replace-files: under construction";
+}
+
+my sub files-only($needle, @paths, %_ --> Nil) {
+    my %additional := named-args %_,
       :ignorecase<i ignore-case>,
       :ignoremark<m ignore-mark>,
       :invert-match<v>,
@@ -129,26 +208,23 @@ my sub files-only($needle, $root, $file, $dir, %_ --> Nil) {
     ;
     meh-if-unexpected(%_);
 
-    .relative.say for files-containing
-       $needle, $root, :$file, :$dir, :files-only, |$additional;
+    .relative.say
+      for files-containing $needle, @paths, :files-only, |%additional;
 }
 
-my sub want-lines($needle, $root, $file, $dir, %_ --> Nil) {
+my sub want-lines($needle, @paths, %_ --> Nil) {
     my $ignorecase := named-arg %_, <i ignorecase ignore-case>;
     my $ignoremark := named-arg %_, <m ignoremark ignore-mark>;
     my $seq := files-containing
-      $needle, $root, :$file, :$dir, :offset(1), :$ignorecase, :$ignoremark,
-      |named-args %_,
-        :follow-symlinks<S>
-        :invert-match<v>,
-        :max-count,
-        :batch,
-        :degree,
+      $needle, @paths, :$ignorecase, :$ignoremark, :offset(1),
+      |named-args %_, :invert-match<v>, :max-count, :batch, :degree,
     ;
 
     my UInt() $before = $_ with named-arg %_, <B before before-context>;
     my UInt() $after  = $_ with named-arg %_, <A after after-context>;
     $before = $after  = $_ with named-arg %_, <C context>;
+    $before = 0 without $before;
+    $after  = 0 without $after;
 
     my Bool() $line-number;
     my Bool() $highlight;
@@ -157,16 +233,17 @@ my sub want-lines($needle, $root, $file, $dir, %_ --> Nil) {
     my Bool() $only;
     my Int()  $summary-if-larger-than;
 
-    if %_<human> // $isa-tty {
-        $line-number = $highlight = !is-simple-Callable($needle);
-        $no-filename = $only      = False;
+    my $human := %_<human>:delete // $isa-tty;
+    if $human {
+        $highlight = !is-simple-Callable($needle);
+        $no-filename = $only = False;
         $trim = !($before || $after);
         $summary-if-larger-than = 160;
     }
 
-    $highlight = $_ with named-arg %_, <highlight>;
-    $trim      = $_ with named-arg %_, <trim>;
-    $only      = $_ with named-arg %_, <o only-matching>;
+    $highlight  = $_ with named-arg %_, <highlight>;
+    $trim       = $_ with named-arg %_, <trim>;
+    $only       = $_ with named-arg %_, <o only-matching>;
     $before = $after = 0 if $only;
     $summary-if-larger-than = $_
       with named-arg %_, <sum summary-if-larger-than>;
@@ -200,41 +277,44 @@ my sub want-lines($needle, $root, $file, $dir, %_ --> Nil) {
         ;
     }
 
-    $line-number   = $_ with named-arg %_, <n line-number>;
-    $no-filename   = $_ with named-arg %_, <h no-filename>;
-
-    $before || $after
-      ?? lines-with-context($seq, &show-line, $before, $after, %_)
-      !! just-lines($seq, &show-line, %_);
-}
-
-my sub lines-with-context($seq is raw, &show-line, $before, $after, %_) {
-    my int $nr-files;
-
-    for $seq {
-        say "" if $nr-files++;
-
-        my $io := .key;
-        say $io.relative;
-
-        my @selected := add-before-after($io, .value, $before//0, $after//0);
-        my $format   := '%' ~ (@selected.tail.key.chars + 1) ~ 'd:';
-
-        say sprintf($format, .key) ~ show-line .value for @selected;
+    # some twisted historical logic
+    $no-filename = $_ with named-arg %_, <h no-filename>;
+    $no-filename = True without $no-filename;
+    $line-number = $_ with named-arg %_, <n line-number>;
+    without $line-number {
+        $line-number = !$no-filename if $human;
     }
-}
 
-my sub just-lines($seq is raw, &show-line, %_) {
+    meh-if-unexpected(%_);
+
     my int $nr-files;
+    my $before-or-after := $before || $after;
 
     for $seq {
-        say "" if $nr-files++;
+        say "" if $human && $nr-files++;
 
         my $io := .key;
-        say $io.relative;
+        say $io.relative unless $no-filename;
 
-        my $format := '%' ~ (.value.tail.key.chars + 1) ~ 'd:';
-        say sprintf($format, .key) ~ show-line .value for .value;
+        if $before-or-after {
+            my @selected := add-before-after($io, .value, $before, $after);
+            if $line-number {
+                my $format := '%' ~ (@selected.tail.key.chars + 1) ~ 'd: ';
+                say sprintf($format, .key) ~ show-line .value for @selected;
+            }
+            else {
+                say show-line .value for @selected;
+            }
+        }
+        else {
+            if $line-number {
+                my $format := '%' ~ (.value.tail.key.chars + 1) ~ 'd: ';
+                say sprintf($format, .key) ~ show-line .value for .value;
+            }
+            else {
+                say show-line .value for .value;
+            }
+        }
     }
 }
 
@@ -279,7 +359,7 @@ The pattern to search for.  This can either be a string, or a regular
 expression (indicated by a string starting and ending with B</>), or a
 Callable (indicated by a string starting with B<{> and ending with B<}>.  
 
-=head2 path
+=head2 path(s)
 
 Optional.  Either indicates the path of the directory (and its
 sub-directories), or the file that will be searched.  By default, all
@@ -312,6 +392,16 @@ Indicate the number of lines that should be shown B<around> any line that
 matches.  Defaults to B<0>.  Overrides any a C<-A>, C<--after>,
 C<--after-context>, C<-B>, C<--before> or C<--before-context> argument.
 argument.
+
+=head2 --edit
+
+Indicate whether the patterns found should be fed into an editor for
+inspection and/or changes.  Defaults to C<False>.
+
+=head2 -h --no-filename
+
+Indicate whether filenames should B<not> be shown.  Defaults to C<False> if
+C<--human> is (implicitely) set to C<True>, else defaults to C<True>.
 
 =head2 --highlight
 
@@ -346,6 +436,25 @@ defaults to C<False>.
 If specified with a true value, will only produce the filenames of the
 files in which the pattern was found.  Defaults to C<False>.
 
+=head2 --list-tags
+
+=begin code :lang<bash>
+
+$ rak --list-tags
+fs: --'follow-symlinks'
+im: --ignorecase --ignoremark
+
+=end code
+
+If specified with a true value and as the only named argument, will list
+all saved tags.
+
+=head2 -n --line-number
+
+Indicate whether line numbers should be shown.  Defaults to C<True> if
+C<--human> is (implicitely) set to C<True> and <-h> is B<not> set to C<True>,
+else defaults to C<False>.
+
 =head2 -o  --only-matching
 
 Indicate whether only the matched pattern should be produced, rather than
@@ -355,6 +464,41 @@ the line in which the pattern was found.  Defaults to C<False>.
 
 Indicate the path of the file in which the result of the search should
 be placed.  Defaults to C<STDOUT>.
+
+=head2 --replace-files
+
+Only makes sense if the specified pattern is a C<Callable>.  Indicates
+whether the output of the pattern should be applied to the file in which
+it was found.  Defaults to C<False>.
+
+=head2 --save
+
+Save all named arguments with the given tag in the configuration file
+(C<~/.rak-config.json>), and exit with a message that the named arguments
+have been saved with the given tag.
+
+This feature can used to both create shortcuts for specific (long) named
+arguments, or just as a convenient way to combine often used named arguments.
+
+=begin code :lang<bash>
+
+$ rak --ignorecase --ignoremark --save=im
+Saved configuration for 'im'
+
+$ rak --follow-symlinks --save=fs
+Saved configuration for 'fs'
+
+$ rak --save=foo
+Removed configuration for 'foo'
+
+=end code
+
+See C<--with> to add saved named arguments to a query.  Please note that
+no validity checking on the named arguments is being performed at the
+moment of saving, as validity may depend on other arguments having been
+specified.
+
+To remove a saved set of named arguments, use C<--save> as the only argument.
 
 =head2 --sum  --summary-if-larger-than
 
@@ -378,6 +522,20 @@ context for lines was specified, else defaults to C<False>.
 
 If the only argument, shows the name and version of the script, and the
 system it is running on.
+
+=head2 --with
+
+=begin code :lang<bash>
+
+# run search with --ignorecase --ignoremark --follow-symlinks
+$ rak foo --with=im,fs
+
+=end code
+
+Add all named arguments previously saved with C<--save> with the given tag(s)
+from the configuration file (C<~/.rak-config.json>).  Multiple tags can be
+specified, separated by commas.  See C<--save> to saved named arguments with
+a tag.
 
 =head1 AUTHOR
 
