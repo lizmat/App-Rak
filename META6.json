@@ -10,7 +10,7 @@
     "highlighter:ver<0.0.9>:auth<zef:lizmat>",
     "Files::Containing:ver<0.0.10>:auth<zef:lizmat>",
     "as-cli-arguments:ver<0.0.3>:auth<zef:lizmat>",
-    "Edit::Files:ver<0.0.2>:auth<zef:lizmat>",
+    "Edit::Files:ver<0.0.3>:auth<zef:lizmat>",
     "JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>"
   ],
   "description": "a CLI for searching strings in files",
@@ -31,5 +31,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.0.8"
+  "version": "0.0.9"
 }

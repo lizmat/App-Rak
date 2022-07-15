@@ -2,6 +2,10 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.9  2022-07-15T23:29:55+02:00
+    - Up dependency on "Edit::Files" to get nvim support
+    - Add support for --pattern, allowing pattern to be saved with --save
+
 0.0.8  2022-07-15T15:59:26+02:00
     - Add dependency on "JSON::Fast"
     - Add support for --save=tag functionality
@@ -24,7 +28,7 @@ Revision history for App-Rak
 
 0.0.5  2022-07-10T15:26:55+02:00
     - No longer follow symlinked directories by default
-    - Bump dependency on Files::Containing to get :follow-symlinks capablity
+    - Bump dependency on Files::Containing to get :follow-symlinks capability
     - Add -S / --follow-symlinks arguments to follow symlinked directories
 
 0.0.4  2022-07-09T14:22:33+02:00

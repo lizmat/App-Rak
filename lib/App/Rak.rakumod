@@ -89,13 +89,15 @@ my sub add-before-after($io, @initially-selected, int $before, int $after) {
     @selected
 }
 
-# Make sure we can do -V --version
-use CLI::Version:ver<0.0.3>:auth<zef:lizmat>
-  $?DISTRIBUTION,
-  my proto sub MAIN(|) is export {*}
+# Entry point for CLI processing
+my proto sub MAIN(|) is export {*}
 
-# Processing "save" and "list-tags" requests
-my multi sub MAIN(*%n) {  # *%_ causes compilation issues
+# Make sure we can do -V --version
+use CLI::Version:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION, &MAIN;
+
+# Main handler
+my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
+
     # Saving config
     if %n<save>:delete -> $tag {
         load-config;
@@ -104,6 +106,7 @@ my multi sub MAIN(*%n) {  # *%_ causes compilation issues
         say (%n ?? "Saved" !! "Removed") ~ " configuration for '$tag'";
         exit;
     }
+
     # Show what we have
     elsif %n<list-tags>:delete {
         meh-if-unexpected(%n);
@@ -114,20 +117,15 @@ my multi sub MAIN(*%n) {  # *%_ causes compilation issues
           for %config.sort(*.key.fc);
         exit;
     }
-    meh "Must at least specify a pattern";
-}
 
-# The main processor
-my multi sub MAIN($needle, *@specs, *%n) {  # *%_ causes compilation issues
-    meh "Saving pattern and/or paths not supported" if %n<save>:delete;
-
-    # Running one or more configs
+    # Add saved tags if any
     if %n<with>:delete -> $with {
         my @not-found;
+
         load-config;
         for $with.split(',') -> $tag {
             if %config{$tag} -> %adding {
-                %n{.key} = .value for %adding;
+                %n{.key} = .value unless %n{.key}:exists for %adding;
             }
             else {
                 @not-found.push: $tag;
@@ -135,6 +133,9 @@ my multi sub MAIN($needle, *@specs, *%n) {  # *%_ causes compilation issues
         }
         meh "Attempt to add named arguments from unknown tag(s): @not-found[]" if @not-found;
     }
+
+    my $needle = %n<pattern>:delete // @specs.shift;
+    meh "Must at least specify a pattern" without $needle;
 
     if $needle.starts-with('/') && $needle.ends-with('/') {
         $needle .= EVAL;
@@ -147,7 +148,7 @@ my multi sub MAIN($needle, *@specs, *%n) {  # *%_ causes compilation issues
     }
 
     temp $*OUT;
-    with named-arg %n, <output-file> -> $path {
+    with %n<output-file>:delete -> $path {
         $*OUT = open($path, :w) if $path ne "-";
     }
 
@@ -357,7 +358,10 @@ suggestions are more than welcome!
 
 The pattern to search for.  This can either be a string, or a regular
 expression (indicated by a string starting and ending with B</>), or a
-Callable (indicated by a string starting with B<{> and ending with B<}>.  
+Callable (indicated by a string starting with B<{> and ending with B<}>.
+
+Can also be specified with the C<--pattern> named argument, in which
+case all the positional arguments are considered to be a path specification.
 
 =head2 path(s)
 
@@ -464,6 +468,13 @@ the line in which the pattern was found.  Defaults to C<False>.
 
 Indicate the path of the file in which the result of the search should
 be placed.  Defaults to C<STDOUT>.
+
+=head2 --pattern
+
+Alternative way to specify the pattern to search for.  If (implicitely)
+specified, will assume the first positional parameter specified is
+actually a path specification, rather than a pattern.  This allows
+the pattern to be searched for to be saved with C<--save>.
 
 =head2 --replace-files
 
