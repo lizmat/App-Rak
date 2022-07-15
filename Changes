@@ -2,6 +2,9 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.10  2022-07-15T23:39:04+02:00
+    - Up dependency on "Edit::Files" in code as well  :-(
+
 0.0.9  2022-07-15T23:29:55+02:00
     - Up dependency on "Edit::Files" to get nvim support
     - Add support for --pattern, allowing pattern to be saved with --save

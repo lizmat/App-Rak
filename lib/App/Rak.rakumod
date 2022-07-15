@@ -2,7 +2,7 @@
 use highlighter:ver<0.0.9>:auth<zef:lizmat>;
 use Files::Containing:ver<0.0.10>:auth<zef:lizmat>;
 use as-cli-arguments:ver<0.0.3>:auth<zef:lizmat>;
-use Edit::Files:ver<0.0.2>:auth<zef:lizmat>;
+use Edit::Files:ver<0.0.3>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
 
 # Defaults for highlighting on terminals
