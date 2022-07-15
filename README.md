@@ -64,6 +64,11 @@ Indicate the number of lines that should be shown **before** any line that match
 
 Indicate the number of lines that should be shown **around** any line that matches. Defaults to **0**. Overrides any a `-A`, `--after`, `--after-context`, `-B`, `--before` or `--before-context` argument. argument.
 
+--edit
+------
+
+Indicate whether the patterns found should be fed into an editor for inspection and/or changes. Defaults to `False`.
+
 -h --no-filename
 ----------------
 
@@ -108,6 +113,11 @@ Indicate whether only the matched pattern should be produced, rather than the li
 -------------
 
 Indicate the path of the file in which the result of the search should be placed. Defaults to `STDOUT`.
+
+--replace-files
+---------------
+
+Only makes sense if the specified pattern is a `Callable`. Indicates whether the output of the pattern should be applied to the file in which it was found. Defaults to `False`.
 
 --sum --summary-if-larger-than
 ------------------------------

@@ -1,7 +1,8 @@
 # The modules that we need here, with their full identities
-use highlighter:ver<0.0.6>:auth<zef:lizmat>;
+use highlighter:ver<0.0.9>:auth<zef:lizmat>;
 use Files::Containing:ver<0.0.10>:auth<zef:lizmat>;
 use as-cli-arguments:ver<0.0.3>:auth<zef:lizmat>;
+use Edit::Files:ver<0.0.2>:auth<zef:lizmat>;
 
 # Defaults for highlighting on terminals
 my constant BON  = "\e[1m";   # BOLD ON
@@ -19,7 +20,7 @@ my sub meh($message) { exit note $message }
 
 # Quit if unexpected named arguments hash
 my sub meh-if-unexpected(%_) {
-    meh "Unexpected arguments: &as-cli-arguments(%_)";
+    meh "Unexpected arguments: &as-cli-arguments(%_)" if %_;
 }
 
 # Is a needle a simple Callable?
@@ -86,13 +87,15 @@ use CLI::Version:ver<0.0.3>:auth<zef:lizmat>
 
 # The main processor
 my multi sub MAIN($needle is copy, *@specs, *%_) {
-    $needle .= trim;
     if $needle.starts-with('/') && $needle.ends-with('/')
       || $needle.indices('*') == 1 {
         $needle .= EVAL;
     }
     elsif $needle.starts-with('{') && $needle.ends-with('}') {
         $needle = ('-> $_ ' ~ $needle).EVAL;
+    }
+    elsif $needle.starts-with('*.') {
+        $needle = $needle.EVAL;
     }
 
     temp $*OUT;
@@ -104,7 +107,7 @@ my multi sub MAIN($needle is copy, *@specs, *%_) {
     unless $*IN.t {
         meh "Specified '$root' while reading from STDIN"
           if $root && $root ne '-';
-        meh "Piping not yet implemented.  Sorry";
+        NYI "Under construction";
     }
 
     @specs.unshift(".") without $root;
@@ -114,9 +117,37 @@ my multi sub MAIN($needle is copy, *@specs, *%_) {
       !! @specs.&hyperize(1, %_<degree>).map({ paths($_, |%additional).Slip })
     ).sort(*.fc);
 
-    named-arg(%_, <l files-only files-with-matches>)
-      ?? files-only($needle, @paths, %_)
-      !! want-lines($needle, @paths, %_);
+    %_<edit>:delete
+      ?? go-edit-files($needle, @paths, %_)
+      !! is-simple-Callable($needle) && (%_<replace-files>:delete)
+        ?? replace-files($needle, @paths, %_)
+        !! named-arg(%_, <l files-only files-with-matches>)
+          ?? files-only($needle, @paths, %_)
+          !! want-lines($needle, @paths, %_);
+}
+
+my sub go-edit-files($needle, @paths, %_ --> Nil) {
+    my $files-only := named-arg  %_, <l files-only files-with-matches>;
+    my %ignore := named-args %_,
+      :ignorecase<i ignore-case>,
+      :ignoremark<m ignore-mark>,
+    ;
+    my %additional = |(named-args %_, :batch, :degree, :max-count), |%ignore;
+
+    meh-if-unexpected(%_);
+
+    edit-files $files-only
+      ?? files-containing($needle, @paths, :files-only, |%additional)
+      !! files-containing($needle, @paths, |%additional).map: {
+             my $path := .key;
+             .value.map({
+                 $path => .key + 1 => columns(.value, $needle, |%ignore).head
+             }).Slip
+         }
+}
+
+my sub replace-files($needle, @paths, %_ --> Nil) {
+    NYI "replace-files: under construction";
 }
 
 my sub files-only($needle, @paths, %_ --> Nil) {
@@ -314,6 +345,11 @@ matches.  Defaults to B<0>.  Overrides any a C<-A>, C<--after>,
 C<--after-context>, C<-B>, C<--before> or C<--before-context> argument.
 argument.
 
+=head2 --edit
+
+Indicate whether the patterns found should be fed into an editor for
+inspection and/or changes.  Defaults to C<False>.
+
 =head2 -h --no-filename
 
 Indicate whether filenames should B<not> be shown.  Defaults to C<False> if
@@ -367,6 +403,12 @@ the line in which the pattern was found.  Defaults to C<False>.
 
 Indicate the path of the file in which the result of the search should
 be placed.  Defaults to C<STDOUT>.
+
+=head2 --replace-files
+
+Only makes sense if the specified pattern is a C<Callable>.  Indicates
+whether the output of the pattern should be applied to the file in which
+it was found.  Defaults to C<False>.
 
 =head2 --sum  --summary-if-larger-than
 

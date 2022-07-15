@@ -2,6 +2,12 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.7  2022-07-15T12:55:35+02:00
+    - Bump dependency on "highlighter" to get "columns" support
+    - Add scaffolding and documentation for --replace-files argument
+    - Add dependency on "Edit::Files"
+    - Add support for "--edit" argument to edit the search result
+
 0.0.6  2022-07-14T12:52:34+02:00
     - Allow for multiple paths to be specified
     - Bump dependency on Files::Containing to be up-to-date
