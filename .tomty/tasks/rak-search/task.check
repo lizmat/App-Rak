@@ -1,7 +1,6 @@
 begin:
 <<<
-execute: rak foo
 file.txt
-regexp: ^^ \s+ '1:foo' \s* $$
+regexp: ^^ \s+ '1:' \s+ 'foo' \s* $$
 >>>
 end:

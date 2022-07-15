@@ -7,7 +7,6 @@ mkdir bar
 echo "foo" > bar/file.txt
 
 echo "<<<"
-echo "execute: rak foo bar"
-rak foo
+rak foo --highlight=False --human
 echo ">>>"
 

@@ -23,7 +23,6 @@ echo "file: "
 cat file.txt
 
 echo "<<<"
-echo "execute: rak foo --before=$lb --after=$la"
-rak foo --before=$lb --after=$la
+rak foo --before=$lb --after=$la --highlight=False --human
 echo ">>>"
 
