@@ -99,6 +99,17 @@ Indicate that search results should be presented in a human readable manner. Thi
 
 If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
 
+--list-tags
+-----------
+
+```bash
+$ rak --list-tags
+fs: --'follow-symlinks'
+im: --ignorecase --ignoremark
+```
+
+If specified with a true value and as the only named argument, will list all saved tags.
+
 -n --line-number
 ----------------
 
@@ -119,6 +130,28 @@ Indicate the path of the file in which the result of the search should be placed
 
 Only makes sense if the specified pattern is a `Callable`. Indicates whether the output of the pattern should be applied to the file in which it was found. Defaults to `False`.
 
+--save
+------
+
+Save all named arguments with the given tag in the configuration file (`~/.rak-config.json`), and exit with a message that the named arguments have been saved with the given tag.
+
+This feature can used to both create shortcuts for specific (long) named arguments, or just as a convenient way to combine often used named arguments.
+
+```bash
+$ rak --ignorecase --ignoremark --save=im
+Saved configuration for 'im'
+
+$ rak --follow-symlinks --save=fs
+Saved configuration for 'fs'
+
+$ rak --save=foo
+Removed configuration for 'foo'
+```
+
+See `--with` to add saved named arguments to a query. Please note that no validity checking on the named arguments is being performed at the moment of saving, as validity may depend on other arguments having been specified.
+
+To remove a saved set of named arguments, use `--save` as the only argument.
+
 --sum --summary-if-larger-than
 ------------------------------
 
@@ -138,6 +171,16 @@ Indicate whether lines that have the pattern, should have any whitespace at the 
 ------------
 
 If the only argument, shows the name and version of the script, and the system it is running on.
+
+--with
+------
+
+```bash
+# run search with --ignorecase --ignoremark --follow-symlinks
+$ rak foo --with=im,fs
+```
+
+Add all named arguments previously saved with `--save` with the given tag(s) from the configuration file (`~/.rak-config.json`). Multiple tags can be specified, separated by commas. See `--save` to saved named arguments with a tag.
 
 AUTHOR
 ======

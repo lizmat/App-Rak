@@ -2,6 +2,12 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.8  2022-07-15T15:59:26+02:00
+    - Add dependency on "JSON::Fast"
+    - Add support for --save=tag functionality
+    - Add support for --with=tag1,tag2 functionality
+    - Add support for --list-tags functionality
+
 0.0.7  2022-07-15T12:55:35+02:00
     - Bump dependency on "highlighter" to get "columns" support
     - Add scaffolding and documentation for --replace-files argument

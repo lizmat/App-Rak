@@ -3,6 +3,7 @@ use highlighter:ver<0.0.9>:auth<zef:lizmat>;
 use Files::Containing:ver<0.0.10>:auth<zef:lizmat>;
 use as-cli-arguments:ver<0.0.3>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.2>:auth<zef:lizmat>;
+use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
 
 # Defaults for highlighting on terminals
 my constant BON  = "\e[1m";   # BOLD ON
@@ -14,6 +15,14 @@ my $isa-tty := $*OUT.t;
 my constant @raku-extensions = <
    raku rakumod rakutest nqp t pm6 pl6
 >;
+
+# Place to keep tagged configurations
+my $config-file := $*HOME.add('.rak-config.json');
+my %config;
+my sub load-config() {
+    %config := from-json($config-file.slurp) if $config-file.e;
+    %config
+}
 
 # Sane way of quitting
 my sub meh($message) { exit note $message }
@@ -85,10 +94,49 @@ use CLI::Version:ver<0.0.3>:auth<zef:lizmat>
   $?DISTRIBUTION,
   my proto sub MAIN(|) is export {*}
 
+# Processing "save" and "list-tags" requests
+my multi sub MAIN(*%n) {  # *%_ causes compilation issues
+    # Saving config
+    if %n<save>:delete -> $tag {
+        load-config;
+        %n ?? (%config{$tag} := %n) !! (%config{$tag}:delete);
+        $config-file.spurt: to-json %config, :!pretty, :sorted-keys;
+        say (%n ?? "Saved" !! "Removed") ~ " configuration for '$tag'";
+        exit;
+    }
+    # Show what we have
+    elsif %n<list-tags>:delete {
+        meh-if-unexpected(%n);
+
+        load-config;
+        my $format := '%' ~ %config.keys>>.chars.max ~ 's: ';
+        say sprintf($format,.key) ~ as-cli-arguments(.value)
+          for %config.sort(*.key.fc);
+        exit;
+    }
+    meh "Must at least specify a pattern";
+}
+
 # The main processor
-my multi sub MAIN($needle is copy, *@specs, *%_) {
-    if $needle.starts-with('/') && $needle.ends-with('/')
-      || $needle.indices('*') == 1 {
+my multi sub MAIN($needle, *@specs, *%n) {  # *%_ causes compilation issues
+    meh "Saving pattern and/or paths not supported" if %n<save>:delete;
+
+    # Running one or more configs
+    if %n<with>:delete -> $with {
+        my @not-found;
+        load-config;
+        for $with.split(',') -> $tag {
+            if %config{$tag} -> %adding {
+                %n{.key} = .value for %adding;
+            }
+            else {
+                @not-found.push: $tag;
+            }
+        }
+        meh "Attempt to add named arguments from unknown tag(s): @not-found[]" if @not-found;
+    }
+
+    if $needle.starts-with('/') && $needle.ends-with('/') {
         $needle .= EVAL;
     }
     elsif $needle.starts-with('{') && $needle.ends-with('}') {
@@ -99,7 +147,7 @@ my multi sub MAIN($needle is copy, *@specs, *%_) {
     }
 
     temp $*OUT;
-    with named-arg %_, <output-file> -> $path {
+    with named-arg %n, <output-file> -> $path {
         $*OUT = open($path, :w) if $path ne "-";
     }
 
@@ -111,19 +159,19 @@ my multi sub MAIN($needle is copy, *@specs, *%_) {
     }
 
     @specs.unshift(".") without $root;
-    my %additional := named-args %_, :follow-symlinks<S>, :file :dir;
+    my %additional := named-args %n, :follow-symlinks<S>, :file :dir;
     my @paths = (@specs == 1
       ?? paths(@specs.head, |%additional)
-      !! @specs.&hyperize(1, %_<degree>).map({ paths($_, |%additional).Slip })
+      !! @specs.&hyperize(1, %n<degree>).map({ paths($_, |%additional).Slip })
     ).sort(*.fc);
 
-    %_<edit>:delete
-      ?? go-edit-files($needle, @paths, %_)
-      !! is-simple-Callable($needle) && (%_<replace-files>:delete)
-        ?? replace-files($needle, @paths, %_)
-        !! named-arg(%_, <l files-only files-with-matches>)
-          ?? files-only($needle, @paths, %_)
-          !! want-lines($needle, @paths, %_);
+    %n<edit>:delete
+      ?? go-edit-files($needle, @paths, %n)
+      !! is-simple-Callable($needle) && (%n<replace-files>:delete)
+        ?? replace-files($needle, @paths, %n)
+        !! named-arg(%n, <l files-only files-with-matches>)
+          ?? files-only($needle, @paths, %n)
+          !! want-lines($needle, @paths, %n);
 }
 
 my sub go-edit-files($needle, @paths, %_ --> Nil) {
@@ -388,6 +436,19 @@ defaults to C<False>.
 If specified with a true value, will only produce the filenames of the
 files in which the pattern was found.  Defaults to C<False>.
 
+=head2 --list-tags
+
+=begin code :lang<bash>
+
+$ rak --list-tags
+fs: --'follow-symlinks'
+im: --ignorecase --ignoremark
+
+=end code
+
+If specified with a true value and as the only named argument, will list
+all saved tags.
+
 =head2 -n --line-number
 
 Indicate whether line numbers should be shown.  Defaults to C<True> if
@@ -409,6 +470,35 @@ be placed.  Defaults to C<STDOUT>.
 Only makes sense if the specified pattern is a C<Callable>.  Indicates
 whether the output of the pattern should be applied to the file in which
 it was found.  Defaults to C<False>.
+
+=head2 --save
+
+Save all named arguments with the given tag in the configuration file
+(C<~/.rak-config.json>), and exit with a message that the named arguments
+have been saved with the given tag.
+
+This feature can used to both create shortcuts for specific (long) named
+arguments, or just as a convenient way to combine often used named arguments.
+
+=begin code :lang<bash>
+
+$ rak --ignorecase --ignoremark --save=im
+Saved configuration for 'im'
+
+$ rak --follow-symlinks --save=fs
+Saved configuration for 'fs'
+
+$ rak --save=foo
+Removed configuration for 'foo'
+
+=end code
+
+See C<--with> to add saved named arguments to a query.  Please note that
+no validity checking on the named arguments is being performed at the
+moment of saving, as validity may depend on other arguments having been
+specified.
+
+To remove a saved set of named arguments, use C<--save> as the only argument.
 
 =head2 --sum  --summary-if-larger-than
 
@@ -432,6 +522,20 @@ context for lines was specified, else defaults to C<False>.
 
 If the only argument, shows the name and version of the script, and the
 system it is running on.
+
+=head2 --with
+
+=begin code :lang<bash>
+
+# run search with --ignorecase --ignoremark --follow-symlinks
+$ rak foo --with=im,fs
+
+=end code
+
+Add all named arguments previously saved with C<--save> with the given tag(s)
+from the configuration file (C<~/.rak-config.json>).  Multiple tags can be
+specified, separated by commas.  See C<--save> to saved named arguments with
+a tag.
 
 =head1 AUTHOR
 
