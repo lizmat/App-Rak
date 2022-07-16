@@ -148,6 +148,9 @@ This feature can used to both create shortcuts for specific (long) named argumen
 $ rak --ignorecase --ignoremark --save=im
 Saved configuration for 'im'
 
+# same as --ignorecase --ignoremark
+$ rak foo --im
+
 $ rak --follow-symlinks --save=fs
 Saved configuration for 'fs'
 
@@ -155,9 +158,9 @@ $ rak --save=foo
 Removed configuration for 'foo'
 ```
 
-See `--with` to add saved named arguments to a query. Please note that no validity checking on the named arguments is being performed at the moment of saving, as validity may depend on other arguments having been specified.
+Any saved named arguments can be accessed as if it is a standard named boolean argument. Please note that no validity checking on the named arguments is being performed at the moment of saving, as validity may depend on other arguments having been specified.
 
-To remove a saved set of named arguments, use `--save` as the only argument.
+To remove a saved set of named arguments, use `--save` as the only named argument.
 
 --sum --summary-if-larger-than
 ------------------------------
@@ -179,15 +182,18 @@ Indicate whether lines that have the pattern, should have any whitespace at the 
 
 If the only argument, shows the name and version of the script, and the system it is running on.
 
---with
-------
+CREATING YOUR OWN NAMED ARGUMENTS
+=================================
+
+You can use the `--save` named argument to save a set of named arguments and than later access it with the given name:
 
 ```bash
-# run search with --ignorecase --ignoremark --follow-symlinks
-$ rak foo --with=im,fs
-```
+$ rak --ignorecase --ignoremark --save=im
+Saved configuration for 'im'
 
-Add all named arguments previously saved with `--save` with the given tag(s) from the configuration file (`~/.rak-config.json`). Multiple tags can be specified, separated by commas. See `--save` to saved named arguments with a tag.
+# same as --ignorecase --ignoremark
+$ rak foo --im
+```
 
 AUTHOR
 ======

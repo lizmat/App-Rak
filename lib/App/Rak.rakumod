@@ -1,8 +1,8 @@
 # The modules that we need here, with their full identities
-use highlighter:ver<0.0.9>:auth<zef:lizmat>;
+use highlighter:ver<0.0.11>:auth<zef:lizmat>;
 use Files::Containing:ver<0.0.10>:auth<zef:lizmat>;
 use as-cli-arguments:ver<0.0.3>:auth<zef:lizmat>;
-use Edit::Files:ver<0.0.3>:auth<zef:lizmat>;
+use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
 
 # Defaults for highlighting on terminals
@@ -18,11 +18,6 @@ my constant @raku-extensions = <
 
 # Place to keep tagged configurations
 my $config-file := $*HOME.add('.rak-config.json');
-my %config;
-my sub load-config() {
-    %config := from-json($config-file.slurp) if $config-file.e;
-    %config
-}
 
 # Sane way of quitting
 my sub meh($message) { exit note $message }
@@ -97,13 +92,13 @@ use CLI::Version:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION, &MAIN;
 
 # Main handler
 my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
+    my %config := from-json($config-file.slurp) if $config-file.e;
 
     # Saving config
     if %n<save>:delete -> $tag {
-        load-config;
         %n ?? (%config{$tag} := %n) !! (%config{$tag}:delete);
         $config-file.spurt: to-json %config, :!pretty, :sorted-keys;
-        say (%n ?? "Saved" !! "Removed") ~ " configuration for '$tag'";
+        say (%n ?? "Saved" !! "Removed") ~ " configuration for '--$tag'";
         exit;
     }
 
@@ -111,28 +106,31 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     elsif %n<list-tags>:delete {
         meh-if-unexpected(%n);
 
-        load-config;
         my $format := '%' ~ %config.keys>>.chars.max ~ 's: ';
         say sprintf($format,.key) ~ as-cli-arguments(.value)
           for %config.sort(*.key.fc);
         exit;
     }
 
-    # Add saved tags if any
-    if %n<with>:delete -> $with {
-        my @not-found;
-
-        load-config;
-        for $with.split(',') -> $tag {
+    # Translate any custom parameters
+    my @strange;
+    for %n.sort(*.key.fc) -> (:key($tag), :$value) {
+        if Bool.ACCEPTS($value) {
             if %config{$tag} -> %adding {
-                %n{.key} = .value unless %n{.key}:exists for %adding;
-            }
-            else {
-                @not-found.push: $tag;
+                %n{$tag}:delete;
+                if $value {
+                    %n{.key} = .value unless %n{.key}:exists for %adding;
+                }
+                else {
+                    %n{.key}:delete for %adding;
+                }
             }
         }
-        meh "Attempt to add named arguments from unknown tag(s): @not-found[]" if @not-found;
+        else {
+            @strange.push: "--$tag";
+        }
     }
+    meh "Must be flags, did you mean: @strange[] ?" if @strange;
 
     my $needle = %n<pattern>:delete // @specs.shift;
     meh "Must at least specify a pattern" without $needle;
@@ -258,12 +256,12 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
 
         &show-line = $trim 
           ?? -> $line {
-                 highlighter $line.trim, $needle, $pre, $post,
+                 highlighter $line.trim, $needle<>, $pre, $post,
                  :$ignorecase, :$ignoremark, :$only,
                  :$summary-if-larger-than
              }
           !! -> $line {
-                 highlighter $line, $needle, $pre, $post,
+                 highlighter $line, $needle<>, $pre, $post,
                  :$ignorecase, :$ignoremark, :$only,
                  :$summary-if-larger-than
              }
@@ -496,6 +494,9 @@ arguments, or just as a convenient way to combine often used named arguments.
 $ rak --ignorecase --ignoremark --save=im
 Saved configuration for 'im'
 
+# same as --ignorecase --ignoremark
+$ rak foo --im
+
 $ rak --follow-symlinks --save=fs
 Saved configuration for 'fs'
 
@@ -504,12 +505,13 @@ Removed configuration for 'foo'
 
 =end code
 
-See C<--with> to add saved named arguments to a query.  Please note that
-no validity checking on the named arguments is being performed at the
-moment of saving, as validity may depend on other arguments having been
-specified.
+Any saved named arguments can be accessed as if it is a standard named
+boolean argument.  Please note that no validity checking on the named
+arguments is being performed at the moment of saving, as validity may
+depend on other arguments having been specified.
 
-To remove a saved set of named arguments, use C<--save> as the only argument.
+To remove a saved set of named arguments, use C<--save> as the only
+named argument.
 
 =head2 --sum  --summary-if-larger-than
 
@@ -534,19 +536,20 @@ context for lines was specified, else defaults to C<False>.
 If the only argument, shows the name and version of the script, and the
 system it is running on.
 
-=head2 --with
+=head1 CREATING YOUR OWN NAMED ARGUMENTS
+
+You can use the C<--save> named argument to save a set of named arguments
+and than later access it with the given name:
 
 =begin code :lang<bash>
 
-# run search with --ignorecase --ignoremark --follow-symlinks
-$ rak foo --with=im,fs
+$ rak --ignorecase --ignoremark --save=im
+Saved configuration for 'im'
+
+# same as --ignorecase --ignoremark
+$ rak foo --im
 
 =end code
-
-Add all named arguments previously saved with C<--save> with the given tag(s)
-from the configuration file (C<~/.rak-config.json>).  Multiple tags can be
-specified, separated by commas.  See C<--save> to saved named arguments with
-a tag.
 
 =head1 AUTHOR
 
