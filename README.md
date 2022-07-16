@@ -35,7 +35,9 @@ POSITIONAL ARGUMENTS
 pattern
 -------
 
-The pattern to search for. This can either be a string, or a regular expression (indicated by a string starting and ending with **/**), or a Callable (indicated by a string starting with **{** and ending with **}**. 
+The pattern to search for. This can either be a string, or a regular expression (indicated by a string starting and ending with **/**), or a Callable (indicated by a string starting with **{** and ending with **}**.
+
+Can also be specified with the `--pattern` named argument, in which case all the positional arguments are considered to be a path specification.
 
 path(s)
 -------
@@ -124,6 +126,11 @@ Indicate whether only the matched pattern should be produced, rather than the li
 -------------
 
 Indicate the path of the file in which the result of the search should be placed. Defaults to `STDOUT`.
+
+--pattern
+---------
+
+Alternative way to specify the pattern to search for. If (implicitely) specified, will assume the first positional parameter specified is actually a path specification, rather than a pattern. This allows the pattern to be searched for to be saved with `--save`.
 
 --replace-files
 ---------------
