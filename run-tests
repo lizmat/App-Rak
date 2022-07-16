@@ -32,9 +32,6 @@ sub test-dir($dir) {
                     say $stdout;
                 }
             }
-            elsif $proc.err -> $stderr {
-                say .slurp with $stderr;
-            }
             else {
                 say "No output received, exit-code $proc.exitcode() ($proc.signal())";
             }

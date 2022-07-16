@@ -32,10 +32,25 @@ my sub is-simple-Callable($needle) {
     Callable.ACCEPTS($needle) && !Regex.ACCEPTS($needle)
 }
 
-# Process all alternate names / values into a single value and remove it
-my sub named-arg(%_, *@names) {
-    return %_.DELETE-KEY($_) if %_.EXISTS-KEY($_) for @names;
-    Nil
+# Return string before marker, or string if no marker
+my sub before(Str:D $string, Str:D $marker) {
+    with $string.index($marker) {
+        $string.substr(0,$_)
+    }
+    else {
+        $string
+    }
+}
+
+# Return named variables in order of specification on the command line
+my sub original-nameds() {
+    @*ARGS.map: {
+        .starts-with("--")
+          ?? before(.substr(2), "=")
+          !! .starts-with("-")
+            ?? before(.substr(1), "=")
+            !! Empty
+    }
 }
 
 # Process all alternate names / values into a Map and remove them
@@ -95,15 +110,17 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     my %config := from-json($config-file.slurp) if $config-file.e;
 
     # Saving config
-    if %n<save>:delete -> $tag {
-        %n ?? (%config{$tag} := %n) !! (%config{$tag}:delete);
+    if %n<save>:delete -> $option {
+        %n ?? (%config{$option} := %n) !! (%config{$option}:delete);
         $config-file.spurt: to-json %config, :!pretty, :sorted-keys;
-        say (%n ?? "Saved" !! "Removed") ~ " configuration for '--$tag'";
+        say %n
+          ?? "Saved option '--$option' as: " ~ as-cli-arguments(%n)
+          !! "Removed option '--$option'";
         exit;
     }
 
     # Show what we have
-    elsif %n<list-tags>:delete {
+    elsif %n<list-additional-options>:delete {
         meh-if-unexpected(%n);
 
         my $format := '%' ~ %config.keys>>.chars.max ~ 's: ';
@@ -114,10 +131,11 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 
     # Translate any custom parameters
     my @strange;
-    for %n.sort(*.key.fc) -> (:key($tag), :$value) {
+    for original-nameds() -> $option {
+        my $value := %n{$option};
         if Bool.ACCEPTS($value) {
-            if %config{$tag} -> %adding {
-                %n{$tag}:delete;
+            if %config{$option} -> %adding {
+                %n{$option}:delete;
                 if $value {
                     %n{.key} = .value unless %n{.key}:exists for %adding;
                 }
@@ -127,10 +145,10 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
             }
         }
         else {
-            @strange.push: "--$tag";
+            @strange.push: "--$option";
         }
     }
-    meh "Must be flags, did you mean: @strange[] ?" if @strange;
+    meh "These options Must be flags, did you mean: @strange[] ?" if @strange;
 
     my $needle = %n<pattern>:delete // @specs.shift;
     meh "Must at least specify a pattern" without $needle;
@@ -158,7 +176,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     }
 
     @specs.unshift(".") without $root;
-    my %additional := named-args %n, :follow-symlinks<S>, :file :dir;
+    my %additional := named-args %n, :follow-symlinks, :file :dir;
     my @paths = (@specs == 1
       ?? paths(@specs.head, |%additional)
       !! @specs.&hyperize(1, %n<degree>).map({ paths($_, |%additional).Slip })
@@ -168,13 +186,13 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
       ?? go-edit-files($needle, @paths, %n)
       !! is-simple-Callable($needle) && (%n<replace-files>:delete)
         ?? replace-files($needle, @paths, %n)
-        !! named-arg(%n, <l files-only files-with-matches>)
+        !! (%n<files-with-matches>:delete)
           ?? files-only($needle, @paths, %n)
           !! want-lines($needle, @paths, %n);
 }
 
 my sub go-edit-files($needle, @paths, %_ --> Nil) {
-    my $files-only := named-arg  %_, <l files-only files-with-matches>;
+    my $files-only := %_<files-with-matches>:delete;
     my %ignore := named-args %_,
       :ignorecase<i ignore-case>,
       :ignoremark<m ignore-mark>,
@@ -212,16 +230,16 @@ my sub files-only($needle, @paths, %_ --> Nil) {
 }
 
 my sub want-lines($needle, @paths, %_ --> Nil) {
-    my $ignorecase := named-arg %_, <i ignorecase ignore-case>;
-    my $ignoremark := named-arg %_, <m ignoremark ignore-mark>;
+    my $ignorecase := %_<ignorecase>:delete;
+    my $ignoremark := %_<ignoremark>:delete;
     my $seq := files-containing
       $needle, @paths, :$ignorecase, :$ignoremark, :offset(1),
-      |named-args %_, :invert-match<v>, :max-count, :batch, :degree,
+      |named-args %_, :invert-match, :max-count, :batch, :degree,
     ;
 
-    my UInt() $before = $_ with named-arg %_, <B before before-context>;
-    my UInt() $after  = $_ with named-arg %_, <A after after-context>;
-    $before = $after  = $_ with named-arg %_, <C context>;
+    my UInt() $before = $_ with %_<before-context>:delete;
+    my UInt() $after  = $_ with %_<after-context>:delete;
+    $before = $after  = $_ with %_<context>:delete;
     $before = 0 without $before;
     $after  = 0 without $after;
 
@@ -240,17 +258,16 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
         $summary-if-larger-than = 160;
     }
 
-    $highlight  = $_ with named-arg %_, <highlight>;
-    $trim       = $_ with named-arg %_, <trim>;
-    $only       = $_ with named-arg %_, <o only-matching>;
+    $highlight  = $_ with %_<highlight>:delete;
+    $trim       = $_ with %_<trim>:delete;
+    $only       = $_ with %_<only-matching>:delete;
     $before = $after = 0 if $only;
-    $summary-if-larger-than = $_
-      with named-arg %_, <sum summary-if-larger-than>;
+    $summary-if-larger-than = $_ with %_<summary-if-larger-than>:delete;
 
     my &show-line;
     if $highlight {
-        my Str() $pre = my Str() $post = named-arg(%_, <highlight-before>);
-        $post = $_ with named-arg %_, <highlight-after>;
+        my Str() $pre = my Str() $post = $_ with %_<highlight-before>:delete;
+        $post = $_ with %_<highlight-after>:delete;
         $pre  = $only ?? " " !! BON  without $pre;
         $post = $only ?? ""  !! BOFF without $post;
 
@@ -277,9 +294,9 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
     }
 
     # some twisted historical logic
-    $no-filename = $_ with named-arg %_, <h no-filename>;
+    $no-filename = $_ with %_<no-filename>:delete;
     $no-filename = True without $no-filename;
-    $line-number = $_ with named-arg %_, <n line-number>;
+    $line-number = $_ with %_<line-number>:delete;
     without $line-number {
         $line-number = !$no-filename if $human;
     }
@@ -358,37 +375,37 @@ The pattern to search for.  This can either be a string, or a regular
 expression (indicated by a string starting and ending with B</>), or a
 Callable (indicated by a string starting with B<{> and ending with B<}>.
 
-Can also be specified with the C<--pattern> named argument, in which
-case all the positional arguments are considered to be a path specification.
+Can also be specified with the C<--pattern> option, in which case B<all>
+the positional arguments are considered to be a path specification.
 
 =head2 path(s)
 
 Optional.  Either indicates the path of the directory (and its
 sub-directories), or the file that will be searched.  By default, all
 directories that do not start with a period, will be recursed into (but
-this can be changed with the C<--dir> named argument).
+this can be changed with the C<--dir> option).
 
 By default, all files will be searched in the directories.  This can be
-changed with the C<--file> named argument.
+changed with the C<--file> option
 
-=head1 SUPPORTED NAMED ARGUMENTS
+=head1 SUPPORTED OPTIONS
 
-All named arguments are optional.  Any unexpected named arguments, will
-cause an exception with the unexpected named arguments listed.
+All options are optional.  Any unexpected options, will cause an exception
+to be thrown with the unexpected options listed.
 
-=head2 -A  --after  --after-context
+=head2 --after-context
 
 Indicate the number of lines that should be shown B<after> any line that
 matches.  Defaults to B<0>.  Will be overridden by a C<-C> or C<--context>
 argument.
 
-=head2 -B  --before  --before-context
+=head2 --before-context
 
 Indicate the number of lines that should be shown B<before> any line that
 matches.  Defaults to B<0>.  Will be overridden by a C<-C> or C<--context>
 argument.
 
-=head2 -C  --context
+=head2 --context
 
 Indicate the number of lines that should be shown B<around> any line that
 matches.  Defaults to B<0>.  Overrides any a C<-A>, C<--after>,
@@ -400,7 +417,7 @@ argument.
 Indicate whether the patterns found should be fed into an editor for
 inspection and/or changes.  Defaults to C<False>.
 
-=head2 -h --no-filename
+=head2 --no-filename
 
 Indicate whether filenames should B<not> be shown.  Defaults to C<False> if
 C<--human> is (implicitely) set to C<True>, else defaults to C<True>.
@@ -433,31 +450,31 @@ shown, and highlighting performed.  Defaults to C<True> if C<STDOUT> is
 a TTY (aka, someone is actually watching the search results), otherwise
 defaults to C<False>.
 
-=head2 -l  --files-only  --files-with-matches
+=head2 --files-with-matches
 
 If specified with a true value, will only produce the filenames of the
 files in which the pattern was found.  Defaults to C<False>.
 
-=head2 --list-tags
+=head2 --list-additional-options
 
 =begin code :lang<bash>
 
-$ rak --list-tags
+$ rak --list-additional-options
 fs: --'follow-symlinks'
 im: --ignorecase --ignoremark
 
 =end code
 
-If specified with a true value and as the only named argument, will list
-all saved tags.
+If specified with a true value and as the only option, will list all
+additional options previously saved with C<--save>.
 
-=head2 -n --line-number
+=head2 --line-number
 
 Indicate whether line numbers should be shown.  Defaults to C<True> if
 C<--human> is (implicitely) set to C<True> and <-h> is B<not> set to C<True>,
 else defaults to C<False>.
 
-=head2 -o  --only-matching
+=head2 --only-matching
 
 Indicate whether only the matched pattern should be produced, rather than
 the line in which the pattern was found.  Defaults to C<False>.
@@ -482,9 +499,9 @@ it was found.  Defaults to C<False>.
 
 =head2 --save
 
-Save all named arguments with the given tag in the configuration file
-(C<~/.rak-config.json>), and exit with a message that the named arguments
-have been saved with the given tag.
+Save all named arguments with the given name in the configuration file
+(C<~/.rak-config.json>), and exit with a message that these options have
+been saved with the given name.
 
 This feature can used to both create shortcuts for specific (long) named
 arguments, or just as a convenient way to combine often used named arguments.
@@ -492,13 +509,13 @@ arguments, or just as a convenient way to combine often used named arguments.
 =begin code :lang<bash>
 
 $ rak --ignorecase --ignoremark --save=im
-Saved configuration for 'im'
+Saved option '--im' as: --ignorecase --ignoremark
 
 # same as --ignorecase --ignoremark
 $ rak foo --im
 
 $ rak --follow-symlinks --save=fs
-Saved configuration for 'fs'
+Saved option '--fs' as: --follow-symlinks
 
 $ rak --save=foo
 Removed configuration for 'foo'
@@ -513,14 +530,14 @@ depend on other arguments having been specified.
 To remove a saved set of named arguments, use C<--save> as the only
 named argument.
 
-=head2 --sum  --summary-if-larger-than
+=head2 --summary-if-larger-than
 
 Indicate the maximum size a line may have before it will be summarized.
 Defaults to C<160> if C<STDOUT> is a TTY (aka, someone is actually watching
 the search results), otherwise defaults to C<Inf> effectively (indicating
 no summarization will ever occur).
 
-=head2 -S --follow-symlinks
+=head2 --follow-symlinks
 
 Indicate whether symbolic links to directories should be followed.  Defaults
 to C<False>.
@@ -531,20 +548,20 @@ Indicate whether lines that have the pattern, should have any whitespace
 at the start and/or end of the line removed.  Defaults to C<True> if no
 context for lines was specified, else defaults to C<False>.
 
-=head2 -V  --version
+=head2 --version
 
 If the only argument, shows the name and version of the script, and the
 system it is running on.
 
-=head1 CREATING YOUR OWN NAMED ARGUMENTS
+=head1 CREATING YOUR OPTIONS
 
-You can use the C<--save> named argument to save a set of named arguments
-and than later access it with the given name:
+You can use the C<--save> option to save a set of options and than later
+access them with the given name:
 
 =begin code :lang<bash>
 
 $ rak --ignorecase --ignoremark --save=im
-Saved configuration for 'im'
+Saved option '--im' as: --ignorecase --ignoremark
 
 # same as --ignorecase --ignoremark
 $ rak foo --im

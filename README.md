@@ -37,32 +37,32 @@ pattern
 
 The pattern to search for. This can either be a string, or a regular expression (indicated by a string starting and ending with **/**), or a Callable (indicated by a string starting with **{** and ending with **}**.
 
-Can also be specified with the `--pattern` named argument, in which case all the positional arguments are considered to be a path specification.
+Can also be specified with the `--pattern` option, in which case **all** the positional arguments are considered to be a path specification.
 
 path(s)
 -------
 
-Optional. Either indicates the path of the directory (and its sub-directories), or the file that will be searched. By default, all directories that do not start with a period, will be recursed into (but this can be changed with the `--dir` named argument).
+Optional. Either indicates the path of the directory (and its sub-directories), or the file that will be searched. By default, all directories that do not start with a period, will be recursed into (but this can be changed with the `--dir` option).
 
-By default, all files will be searched in the directories. This can be changed with the `--file` named argument.
+By default, all files will be searched in the directories. This can be changed with the `--file` option
 
-SUPPORTED NAMED ARGUMENTS
-=========================
+SUPPORTED OPTIONS
+=================
 
-All named arguments are optional. Any unexpected named arguments, will cause an exception with the unexpected named arguments listed.
+All options are optional. Any unexpected options, will cause an exception to be thrown with the unexpected options listed.
 
--A --after --after-context
---------------------------
+--after-context
+---------------
 
 Indicate the number of lines that should be shown **after** any line that matches. Defaults to **0**. Will be overridden by a `-C` or `--context` argument.
 
--B --before --before-context
-----------------------------
+--before-context
+----------------
 
 Indicate the number of lines that should be shown **before** any line that matches. Defaults to **0**. Will be overridden by a `-C` or `--context` argument.
 
--C --context
-------------
+--context
+---------
 
 Indicate the number of lines that should be shown **around** any line that matches. Defaults to **0**. Overrides any a `-A`, `--after`, `--after-context`, `-B`, `--before` or `--before-context` argument. argument.
 
@@ -71,8 +71,8 @@ Indicate the number of lines that should be shown **around** any line that match
 
 Indicate whether the patterns found should be fed into an editor for inspection and/or changes. Defaults to `False`.
 
--h --no-filename
-----------------
+--no-filename
+-------------
 
 Indicate whether filenames should **not** be shown. Defaults to `False` if `--human` is (implicitely) set to `True`, else defaults to `True`.
 
@@ -96,29 +96,29 @@ Indicate the string that should be used at the end of the pattern found in a lin
 
 Indicate that search results should be presented in a human readable manner. This means: filenames shown on a separate line, line numbers shown, and highlighting performed. Defaults to `True` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `False`.
 
--l --files-only --files-with-matches
-------------------------------------
+--files-with-matches
+--------------------
 
 If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
 
---list-tags
------------
+--list-additional-options
+-------------------------
 
 ```bash
-$ rak --list-tags
+$ rak --list-additional-options
 fs: --'follow-symlinks'
 im: --ignorecase --ignoremark
 ```
 
-If specified with a true value and as the only named argument, will list all saved tags.
+If specified with a true value and as the only option, will list all additional options previously saved with `--save`.
 
--n --line-number
-----------------
+--line-number
+-------------
 
 Indicate whether line numbers should be shown. Defaults to `True` if `--human` is (implicitely) set to `True` and <-h> is **not** set to `True`, else defaults to `False`.
 
--o --only-matching
-------------------
+--only-matching
+---------------
 
 Indicate whether only the matched pattern should be produced, rather than the line in which the pattern was found. Defaults to `False`.
 
@@ -140,19 +140,19 @@ Only makes sense if the specified pattern is a `Callable`. Indicates whether the
 --save
 ------
 
-Save all named arguments with the given tag in the configuration file (`~/.rak-config.json`), and exit with a message that the named arguments have been saved with the given tag.
+Save all named arguments with the given name in the configuration file (`~/.rak-config.json`), and exit with a message that these options have been saved with the given name.
 
 This feature can used to both create shortcuts for specific (long) named arguments, or just as a convenient way to combine often used named arguments.
 
 ```bash
 $ rak --ignorecase --ignoremark --save=im
-Saved configuration for 'im'
+Saved option '--im' as: --ignorecase --ignoremark
 
 # same as --ignorecase --ignoremark
 $ rak foo --im
 
 $ rak --follow-symlinks --save=fs
-Saved configuration for 'fs'
+Saved option '--fs' as: --follow-symlinks
 
 $ rak --save=foo
 Removed configuration for 'foo'
@@ -162,13 +162,13 @@ Any saved named arguments can be accessed as if it is a standard named boolean a
 
 To remove a saved set of named arguments, use `--save` as the only named argument.
 
---sum --summary-if-larger-than
-------------------------------
+--summary-if-larger-than
+------------------------
 
 Indicate the maximum size a line may have before it will be summarized. Defaults to `160` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `Inf` effectively (indicating no summarization will ever occur).
 
--S --follow-symlinks
---------------------
+--follow-symlinks
+-----------------
 
 Indicate whether symbolic links to directories should be followed. Defaults to `False`.
 
@@ -177,19 +177,19 @@ Indicate whether symbolic links to directories should be followed. Defaults to `
 
 Indicate whether lines that have the pattern, should have any whitespace at the start and/or end of the line removed. Defaults to `True` if no context for lines was specified, else defaults to `False`.
 
--V --version
-------------
+--version
+---------
 
 If the only argument, shows the name and version of the script, and the system it is running on.
 
-CREATING YOUR OWN NAMED ARGUMENTS
-=================================
+CREATING YOUR OPTIONS
+=====================
 
-You can use the `--save` named argument to save a set of named arguments and than later access it with the given name:
+You can use the `--save` option to save a set of options and than later access them with the given name:
 
 ```bash
 $ rak --ignorecase --ignoremark --save=im
-Saved configuration for 'im'
+Saved option '--im' as: --ignorecase --ignoremark
 
 # same as --ignorecase --ignoremark
 $ rak foo --im

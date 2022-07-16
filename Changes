@@ -2,6 +2,17 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.12  2022-07-16T22:17:25+02:00
+    - Process named arg substitutions in the order they are specified
+    - Remove all aliases for each option: each option can only be accessed
+      by default using a single (long) name, for clarity.  Users can add
+      their own shortcuts with --save, or add a set from someone adhering
+      to either "grep", "ack" or "ag" options
+    - Changed wording in documentation to refer to "options" if they are
+      about optional named arguments on the command line
+    - Change "list-tags" option to "list-additional-options", to be more
+      in line with names used
+
 0.0.11  2022-07-16T13:29:57+02:00
     - Remove "--with" named argument: you can now use any saved named
       argument directly, without having to use --with
