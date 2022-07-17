@@ -2,6 +2,11 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.13  2022-07-17T10:17:34+02:00
+    - Fix issue when there was no config file available
+    - Remove mentions of now removed option names
+    - Allow editor to be named with --edit
+
 0.0.12  2022-07-16T22:17:25+02:00
     - Process named arg substitutions in the order they are specified
     - Remove all aliases for each option: each option can only be accessed

@@ -107,7 +107,7 @@ use CLI::Version:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION, &MAIN;
 
 # Main handler
 my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
-    my %config := from-json($config-file.slurp) if $config-file.e;
+    my %config := $config-file.e ?? from-json($config-file.slurp) !! { }
 
     # Saving config
     if %n<save>:delete -> $option {
@@ -133,8 +133,8 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     my @strange;
     for original-nameds() -> $option {
         my $value := %n{$option};
-        if Bool.ACCEPTS($value) {
-            if %config{$option} -> %adding {
+        if %config{$option} -> %adding {
+            if Bool.ACCEPTS($value) {
                 %n{$option}:delete;
                 if $value {
                     %n{.key} = .value unless %n{.key}:exists for %adding;
@@ -143,12 +143,12 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
                     %n{.key}:delete for %adding;
                 }
             }
-        }
-        else {
-            @strange.push: "--$option";
+            else {
+                @strange.push: "--$option";
+            }
         }
     }
-    meh "These options Must be flags, did you mean: @strange[] ?" if @strange;
+    meh "These options must be flags, did you mean: @strange[] ?" if @strange;
 
     my $needle = %n<pattern>:delete // @specs.shift;
     meh "Must at least specify a pattern" without $needle;
@@ -182,8 +182,8 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
       !! @specs.&hyperize(1, %n<degree>).map({ paths($_, |%additional).Slip })
     ).sort(*.fc);
 
-    %n<edit>:delete
-      ?? go-edit-files($needle, @paths, %n)
+    (my $editor := %n<edit>:delete)
+      ?? go-edit-files($editor, $needle, @paths, %n)
       !! is-simple-Callable($needle) && (%n<replace-files>:delete)
         ?? replace-files($needle, @paths, %n)
         !! (%n<files-with-matches>:delete)
@@ -191,7 +191,9 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
           !! want-lines($needle, @paths, %n);
 }
 
-my sub go-edit-files($needle, @paths, %_ --> Nil) {
+my sub go-edit-files($editor, $needle, @paths, %_ --> Nil) {
+    CATCH { meh .message }
+
     my $files-only := %_<files-with-matches>:delete;
     my %ignore := named-args %_,
       :ignorecase<i ignore-case>,
@@ -201,14 +203,15 @@ my sub go-edit-files($needle, @paths, %_ --> Nil) {
 
     meh-if-unexpected(%_);
 
-    edit-files $files-only
+    edit-files ($files-only
       ?? files-containing($needle, @paths, :files-only, |%additional)
       !! files-containing($needle, @paths, |%additional).map: {
              my $path := .key;
              .value.map({
                  $path => .key + 1 => columns(.value, $needle, |%ignore).head
              }).Slip
-         }
+         }),
+      :editor(Bool.ACCEPTS($editor) ?? Any !! $editor)
 }
 
 my sub replace-files($needle, @paths, %_ --> Nil) {
@@ -396,26 +399,24 @@ to be thrown with the unexpected options listed.
 =head2 --after-context
 
 Indicate the number of lines that should be shown B<after> any line that
-matches.  Defaults to B<0>.  Will be overridden by a C<-C> or C<--context>
-argument.
+matches.  Defaults to B<0>.  Will be overridden by a C<--context> argument.
 
 =head2 --before-context
 
 Indicate the number of lines that should be shown B<before> any line that
-matches.  Defaults to B<0>.  Will be overridden by a C<-C> or C<--context>
-argument.
+matches.  Defaults to B<0>.  Will be overridden by a C<--context> argument.
 
 =head2 --context
 
 Indicate the number of lines that should be shown B<around> any line that
-matches.  Defaults to B<0>.  Overrides any a C<-A>, C<--after>,
-C<--after-context>, C<-B>, C<--before> or C<--before-context> argument.
-argument.
+matches.  Defaults to B<0>.  Overrides any a C<--after-context> or
+C<--before-context> arguments.
 
 =head2 --edit
 
 Indicate whether the patterns found should be fed into an editor for
-inspection and/or changes.  Defaults to C<False>.
+inspection and/or changes.  Defaults to C<False>.  Optionally takes the
+name of the editor to be used.
 
 =head2 --no-filename
 
@@ -432,15 +433,15 @@ C<True>, else defaults to C<False>.
 
 Indicate the string that should be used at the end of the pattern found in
 a line.  Only makes sense if C<--highlight> is (implicitely) set to C<True>.
-Defaults to the empty string if C<-o> or C<--only-matching> is specified
-with a C<True> value, or to the terminal code to end B<bold> otherwise.
+Defaults to the empty string if C<--only-matching> is specified with a
+C<True> value, or to the terminal code to end B<bold> otherwise.
 
 =head2 --highlight--before
 
 Indicate the string that should be used at the end of the pattern found in
 a line.  Only makes sense if C<--highlight> is (implicitely) set to C<True>.
-Defaults to a space if C<-o> or C<--only-matching> is specified with a
-C<True> value, or to the terminal code to start B<bold> otherwise.
+Defaults to a space if C<--only-matching> is specified with a C<True> value,
+or to the terminal code to start B<bold> otherwise.
 
 =head2 --human
 
