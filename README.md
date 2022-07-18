@@ -3,7 +3,7 @@
 NAME
 ====
 
-App::Rak - a CLI for searching strings in files
+App::Rak - a CLI for searching strings in files and more
 
 SYNOPSIS
 ========
@@ -54,22 +54,27 @@ All options are optional. Any unexpected options, will cause an exception to be 
 --after-context
 ---------------
 
-Indicate the number of lines that should be shown **after** any line that matches. Defaults to **0**. Will be overridden by a `-C` or `--context` argument.
+Indicate the number of lines that should be shown **after** any line that matches. Defaults to **0**. Will be overridden by a `--context` argument.
 
 --before-context
 ----------------
 
-Indicate the number of lines that should be shown **before** any line that matches. Defaults to **0**. Will be overridden by a `-C` or `--context` argument.
+Indicate the number of lines that should be shown **before** any line that matches. Defaults to **0**. Will be overridden by a `--context` argument.
 
 --context
 ---------
 
-Indicate the number of lines that should be shown **around** any line that matches. Defaults to **0**. Overrides any a `-A`, `--after`, `--after-context`, `-B`, `--before` or `--before-context` argument. argument.
+Indicate the number of lines that should be shown **around** any line that matches. Defaults to **0**. Overrides any a `--after-context` or `--before-context` arguments.
+
+--count-only
+------------
+
+Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:files-with-matches` option is also specified with a `True` value, will also list the file names with their respective counts.
 
 --edit
 ------
 
-Indicate whether the patterns found should be fed into an editor for inspection and/or changes. Defaults to `False`.
+Indicate whether the patterns found should be fed into an editor for inspection and/or changes. Defaults to `False`. Optionally takes the name of the editor to be used.
 
 --no-filename
 -------------
@@ -84,12 +89,12 @@ Indicate whether the pattern should be highlighted in the line in which it was f
 --highlight--after
 ------------------
 
-Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitely) set to `True`. Defaults to the empty string if `-o` or `--only-matching` is specified with a `True` value, or to the terminal code to end **bold** otherwise.
+Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitely) set to `True`. Defaults to the empty string if `--only-matching` is specified with a `True` value, or to the terminal code to end **bold** otherwise.
 
 --highlight--before
 -------------------
 
-Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitely) set to `True`. Defaults to a space if `-o` or `--only-matching` is specified with a `True` value, or to the terminal code to start **bold** otherwise.
+Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitely) set to `True`. Defaults to a space if `--only-matching` is specified with a `True` value, or to the terminal code to start **bold** otherwise.
 
 --human
 -------
@@ -182,8 +187,8 @@ Indicate whether lines that have the pattern, should have any whitespace at the 
 
 If the only argument, shows the name and version of the script, and the system it is running on.
 
-CREATING YOUR OPTIONS
-=====================
+CREATING YOUR OWN OPTIONS
+=========================
 
 You can use the `--save` option to save a set of options and than later access them with the given name:
 

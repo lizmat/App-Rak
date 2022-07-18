@@ -1,6 +1,6 @@
 # The modules that we need here, with their full identities
 use highlighter:ver<0.0.11>:auth<zef:lizmat>;
-use Files::Containing:ver<0.0.10>:auth<zef:lizmat>;
+use Files::Containing:ver<0.0.11>:auth<zef:lizmat>;
 use as-cli-arguments:ver<0.0.3>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
@@ -99,15 +99,37 @@ my sub add-before-after($io, @initially-selected, int $before, int $after) {
     @selected
 }
 
+# Set up the --help handler
+use META::constants:ver<0.0.2>:auth<zef:lizmat> $?DISTRIBUTION;
+my sub HELP($text, @keys, :$verbose) {
+    my $SCRIPT := $*PROGRAM.basename;
+    my $header := "$SCRIPT - " ~ DESCRIPTION;
+    say $header;
+    say "-" x $header.chars;
+    if @keys {
+        say "Specific help about '@keys[]':";
+        say "";
+    }
+    say $text;
+
+    if $verbose {
+        say "";
+        say CREDITS;
+        say "";
+        say "Thank you for using $SCRIPT!";
+    }
+}
+
 # Entry point for CLI processing
 my proto sub MAIN(|) is export {*}
 
-# Make sure we can do -V --version
+# Make sure we can do --help and --version
 use CLI::Version:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION, &MAIN;
+use CLI::Help:ver<0.0.2>:auth<zef:lizmat>    %?RESOURCES,    &MAIN, &HELP;
 
 # Main handler
 my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
-    my %config := from-json($config-file.slurp) if $config-file.e;
+    my %config := $config-file.e ?? from-json($config-file.slurp) !! { }
 
     # Saving config
     if %n<save>:delete -> $option {
@@ -129,26 +151,26 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
         exit;
     }
 
-    # Translate any custom parameters
+    # Recursively translate any custom parameters
     my @strange;
-    for original-nameds() -> $option {
-        my $value := %n{$option};
-        if Bool.ACCEPTS($value) {
-            if %config{$option} -> %adding {
+    my sub translate($option, $value) {
+        if %config{$option} -> %adding {
+            if Bool.ACCEPTS($value) {
                 %n{$option}:delete;
                 if $value {
-                    %n{.key} = .value unless %n{.key}:exists for %adding;
+                    translate(.key, .value) unless %n{.key}:exists for %adding;
                 }
                 else {
                     %n{.key}:delete for %adding;
                 }
             }
-        }
-        else {
-            @strange.push: "--$option";
+            else {
+                @strange.push: "--$option";
+            }
         }
     }
-    meh "These options Must be flags, did you mean: @strange[] ?" if @strange;
+    translate($_, %n{$_}) for original-nameds;
+    meh "These options must be flags, did you mean: @strange[] ?" if @strange;
 
     my $needle = %n<pattern>:delete // @specs.shift;
     meh "Must at least specify a pattern" without $needle;
@@ -182,50 +204,62 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
       !! @specs.&hyperize(1, %n<degree>).map({ paths($_, |%additional).Slip })
     ).sort(*.fc);
 
-    %n<edit>:delete
-      ?? go-edit-files($needle, @paths, %n)
+    (my $editor := %n<edit>:delete)
+      ?? go-edit-files($editor, $needle, @paths, %n)
       !! is-simple-Callable($needle) && (%n<replace-files>:delete)
         ?? replace-files($needle, @paths, %n)
-        !! (%n<files-with-matches>:delete)
-          ?? files-only($needle, @paths, %n)
-          !! want-lines($needle, @paths, %n);
+        !! (%n<count-only>:delete)
+          ?? count-only($needle, @paths, %n)
+          !! (%n<files-with-matches>:delete)
+            ?? files-only($needle, @paths, %n)
+            !! want-lines($needle, @paths, %n);
 }
 
-my sub go-edit-files($needle, @paths, %_ --> Nil) {
-    my $files-only := %_<files-with-matches>:delete;
-    my %ignore := named-args %_,
-      :ignorecase<i ignore-case>,
-      :ignoremark<m ignore-mark>,
-    ;
-    my %additional = |(named-args %_, :batch, :degree, :max-count), |%ignore;
+my sub go-edit-files($editor, $needle, @paths, %_ --> Nil) {
+    CATCH { meh .message }
 
+    my $files-only := %_<files-with-matches>:delete;
+    my %ignore     := named-args %_, :ignorecase :ignoremark;
+    my %additional  = |(named-args %_, :batch, :degree, :max-count), |%ignore;
     meh-if-unexpected(%_);
 
-    edit-files $files-only
+    edit-files ($files-only
       ?? files-containing($needle, @paths, :files-only, |%additional)
       !! files-containing($needle, @paths, |%additional).map: {
              my $path := .key;
              .value.map({
                  $path => .key + 1 => columns(.value, $needle, |%ignore).head
              }).Slip
-         }
+         }),
+      :editor(Bool.ACCEPTS($editor) ?? Any !! $editor)
 }
 
 my sub replace-files($needle, @paths, %_ --> Nil) {
     NYI "replace-files: under construction";
 }
 
-my sub files-only($needle, @paths, %_ --> Nil) {
+my sub count-only($needle, @paths, %_ --> Nil) {
+    my $files-with-matches := %_<files-with-matches>:delete;
     my %additional := named-args %_,
-      :ignorecase<i ignore-case>,
-      :ignoremark<m ignore-mark>,
-      :invert-match<v>,
-      :batch,
-      :degree,
-    ;
+      :ignorecase, :ignoremark, :invert-match, :batch, :degree;
     meh-if-unexpected(%_);
 
-    .relative.say
+    my int $files;
+    my int $matches;
+    for files-containing $needle, @paths, :count-only, |%additional {
+        ++$files;
+        $matches += .value;
+        say .key.relative ~ ': ' ~ .value if $files-with-matches;
+    }
+    say "$matches matches in $files files";
+}
+
+my sub files-only($needle, @paths, %_ --> Nil) {
+    my %additional := named-args %_,
+      :ignorecase, :ignoremark, :invert-match, :batch, :degree;
+    meh-if-unexpected(%_);
+
+    say .relative
       for files-containing $needle, @paths, :files-only, |%additional;
 }
 
@@ -338,7 +372,7 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
 
 =head1 NAME
 
-App::Rak - a CLI for searching strings in files
+App::Rak - a CLI for searching strings in files and more
 
 =head1 SYNOPSIS
 
@@ -396,26 +430,31 @@ to be thrown with the unexpected options listed.
 =head2 --after-context
 
 Indicate the number of lines that should be shown B<after> any line that
-matches.  Defaults to B<0>.  Will be overridden by a C<-C> or C<--context>
-argument.
+matches.  Defaults to B<0>.  Will be overridden by a C<--context> argument.
 
 =head2 --before-context
 
 Indicate the number of lines that should be shown B<before> any line that
-matches.  Defaults to B<0>.  Will be overridden by a C<-C> or C<--context>
-argument.
+matches.  Defaults to B<0>.  Will be overridden by a C<--context> argument.
 
 =head2 --context
 
 Indicate the number of lines that should be shown B<around> any line that
-matches.  Defaults to B<0>.  Overrides any a C<-A>, C<--after>,
-C<--after-context>, C<-B>, C<--before> or C<--before-context> argument.
-argument.
+matches.  Defaults to B<0>.  Overrides any a C<--after-context> or
+C<--before-context> arguments.
+
+=head2 --count-only
+
+Indicate whether just the number of lines with matches should be calculated.
+When specified with a C<True> value, will show a "N matches in M files"
+by default, and if the C<:files-with-matches> option is also specified with
+a C<True> value, will also list the file names with their respective counts.
 
 =head2 --edit
 
 Indicate whether the patterns found should be fed into an editor for
-inspection and/or changes.  Defaults to C<False>.
+inspection and/or changes.  Defaults to C<False>.  Optionally takes the
+name of the editor to be used.
 
 =head2 --no-filename
 
@@ -432,15 +471,15 @@ C<True>, else defaults to C<False>.
 
 Indicate the string that should be used at the end of the pattern found in
 a line.  Only makes sense if C<--highlight> is (implicitely) set to C<True>.
-Defaults to the empty string if C<-o> or C<--only-matching> is specified
-with a C<True> value, or to the terminal code to end B<bold> otherwise.
+Defaults to the empty string if C<--only-matching> is specified with a
+C<True> value, or to the terminal code to end B<bold> otherwise.
 
 =head2 --highlight--before
 
 Indicate the string that should be used at the end of the pattern found in
 a line.  Only makes sense if C<--highlight> is (implicitely) set to C<True>.
-Defaults to a space if C<-o> or C<--only-matching> is specified with a
-C<True> value, or to the terminal code to start B<bold> otherwise.
+Defaults to a space if C<--only-matching> is specified with a C<True> value,
+or to the terminal code to start B<bold> otherwise.
 
 =head2 --human
 
@@ -553,7 +592,7 @@ context for lines was specified, else defaults to C<False>.
 If the only argument, shows the name and version of the script, and the
 system it is running on.
 
-=head1 CREATING YOUR OPTIONS
+=head1 CREATING YOUR OWN OPTIONS
 
 You can use the C<--save> option to save a set of options and than later
 access them with the given name:

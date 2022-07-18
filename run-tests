@@ -1,4 +1,4 @@
-unit sub MAIN(:$author);
+unit sub MAIN(:a($author));
 
 say run(<raku --version>, :out).out.slurp.chomp;
 say "Running on $*DISTRO.gist().\n";
@@ -41,7 +41,7 @@ sub test-dir($dir) {
 }
 
 test-dir("t");
-test-dir("xt") if $author;
+test-dir("xt") if $author && "xt".IO.e;
 
 if @failed {
     say "FAILED: {+@failed} of $done:";
