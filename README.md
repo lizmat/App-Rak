@@ -3,7 +3,7 @@
 NAME
 ====
 
-App::Rak - a CLI for searching strings in files
+App::Rak - a CLI for searching strings in files and more
 
 SYNOPSIS
 ========

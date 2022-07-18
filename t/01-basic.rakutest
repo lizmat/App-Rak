@@ -4,6 +4,7 @@ use Test;
     use App::Rak;
 }
 
-pass "replace me";
+plan 1;
+pass "still alive";
 
-done-testing;
+# vim: expandtab shiftwidth=4

@@ -1,6 +1,12 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+    - Add dependency on META::constants 
+    - Add dependency on CLI::Help to get --help support
+    - Make sure that option replacements occur recursively
+    - Bump dependency on "Files::Containing" to get :count-only functionality
+    - Add support for --count-only functionality
+    - Cleaned up Changes
 
 0.0.13  2022-07-17T10:17:34+02:00
     - Fix issue when there was no config file available
@@ -8,7 +14,7 @@ Revision history for App-Rak
     - Allow editor to be named with --edit
 
 0.0.12  2022-07-16T22:17:25+02:00
-    - Process named arg substitutions in the order they are specified
+    - Process option substitutions in the order they are specified
     - Remove all aliases for each option: each option can only be accessed
       by default using a single (long) name, for clarity.  Users can add
       their own shortcuts with --save, or add a set from someone adhering
@@ -19,8 +25,8 @@ Revision history for App-Rak
       in line with names used
 
 0.0.11  2022-07-16T13:29:57+02:00
-    - Remove "--with" named argument: you can now use any saved named
-      argument directly, without having to use --with
+    - Remove "--with" option: you can now use any saved option directly,
+      without having to use --with
     - Bump dependency on "highlighter" to get colum fix for regexes
       and fix for highlighting on regexes issue
     - Bump dependency on "Edit::Files" to not call editor if nothing to edit
@@ -64,7 +70,7 @@ Revision history for App-Rak
     - Bump dependency on Files::Containing to get new semantics if
       a Callable is specified as the pattern
     - Bump dependency on highlighter to be able to use the
-      :summary-if-larger-than feayture
+      :summary-if-larger-than feature
     - Bump dependency on CLI::Version just for the sake of it
     - Improved internal documentation
 
