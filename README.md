@@ -66,6 +66,11 @@ Indicate the number of lines that should be shown **before** any line that match
 
 Indicate the number of lines that should be shown **around** any line that matches. Defaults to **0**. Overrides any a `--after-context` or `--before-context` arguments.
 
+--count-only
+------------
+
+Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:files-with-matches` option is also specified with a `True` value, will also list the file names with their respective counts.
+
 --edit
 ------
 
@@ -182,8 +187,8 @@ Indicate whether lines that have the pattern, should have any whitespace at the 
 
 If the only argument, shows the name and version of the script, and the system it is running on.
 
-CREATING YOUR OPTIONS
-=====================
+CREATING YOUR OWN OPTIONS
+=========================
 
 You can use the `--save` option to save a set of options and than later access them with the given name:
 
