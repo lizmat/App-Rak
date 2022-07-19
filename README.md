@@ -51,18 +51,18 @@ SUPPORTED OPTIONS
 
 All options are optional. Any unexpected options, will cause an exception to be thrown with the unexpected options listed.
 
---after-context
----------------
+--after-context=N
+-----------------
 
 Indicate the number of lines that should be shown **after** any line that matches. Defaults to **0**. Will be overridden by a `--context` argument.
 
---before-context
-----------------
+--before-context=N
+------------------
 
 Indicate the number of lines that should be shown **before** any line that matches. Defaults to **0**. Will be overridden by a `--context` argument.
 
---context
----------
+--context=N
+-----------
 
 Indicate the number of lines that should be shown **around** any line that matches. Defaults to **0**. Overrides any a `--after-context` or `--before-context` arguments.
 
@@ -71,10 +71,25 @@ Indicate the number of lines that should be shown **around** any line that match
 
 Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:files-with-matches` option is also specified with a `True` value, will also list the file names with their respective counts.
 
---edit
-------
+--edit[=editor]
+---------------
 
 Indicate whether the patterns found should be fed into an editor for inspection and/or changes. Defaults to `False`. Optionally takes the name of the editor to be used.
+
+-I=dir
+------
+
+Indicate the directory that should be searched for Raku module loading. Only makes sense if the pattern is executable code.
+
+Please note that contrary to normal use in Raku, the `=` **must** be specified. Also note that you can create a shortcut for most often used arguments of the `-I` option:
+
+```bash
+$ rak --I=. --save=I.
+Saved option '--I.' as: --I='.'
+
+$ rak --I=lib --save=Ilib
+Saved option '--Ilib' as: --I=lib
+```
 
 --no-filename
 -------------
@@ -86,13 +101,13 @@ Indicate whether filenames should **not** be shown. Defaults to `False` if `--hu
 
 Indicate whether the pattern should be highlighted in the line in which it was found. Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
 
---highlight--after
-------------------
+--highlight--after[=string]
+---------------------------
 
 Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitly) set to `True`. Defaults to the empty string if `--only-matching` is specified with a `True` value, or to the terminal code to end **bold** otherwise.
 
---highlight--before
--------------------
+--highlight--before[=string]
+----------------------------
 
 Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitly) set to `True`. Defaults to a space if `--only-matching` is specified with a `True` value, or to the terminal code to start **bold** otherwise.
 
@@ -122,18 +137,25 @@ If specified with a true value and as the only option, will list all additional 
 
 Indicate whether line numbers should be shown. Defaults to `True` if `--human` is (implicitly) set to `True` and <-h> is **not** set to `True`, else defaults to `False`.
 
+-M=module
+---------
+
+Indicate the Raku module that should be loaded. Only makes sense if the pattern is executable code.
+
+Please note that contrary to normal use in Raku, the `=` **must** be specified.
+
 --only-matching
 ---------------
 
 Indicate whether only the matched pattern should be produced, rather than the line in which the pattern was found. Defaults to `False`.
 
---output-file
--------------
+--output-file=filename
+----------------------
 
 Indicate the path of the file in which the result of the search should be placed. Defaults to `STDOUT`.
 
---pattern
----------
+--pattern=foo
+-------------
 
 Alternative way to specify the pattern to search for. If (implicitly) specified, will assume the first positional parameter specified is actually a path specification, rather than a pattern. This allows the pattern to be searched for to be saved with `--save`.
 
@@ -142,8 +164,8 @@ Alternative way to specify the pattern to search for. If (implicitly) specified,
 
 Only makes sense if the specified pattern is a `Callable`. Indicates whether the output of the pattern should be applied to the file in which it was found. Defaults to `False`.
 
---save
-------
+--save=name
+-----------
 
 Save all named arguments with the given name in the configuration file (`~/.rak-config.json`), and exit with a message that these options have been saved with the given name.
 
@@ -167,8 +189,8 @@ Any saved named arguments can be accessed as if it is a standard named boolean a
 
 To remove a saved set of named arguments, use `--save` as the only named argument.
 
---summary-if-larger-than
-------------------------
+--summary-if-larger-than=N
+--------------------------
 
 Indicate the maximum size a line may have before it will be summarized. Defaults to `160` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `Inf` effectively (indicating no summarization will ever occur).
 

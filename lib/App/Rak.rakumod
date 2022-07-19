@@ -175,14 +175,26 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     my $needle = %n<pattern>:delete // @specs.shift;
     meh "Must at least specify a pattern" without $needle;
 
+    # Return prelude from -I and -M parameters
+    my sub prelude() {
+        my $prelude = "";
+        if %n<I>:delete -> \libs {
+            $prelude = libs.map({"use lib '$_'; "}).join;
+        }
+        if %n<M>:delete -> \modules {
+            $prelude ~= modules.map({"use $_; "}).join;
+        }
+        $prelude
+    }
+
     if $needle.starts-with('/') && $needle.ends-with('/') {
         $needle .= EVAL;
     }
     elsif $needle.starts-with('{') && $needle.ends-with('}') {
-        $needle = ('-> $_ ' ~ $needle).EVAL;
+        $needle = (prelude() ~ '-> $_ ' ~ $needle).EVAL;
     }
     elsif $needle.starts-with('*.') {
-        $needle = $needle.EVAL;
+        $needle = (prelude() ~ $needle).EVAL;
     }
 
     temp $*OUT;
@@ -334,7 +346,6 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
     without $line-number {
         $line-number = !$no-filename if $human;
     }
-
     meh-if-unexpected(%_);
 
     my int $nr-files;
@@ -427,17 +438,17 @@ changed with the C<--file> option
 All options are optional.  Any unexpected options, will cause an exception
 to be thrown with the unexpected options listed.
 
-=head2 --after-context
+=head2 --after-context=N
 
 Indicate the number of lines that should be shown B<after> any line that
 matches.  Defaults to B<0>.  Will be overridden by a C<--context> argument.
 
-=head2 --before-context
+=head2 --before-context=N
 
 Indicate the number of lines that should be shown B<before> any line that
 matches.  Defaults to B<0>.  Will be overridden by a C<--context> argument.
 
-=head2 --context
+=head2 --context=N
 
 Indicate the number of lines that should be shown B<around> any line that
 matches.  Defaults to B<0>.  Overrides any a C<--after-context> or
@@ -450,11 +461,30 @@ When specified with a C<True> value, will show a "N matches in M files"
 by default, and if the C<:files-with-matches> option is also specified with
 a C<True> value, will also list the file names with their respective counts.
 
-=head2 --edit
+=head2 --edit[=editor]
 
 Indicate whether the patterns found should be fed into an editor for
 inspection and/or changes.  Defaults to C<False>.  Optionally takes the
 name of the editor to be used.
+
+=head2 -I=dir
+
+Indicate the directory that should be searched for Raku module loading.
+Only makes sense if the pattern is executable code.
+
+Please note that contrary to normal use in Raku, the C<=> B<must> be
+specified.  Also note that you can create a shortcut for most often used
+arguments of the C<-I> option:
+
+=begin code :lang<bash>
+
+$ rak --I=. --save=I.
+Saved option '--I.' as: --I='.'
+
+$ rak --I=lib --save=Ilib
+Saved option '--Ilib' as: --I=lib
+
+=end code
 
 =head2 --no-filename
 
@@ -467,14 +497,14 @@ Indicate whether the pattern should be highlighted in the line in which
 it was found.  Defaults to C<True> if C<--human> is (implicitly) set to
 C<True>, else defaults to C<False>.
 
-=head2 --highlight--after
+=head2 --highlight--after[=string]
 
 Indicate the string that should be used at the end of the pattern found in
 a line.  Only makes sense if C<--highlight> is (implicitly) set to C<True>.
 Defaults to the empty string if C<--only-matching> is specified with a
 C<True> value, or to the terminal code to end B<bold> otherwise.
 
-=head2 --highlight--before
+=head2 --highlight--before[=string]
 
 Indicate the string that should be used at the end of the pattern found in
 a line.  Only makes sense if C<--highlight> is (implicitly) set to C<True>.
@@ -513,17 +543,25 @@ Indicate whether line numbers should be shown.  Defaults to C<True> if
 C<--human> is (implicitly) set to C<True> and <-h> is B<not> set to C<True>,
 else defaults to C<False>.
 
+=head2 -M=module
+
+Indicate the Raku module that should be loaded.  Only makes sense if the
+pattern is executable code.
+
+Please note that contrary to normal use in Raku, the C<=> B<must> be
+specified.
+
 =head2 --only-matching
 
 Indicate whether only the matched pattern should be produced, rather than
 the line in which the pattern was found.  Defaults to C<False>.
 
-=head2 --output-file
+=head2 --output-file=filename
 
 Indicate the path of the file in which the result of the search should
 be placed.  Defaults to C<STDOUT>.
 
-=head2 --pattern
+=head2 --pattern=foo
 
 Alternative way to specify the pattern to search for.  If (implicitly)
 specified, will assume the first positional parameter specified is
@@ -536,7 +574,7 @@ Only makes sense if the specified pattern is a C<Callable>.  Indicates
 whether the output of the pattern should be applied to the file in which
 it was found.  Defaults to C<False>.
 
-=head2 --save
+=head2 --save=name
 
 Save all named arguments with the given name in the configuration file
 (C<~/.rak-config.json>), and exit with a message that these options have
@@ -569,7 +607,7 @@ depend on other arguments having been specified.
 To remove a saved set of named arguments, use C<--save> as the only
 named argument.
 
-=head2 --summary-if-larger-than
+=head2 --summary-if-larger-than=N
 
 Indicate the maximum size a line may have before it will be summarized.
 Defaults to C<160> if C<STDOUT> is a TTY (aka, someone is actually watching
