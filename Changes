@@ -2,6 +2,12 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.16  2022-07-19T17:15:09+02:00
+    - Bump dependency on "highlighter" to get ":type<ends-with> support
+    - Bump dependency on "Files::Containing" to get ":type" support
+    - Add support for --type functionality
+    - Initial version of --help documentation
+
 0.0.15  2022-07-19T12:03:57+02:00
     - Add support for -I functionality
     - Add support for -M functionality

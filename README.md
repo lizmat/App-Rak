@@ -35,7 +35,7 @@ POSITIONAL ARGUMENTS
 pattern
 -------
 
-The pattern to search for. This can either be a string, or a regular expression (indicated by a string starting and ending with **/**), or a Callable (indicated by a string starting with **{** and ending with **}**.
+The pattern to search for. This can either be a string, or a [Raku regular expression](https://docs.raku.org/language/regexes) (indicated by a string starting and ending with `/`), a `Callable` (indicated by a string starting with `{` and ending with `}`), or a a result of [`Whatever` currying](https://docs.raku.org/type/Whatever) (indicated by a string starting with `*.`).
 
 Can also be specified with the `--pattern` option, in which case **all** the positional arguments are considered to be a path specification.
 
@@ -193,6 +193,10 @@ To remove a saved set of named arguments, use `--save` as the only named argumen
 --------------------------
 
 Indicate the maximum size a line may have before it will be summarized. Defaults to `160` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `Inf` effectively (indicating no summarization will ever occur).
+
+  * --type[=words|starts-with|ends-with|contains]
+
+Only makes sense if the pattern is a string. With `words` specified, will look for pattern as a word in a line, with `starts-with` will look for the pattern at the beginning of a line, with `ends-with` will look for the pattern at the end of a line, with `contains` will look for the pattern at any position in a line.
 
 --follow-symlinks
 -----------------

@@ -1,6 +1,6 @@
 # The modules that we need here, with their full identities
-use highlighter:ver<0.0.11>:auth<zef:lizmat>;
-use Files::Containing:ver<0.0.11>:auth<zef:lizmat>;
+use highlighter:ver<0.0.12>:auth<zef:lizmat>;
+use Files::Containing:ver<0.0.12>:auth<zef:lizmat>;
 use as-cli-arguments:ver<0.0.3>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
@@ -110,7 +110,11 @@ my sub HELP($text, @keys, :$verbose) {
         say "Specific help about '@keys[]':";
         say "";
     }
-    say $text;
+    say $isa-tty
+      ?? $text.lines.map({
+              !.starts-with(" ") && .ends-with(":") ?? BON ~ $_ ~ BOFF !! $_
+         }).join("\n")
+      !! $text;
 
     if $verbose {
         say "";
@@ -232,7 +236,9 @@ my sub go-edit-files($editor, $needle, @paths, %_ --> Nil) {
 
     my $files-only := %_<files-with-matches>:delete;
     my %ignore     := named-args %_, :ignorecase :ignoremark;
-    my %additional  = |(named-args %_, :batch, :degree, :max-count), |%ignore;
+    my %additional =
+      |(named-args %_, :max-count, :type, :batch, :degree),
+      |%ignore;
     meh-if-unexpected(%_);
 
     edit-files ($files-only
@@ -253,7 +259,7 @@ my sub replace-files($needle, @paths, %_ --> Nil) {
 my sub count-only($needle, @paths, %_ --> Nil) {
     my $files-with-matches := %_<files-with-matches>:delete;
     my %additional := named-args %_,
-      :ignorecase, :ignoremark, :invert-match, :batch, :degree;
+      :ignorecase, :ignoremark, :invert-match, :type, :batch, :degree;
     meh-if-unexpected(%_);
 
     my int $files;
@@ -268,7 +274,7 @@ my sub count-only($needle, @paths, %_ --> Nil) {
 
 my sub files-only($needle, @paths, %_ --> Nil) {
     my %additional := named-args %_,
-      :ignorecase, :ignoremark, :invert-match, :batch, :degree;
+      :ignorecase, :ignoremark, :invert-match, :type, :batch, :degree;
     meh-if-unexpected(%_);
 
     say .relative
@@ -280,7 +286,7 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
     my $ignoremark := %_<ignoremark>:delete;
     my $seq := files-containing
       $needle, @paths, :$ignorecase, :$ignoremark, :offset(1),
-      |named-args %_, :invert-match, :max-count, :batch, :degree,
+      |named-args %_, :invert-match, :max-count, :type, :batch, :degree,
     ;
 
     my UInt() $before = $_ with %_<before-context>:delete;
@@ -416,9 +422,12 @@ suggestions are more than welcome!
 
 =head2 pattern
 
-The pattern to search for.  This can either be a string, or a regular
-expression (indicated by a string starting and ending with B</>), or a
-Callable (indicated by a string starting with B<{> and ending with B<}>.
+The pattern to search for.  This can either be a string, or a
+L<Raku regular expression|https://docs.raku.org/language/regexes>
+(indicated by a string starting and ending with C</>), a
+C<Callable> (indicated by a string starting with C<{> and ending with C<}>),
+or a a result of L<C<Whatever> currying|https://docs.raku.org/type/Whatever>
+(indicated by a string starting with C<*.>).
 
 Can also be specified with the C<--pattern> option, in which case B<all>
 the positional arguments are considered to be a path specification.
@@ -613,6 +622,14 @@ Indicate the maximum size a line may have before it will be summarized.
 Defaults to C<160> if C<STDOUT> is a TTY (aka, someone is actually watching
 the search results), otherwise defaults to C<Inf> effectively (indicating
 no summarization will ever occur).
+
+=item --type[=words|starts-with|ends-with|contains]
+
+Only makes sense if the pattern is a string.  With C<words> specified,
+will look for pattern as a word in a line, with C<starts-with> will
+look for the pattern at the beginning of a line, with C<ends-with>
+will look for the pattern at the end of a line, with C<contains> will
+look for the pattern at any position in a line.
 
 =head2 --follow-symlinks
 

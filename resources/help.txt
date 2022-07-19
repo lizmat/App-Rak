@@ -1,1 +1,61 @@
-See https://raku.land/zef:lizmat/App::Rak for now.
+Pattern specification:
+ foo                      string
+ '/ << bar >> /'          Raku regex indicated by being bounded by / /
+ '{ .ends-with("bar") }'  Raku code indicated by being bounded by { }
+ '*.starts--with("foo")'  Raku WhateverCode starting with *.
+either as first argument, or as --pattern=foo option
+
+String search pattern modifiers:
+ --ignorecase  Ignore distinction between upper, lower and title case letters
+ --ignoremark  Only compare base characters, ignore additional marks
+ --type=words        Look for string as a word
+ --type=starts-with  Look for string at start of a line
+ --type=ends-with    Look for string at end of a line
+ --type=contains     Look for string anywhere (default)
+
+Code pattern helpers:
+ --I=lib  First look for any modules to load in the "lib" directory
+ --M=foo  Load module "foo" before compiling Raku code pattern
+
+Haystack specification:
+ all other arguments   (default: current directory)
+ --follow-symlinks  Whether to follow symlinked directories (default: don't)
+
+Result modifiers:
+ --only-matching             Only produce the actual matches
+ --summary-if-larger-than=N  Summarize matching line if longer than N chars
+ --trim                      Remove whitespace, true if no context
+ --highlight                 Highlight matches if possible
+ --highlight-before=xxx      String to put before match
+ --highlight-after=yyy       String to put after match
+ --count-only                Only return count of matches
+ --files-with-matches        Only return filenames with matches
+
+Listing modifiers:
+ --before-context=N  List N lines before any line with a match
+ --after-context=N   List N lines after any line with a match
+ --context=N         List N lines around any line with a match
+
+Resource usage:
+ --batch=N   max number of files to process in a thread (default: 64)
+ --degree=N  max number of threads to use for processing (default: cores - 1)
+
+Edit options:
+ --edit[=editor]  Go edit the result in an editor, (default EDITOR or vim)
+
+Option management:
+ --save=name                Translate --name to all other options specified,
+                            remove if --save was the only option specified
+ --list-additional-options  List all previously saved options
+
+General options:
+ --help      Show this
+ --help foo  Show additional help about: pattern | string | code | haystack |
+             result | listing | resource | edit | option | general
+ --version   Show version information
+ --verbose   Be more verbose, if applicable
+
+Option format:
+ --foo      Option "foo" is True
+ --/foo     Option "foo" is False
+ --foo=bar  Option "foo" is "bar"
