@@ -459,25 +459,25 @@ name of the editor to be used.
 =head2 --no-filename
 
 Indicate whether filenames should B<not> be shown.  Defaults to C<False> if
-C<--human> is (implicitely) set to C<True>, else defaults to C<True>.
+C<--human> is (implicitly) set to C<True>, else defaults to C<True>.
 
 =head2 --highlight
 
 Indicate whether the pattern should be highlighted in the line in which
-it was found.  Defaults to C<True> if C<--human> is (implicitely) set to
+it was found.  Defaults to C<True> if C<--human> is (implicitly) set to
 C<True>, else defaults to C<False>.
 
 =head2 --highlight--after
 
 Indicate the string that should be used at the end of the pattern found in
-a line.  Only makes sense if C<--highlight> is (implicitely) set to C<True>.
+a line.  Only makes sense if C<--highlight> is (implicitly) set to C<True>.
 Defaults to the empty string if C<--only-matching> is specified with a
 C<True> value, or to the terminal code to end B<bold> otherwise.
 
 =head2 --highlight--before
 
 Indicate the string that should be used at the end of the pattern found in
-a line.  Only makes sense if C<--highlight> is (implicitely) set to C<True>.
+a line.  Only makes sense if C<--highlight> is (implicitly) set to C<True>.
 Defaults to a space if C<--only-matching> is specified with a C<True> value,
 or to the terminal code to start B<bold> otherwise.
 
@@ -510,7 +510,7 @@ additional options previously saved with C<--save>.
 =head2 --line-number
 
 Indicate whether line numbers should be shown.  Defaults to C<True> if
-C<--human> is (implicitely) set to C<True> and <-h> is B<not> set to C<True>,
+C<--human> is (implicitly) set to C<True> and <-h> is B<not> set to C<True>,
 else defaults to C<False>.
 
 =head2 --only-matching
@@ -525,7 +525,7 @@ be placed.  Defaults to C<STDOUT>.
 
 =head2 --pattern
 
-Alternative way to specify the pattern to search for.  If (implicitely)
+Alternative way to specify the pattern to search for.  If (implicitly)
 specified, will assume the first positional parameter specified is
 actually a path specification, rather than a pattern.  This allows
 the pattern to be searched for to be saved with C<--save>.

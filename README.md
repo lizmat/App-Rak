@@ -79,22 +79,22 @@ Indicate whether the patterns found should be fed into an editor for inspection 
 --no-filename
 -------------
 
-Indicate whether filenames should **not** be shown. Defaults to `False` if `--human` is (implicitely) set to `True`, else defaults to `True`.
+Indicate whether filenames should **not** be shown. Defaults to `False` if `--human` is (implicitly) set to `True`, else defaults to `True`.
 
 --highlight
 -----------
 
-Indicate whether the pattern should be highlighted in the line in which it was found. Defaults to `True` if `--human` is (implicitely) set to `True`, else defaults to `False`.
+Indicate whether the pattern should be highlighted in the line in which it was found. Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
 
 --highlight--after
 ------------------
 
-Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitely) set to `True`. Defaults to the empty string if `--only-matching` is specified with a `True` value, or to the terminal code to end **bold** otherwise.
+Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitly) set to `True`. Defaults to the empty string if `--only-matching` is specified with a `True` value, or to the terminal code to end **bold** otherwise.
 
 --highlight--before
 -------------------
 
-Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitely) set to `True`. Defaults to a space if `--only-matching` is specified with a `True` value, or to the terminal code to start **bold** otherwise.
+Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitly) set to `True`. Defaults to a space if `--only-matching` is specified with a `True` value, or to the terminal code to start **bold** otherwise.
 
 --human
 -------
@@ -120,7 +120,7 @@ If specified with a true value and as the only option, will list all additional 
 --line-number
 -------------
 
-Indicate whether line numbers should be shown. Defaults to `True` if `--human` is (implicitely) set to `True` and <-h> is **not** set to `True`, else defaults to `False`.
+Indicate whether line numbers should be shown. Defaults to `True` if `--human` is (implicitly) set to `True` and <-h> is **not** set to `True`, else defaults to `False`.
 
 --only-matching
 ---------------
@@ -135,7 +135,7 @@ Indicate the path of the file in which the result of the search should be placed
 --pattern
 ---------
 
-Alternative way to specify the pattern to search for. If (implicitely) specified, will assume the first positional parameter specified is actually a path specification, rather than a pattern. This allows the pattern to be searched for to be saved with `--save`.
+Alternative way to specify the pattern to search for. If (implicitly) specified, will assume the first positional parameter specified is actually a path specification, rather than a pattern. This allows the pattern to be searched for to be saved with `--save`.
 
 --replace-files
 ---------------
