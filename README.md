@@ -81,6 +81,11 @@ Indicate whether just the number of lines with matches should be calculated. Whe
 
 Indicate whether the patterns found should be fed into an editor for inspection and/or changes. Defaults to `False`. Optionally takes the name of the editor to be used.
 
+--file-separator-null
+---------------------
+
+Indicate to separate filenames by null bytes rather than newlines if the `--files-with-matches` option is specified with a `True` value.
+
 --group-matches
 ---------------
 
@@ -151,6 +156,25 @@ im: --ignorecase --ignoremark
 
 If specified with a true value and as the only option, will list all additional options previously saved with `--save`.
 
+--modify-files
+--------------
+
+Only makes sense if the specified pattern is a `Callable`. Indicates whether the output of the pattern should be applied to the file in which it was found. Defaults to `False`.
+
+The `Callable` will be called for each line, giving the line (**including** its line ending). It is then up to the `Callable` to return:
+
+### False
+
+Remove this line from the file. NOTE: this means the exact `False` value.
+
+### True
+
+Keep this line unchanged the file. NOTE: this means the exact `True` value.
+
+### any other value
+
+Inserts this value in the file instead of the given line. The value can either be a string, or a list of strings.
+
 --module=foo
 ------------
 
@@ -170,11 +194,6 @@ Indicate the path of the file in which the result of the search should be placed
 -------------
 
 Alternative way to specify the pattern to search for. If (implicitly) specified, will assume the first positional parameter specified is actually a path specification, rather than a pattern. This allows the pattern to be searched for to be saved with `--save`.
-
---replace-files
----------------
-
-Only makes sense if the specified pattern is a `Callable`. Indicates whether the output of the pattern should be applied to the file in which it was found. Defaults to `False`.
 
 --repository=dir
 ----------------

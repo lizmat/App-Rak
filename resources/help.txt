@@ -22,11 +22,12 @@ Haystack specification:
  --follow-symlinks  Whether to follow symlinked directories (default: don't)
 
 Result modifiers:
- --before-context=N          List N lines before any line with a match
- --after-context=N           List N lines after any line with a match
- --context=N                 List N lines around any line with a match
- --count-only                Only return count of matches
- --files-with-matches        Only return filenames with matches
+ --before-context=N     List N lines before any line with a match
+ --after-context=N      List N lines after any line with a match
+ --context=N            List N lines around any line with a match
+ --count-only           Only return count of matches
+ --files-with-matches   Only return filenames with matches
+ --file-separator-null  Separate filenames with null bytes
 
 Listing modifiers:
  --human                     Force defaults as if a human is watching
@@ -40,6 +41,9 @@ Listing modifiers:
  --highlight                 Highlight matches if possible
  --highlight-before=xxx      String to put before match
  --highlight-after=yyy       String to put after match
+
+Content modifiers:
+ --modify-files  Change content of files using the given Callable pattern
 
 Resource usage:
  --batch=N   max number of files to process in a thread (default: 64)
@@ -57,11 +61,13 @@ General options:
  --help      Show this
  --help foo  Show additional help about:
                pattern | string | code | haystack | result | listing
-               resource | edit | option | general | philosophy | examples
+               content | resource | edit | option | general | philosophy
+               examples
  --version   Show version information
  --verbose   Be more verbose, if applicable
 
 Option format:
  --foo      Option "foo" is True
  --/foo     Option "foo" is False
+ --no-foo   Option "foo" is False
  --foo=bar  Option "foo" is "bar"

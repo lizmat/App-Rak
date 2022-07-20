@@ -2,6 +2,11 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.18  2022-07-20T23:14:37+02:00
+    - Add option --file-separator-null to get \0 between filenames
+    - Allow --no-foo as alternative to --/foo
+    - Add option -modify-files to modify content of files with Callable
+
 0.0.17  2022-07-20T12:52:44+02:00
     - Rename --I option to --repository to get away from Perlishness
     - Rename --M option to --module for better clarity

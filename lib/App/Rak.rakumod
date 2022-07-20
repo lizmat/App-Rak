@@ -128,6 +128,9 @@ my sub HELP($text, @keys, :$verbose) {
     }
 }
 
+# Allow --no-foo as an alternative to --/foo
+$_ = .subst(/^ '--' no '-' /, '--/') for @*ARGS;
+
 # Entry point for CLI processing
 my proto sub MAIN(|) is export {*}
 
@@ -226,8 +229,8 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 
     (my $editor := %n<edit>:delete)
       ?? go-edit-files($editor, $needle, @paths, %n)
-      !! is-simple-Callable($needle) && (%n<replace-files>:delete)
-        ?? replace-files($needle, @paths, %n)
+      !! is-simple-Callable($needle) && (%n<modify-files>:delete)
+        ?? modify-files($needle, @paths, %n)
         !! (%n<count-only>:delete)
           ?? count-only($needle, @paths, %n)
           !! (%n<files-with-matches>:delete)
@@ -235,6 +238,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
             !! want-lines($needle, @paths, %n);
 }
 
+# Edit / Inspect some files
 my sub go-edit-files($editor, $needle, @paths, %_ --> Nil) {
     CATCH { meh .message }
 
@@ -256,8 +260,66 @@ my sub go-edit-files($editor, $needle, @paths, %_ --> Nil) {
       :editor(Bool.ACCEPTS($editor) ?? Any !! $editor)
 }
 
-my sub replace-files($needle, @paths, %_ --> Nil) {
-    NYI "replace-files: under construction";
+my sub s($elems) { $elems == 1 ?? "" !! "s" }
+
+# Replace contents of files
+my sub modify-files($needle, @paths, %_ --> Nil) {
+    my $batch   := %_<batch>:delete;
+    my $degree  := %_<degree>:delete;
+    my $verbose := %_<verbose>:delete;
+    meh-if-unexpected(%_);
+
+    my @files-changed;
+    my int $nr-changed;
+    my int $nr-removed;
+
+    @paths.&hyperize($batch, $degree).map: -> $path {
+        my str @lines;
+        my int $lines-changed;
+        my int $lines-removed;
+
+        my $io := $path.IO;
+        for $io.slurp.lines(:!chomp) {
+            my $result := $needle($_);
+            if $result =:= True {
+                @lines.push: $_;
+            }
+            elsif $result =:= False {
+                ++$lines-removed;
+            }
+            elsif $result eq $_ {
+                @lines.push: $_;
+            }
+            else {
+                @lines.push: $result;
+                ++$lines-changed;
+            }
+        }
+        if $lines-changed || $lines-removed {
+            $io.spurt: @lines.join;
+            @files-changed.push: ($io, $lines-changed, $lines-removed);
+            $nr-changed += $lines-changed;
+            $nr-removed += $lines-removed;
+        }
+    }
+
+    my $nr-files = @files-changed.elems;
+    my $fb = "Processed @paths.elems() file&s(@paths.elems)";
+    $fb ~= ", $nr-files file&s($nr-files) changed"     if $nr-files;
+    $fb ~= ", $nr-changed line&s($nr-changed) changed" if $nr-changed;
+    $fb ~= ", $nr-removed line&s($nr-removed) removed" if $nr-removed;
+
+    if $verbose {
+        $fb ~= "\n";
+        for @files-changed -> ($io, $nr-changed, $nr-removed) {
+            $fb ~= "$io.relative():";
+            $fb ~= " $nr-changed changes" if $nr-changed;
+            $fb ~= " $nr-removed removals" if $nr-removed;
+            $fb ~= "\n";
+        }
+        $fb .= chomp;
+    }
+    say $fb;
 }
 
 # Only count matches
@@ -279,11 +341,12 @@ my sub count-only($needle, @paths, %_ --> Nil) {
 
 # Only show filenames
 my sub files-only($needle, @paths, %_ --> Nil) {
+    my $nl := %_<file-separator-null>:delete ?? "\0" !! $*OUT.nl-out;
     my %additional := named-args %_,
       :ignorecase, :ignoremark, :invert-match, :type, :batch, :degree;
     meh-if-unexpected(%_);
 
-    say .relative
+    print .relative ~ $nl
       for files-containing $needle, @paths, :files-only, |%additional;
 }
 
@@ -316,7 +379,7 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
         $highlight = !is-simple-Callable($needle);
         $break = $group-matches = $show-filename = $show-line-number = True;
         $only = False;
-        $trim = !($before || $after);
+        $trim = !($before || $after || is-simple-Callable($needle));
         $summary-if-larger-than = 160;
     }
 
@@ -514,6 +577,11 @@ Indicate whether the patterns found should be fed into an editor for
 inspection and/or changes.  Defaults to C<False>.  Optionally takes the
 name of the editor to be used.
 
+=head2 --file-separator-null
+
+Indicate to separate filenames by null bytes rather than newlines if the
+C<--files-with-matches> option is specified with a C<True> value.
+
 =head2 --group-matches
 
 Indicate whether matches of a file should be grouped together by mentioning
@@ -584,6 +652,28 @@ im: --ignorecase --ignoremark
 If specified with a true value and as the only option, will list all
 additional options previously saved with C<--save>.
 
+=head2 --modify-files
+
+Only makes sense if the specified pattern is a C<Callable>.  Indicates
+whether the output of the pattern should be applied to the file in which
+it was found.  Defaults to C<False>.
+
+The C<Callable> will be called for each line, giving the line (B<including>
+its line ending).  It is then up to the C<Callable> to return:
+
+=head3 False
+
+Remove this line from the file.  NOTE: this means the exact C<False> value.
+
+=head3 True
+
+Keep this line unchanged the file.  NOTE: this means the exact C<True> value.
+
+=head3 any other value
+
+Inserts this value in the file instead of the given line.  The value can
+either be a string, or a list of strings.
+
 =head2 --module=foo
 
 Indicate the Raku module that should be loaded.  Only makes sense if the
@@ -605,12 +695,6 @@ Alternative way to specify the pattern to search for.  If (implicitly)
 specified, will assume the first positional parameter specified is
 actually a path specification, rather than a pattern.  This allows
 the pattern to be searched for to be saved with C<--save>.
-
-=head2 --replace-files
-
-Only makes sense if the specified pattern is a C<Callable>.  Indicates
-whether the output of the pattern should be applied to the file in which
-it was found.  Defaults to C<False>.
 
 =head2 --repository=dir
 
