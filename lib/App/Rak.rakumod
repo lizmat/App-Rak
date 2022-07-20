@@ -70,8 +70,9 @@ my sub named-args(%args, *%wanted) {
 }
 
 # Add any lines before / after in a result
+role delimiter { has $.delimiter }
 my sub add-before-after($io, @initially-selected, int $before, int $after) {
-    my str @lines = $io.lines;
+    my str @lines = $io.lines(:enc<utf8-c8>);
     @lines.unshift: "";   # make 1-base indexing natural
     my int $last-linenr = @lines.end;
 
@@ -81,16 +82,19 @@ my sub add-before-after($io, @initially-selected, int $before, int $after) {
         my int $linenr = .key;
         if $before {
             for max($linenr - $before, 1) ..^ $linenr -> int $_ {
-                @selected.push: Pair.new($_, @lines.AT-POS($_))
+                @selected.push:
+                  Pair.new($_, @lines.AT-POS($_) but delimiter('-'))
                   unless @seen.AT-POS($_)++;
             }
         }
 
-        @selected.push: $_ unless @seen.AT-POS($linenr)++;
+        @selected.push: Pair.new(.key, .value but delimiter(':'))
+          unless @seen.AT-POS($linenr)++;
 
         if $after {
             for $linenr ^.. min($linenr + $after, $last-linenr ) -> int $_ {
-                @selected.push: Pair.new($_,@lines.AT-POS($_))
+                @selected.push:
+                  Pair.new($_, @lines.AT-POS($_) but delimiter('-'))
                   unless @seen.AT-POS($_)++;
             }
         }
@@ -179,7 +183,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     my $needle = %n<pattern>:delete // @specs.shift;
     meh "Must at least specify a pattern" without $needle;
 
-    # Return prelude from -I and -M parameters
+    # Return prelude from --repository and --module parameters
     my sub prelude() {
         my $prelude = "";
         if %n<I>:delete -> \libs {
@@ -234,14 +238,14 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 my sub go-edit-files($editor, $needle, @paths, %_ --> Nil) {
     CATCH { meh .message }
 
-    my $files-only := %_<files-with-matches>:delete;
-    my %ignore     := named-args %_, :ignorecase :ignoremark;
+    my $files-with-matches := %_<files-with-matches>:delete;
+    my %ignore             := named-args %_, :ignorecase :ignoremark;
     my %additional =
       |(named-args %_, :max-count, :type, :batch, :degree),
       |%ignore;
     meh-if-unexpected(%_);
 
-    edit-files ($files-only
+    edit-files ($files-with-matches
       ?? files-containing($needle, @paths, :files-only, |%additional)
       !! files-containing($needle, @paths, |%additional).map: {
              my $path := .key;
@@ -256,6 +260,7 @@ my sub replace-files($needle, @paths, %_ --> Nil) {
     NYI "replace-files: under construction";
 }
 
+# Only count matches
 my sub count-only($needle, @paths, %_ --> Nil) {
     my $files-with-matches := %_<files-with-matches>:delete;
     my %additional := named-args %_,
@@ -272,6 +277,7 @@ my sub count-only($needle, @paths, %_ --> Nil) {
     say "$matches matches in $files files";
 }
 
+# Only show filenames
 my sub files-only($needle, @paths, %_ --> Nil) {
     my %additional := named-args %_,
       :ignorecase, :ignoremark, :invert-match, :type, :batch, :degree;
@@ -281,6 +287,7 @@ my sub files-only($needle, @paths, %_ --> Nil) {
       for files-containing $needle, @paths, :files-only, |%additional;
 }
 
+# Show lines with highlighting and context
 my sub want-lines($needle, @paths, %_ --> Nil) {
     my $ignorecase := %_<ignorecase>:delete;
     my $ignoremark := %_<ignoremark>:delete;
@@ -295,17 +302,20 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
     $before = 0 without $before;
     $after  = 0 without $after;
 
-    my Bool() $line-number;
     my Bool() $highlight;
     my Bool() $trim;
-    my Bool() $no-filename;
+    my        $break;
+    my Bool() $group-matches;
+    my Bool() $show-filename;
+    my Bool() $show-line-number;
     my Bool() $only;
     my Int()  $summary-if-larger-than;
 
     my $human := %_<human>:delete // $isa-tty;
     if $human {
         $highlight = !is-simple-Callable($needle);
-        $no-filename = $only = False;
+        $break = $group-matches = $show-filename = $show-line-number = True;
+        $only = False;
         $trim = !($before || $after);
         $summary-if-larger-than = 160;
     }
@@ -345,41 +355,62 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
         ;
     }
 
-    # some twisted historical logic
-    $no-filename = $_ with %_<no-filename>:delete;
-    $no-filename = True without $no-filename;
-    $line-number = $_ with %_<line-number>:delete;
-    without $line-number {
-        $line-number = !$no-filename if $human;
-    }
+    $break            = $_ with %_<break>:delete;
+    $group-matches    = $_ with %_<group-matches>:delete;
+    $show-filename    = $_ with %_<show-filename>:delete;
+    $show-line-number = $_ with %_<show-line-number>:delete;
     meh-if-unexpected(%_);
 
-    my int $nr-files;
+    unless $break<> =:= False  {
+        $break = "" but True
+          if Bool.ACCEPTS($break) || ($break.defined && !$break);
+    }
     my $before-or-after := $before || $after;
 
-    for $seq {
-        say "" if $human && $nr-files++;
+    my $show-header = $show-filename && $group-matches;
+    $show-filename  = False if $show-header;
+    my int $nr-files;
 
-        my $io := .key;
-        say $io.relative unless $no-filename;
+    for $seq -> (:key($io), :value(@matches)) {
+        say $break if $break && $nr-files++;
+
+        my str $filename = $io.relative;
+        say $filename if $show-header;
 
         if $before-or-after {
-            my @selected := add-before-after($io, .value, $before, $after);
-            if $line-number {
-                my $format := '%' ~ (@selected.tail.key.chars + 1) ~ 'd: ';
-                say sprintf($format, .key) ~ show-line .value for @selected;
+            my @selected := add-before-after($io, @matches, $before, $after);
+            my $format := '%' ~ (@selected.tail.key.chars) ~ 'd';
+            if $show-line-number {
+                for @selected {
+                    my str $delimiter = .value.delimiter;
+                    say ($show-filename ?? $filename ~ $delimiter !! '')
+                      ~ sprintf($format, .key)
+                      ~ $delimiter
+                      ~ show-line(.value);
+                }
+            }
+            elsif $show-filename {
+                say $filename ~ .value.delimiter ~ show-line(.value)
+                  for @selected;
             }
             else {
-                say show-line .value for @selected;
+                say show-line(.value) for @selected;
             }
         }
         else {
-            if $line-number {
-                my $format := '%' ~ (.value.tail.key.chars + 1) ~ 'd: ';
-                say sprintf($format, .key) ~ show-line .value for .value;
+            if $show-line-number {
+                my $format := '%' ~ (@matches.tail.key.chars) ~ 'd:';
+                for @matches {
+                    say ($show-filename ?? $filename ~ ':' !! '')
+                      ~ sprintf($format, .key)
+                      ~ show-line(.value);
+                }
+            }
+            elsif $show-filename {
+                say $filename ~ ':' ~ show-line(.value) for @matches;
             }
             else {
-                say show-line .value for .value;
+                say show-line(.value) for @matches;
             }
         }
     }
@@ -457,6 +488,13 @@ matches.  Defaults to B<0>.  Will be overridden by a C<--context> argument.
 Indicate the number of lines that should be shown B<before> any line that
 matches.  Defaults to B<0>.  Will be overridden by a C<--context> argument.
 
+=head2 --break[=string]
+
+Indicate whether there should be a visible division between matches of
+different files.  Can also be specified as a string to be used as the
+divider.  Defaults to C<True> (using an empty line as a divider) if
+C<--human> is (implicitly) set to C<True>, else defaults to C<False>.
+
 =head2 --context=N
 
 Indicate the number of lines that should be shown B<around> any line that
@@ -476,35 +514,35 @@ Indicate whether the patterns found should be fed into an editor for
 inspection and/or changes.  Defaults to C<False>.  Optionally takes the
 name of the editor to be used.
 
-=head2 -I=dir
+=head2 --group-matches
 
-Indicate the directory that should be searched for Raku module loading.
-Only makes sense if the pattern is executable code.
-
-Please note that contrary to normal use in Raku, the C<=> B<must> be
-specified.  Also note that you can create a shortcut for most often used
-arguments of the C<-I> option:
-
-=begin code :lang<bash>
-
-$ rak --I=. --save=I.
-Saved option '--I.' as: --I='.'
-
-$ rak --I=lib --save=Ilib
-Saved option '--Ilib' as: --I=lib
-
-=end code
-
-=head2 --no-filename
-
-Indicate whether filenames should B<not> be shown.  Defaults to C<False> if
-C<--human> is (implicitly) set to C<True>, else defaults to C<True>.
+Indicate whether matches of a file should be grouped together by mentioning
+the filename only once (instead of on every line).  Defaults to C<True> if
+C<--human> is (implicitly) set to C<True>, else defaults to C<False>.
 
 =head2 --highlight
 
 Indicate whether the pattern should be highlighted in the line in which
 it was found.  Defaults to C<True> if C<--human> is (implicitly) set to
 C<True>, else defaults to C<False>.
+
+=head2 --help [area-of-interest]
+
+Show argument documentation, possibly extended by giving the area of
+interest, which are:
+
+=item pattern
+=item string
+=item code
+=item haystack
+=item result
+=item listing
+=item resource
+=item edit
+=item option
+=item general
+=item philosophy
+=item examples
 
 =head2 --highlight--after[=string]
 
@@ -546,19 +584,10 @@ im: --ignorecase --ignoremark
 If specified with a true value and as the only option, will list all
 additional options previously saved with C<--save>.
 
-=head2 --line-number
-
-Indicate whether line numbers should be shown.  Defaults to C<True> if
-C<--human> is (implicitly) set to C<True> and <-h> is B<not> set to C<True>,
-else defaults to C<False>.
-
-=head2 -M=module
+=head2 --module=foo
 
 Indicate the Raku module that should be loaded.  Only makes sense if the
 pattern is executable code.
-
-Please note that contrary to normal use in Raku, the C<=> B<must> be
-specified.
 
 =head2 --only-matching
 
@@ -582,6 +611,24 @@ the pattern to be searched for to be saved with C<--save>.
 Only makes sense if the specified pattern is a C<Callable>.  Indicates
 whether the output of the pattern should be applied to the file in which
 it was found.  Defaults to C<False>.
+
+=head2 --repository=dir
+
+Indicate the directory that should be searched for Raku module loading.
+Only makes sense if the pattern is executable code.
+
+Note that you can create a familiar shortcut for the most common arguments of
+the C<--repository> option:
+
+=begin code :lang<bash>
+
+$ rak --repository=. --save=I.
+Saved option '--I.' as: --repository='.'
+
+$ rak --repository=lib --save=Ilib
+Saved option '--Ilib' as: --repository=lib
+
+=end code
 
 =head2 --save=name
 
@@ -615,6 +662,17 @@ depend on other arguments having been specified.
 
 To remove a saved set of named arguments, use C<--save> as the only
 named argument.
+
+=head2 --show-filename
+
+Indicate whether filenames should be shown.  Defaults to C<True> if
+C<--human> is (implicitly) set to C<True>, else defaults to C<False>.
+
+=head2 --show-line-number
+
+Indicate whether line numbers should be shown.  Defaults to C<True> if
+C<--human> is (implicitly) set to C<True> and <-h> is B<not> set to C<True>,
+else defaults to C<False>.
 
 =head2 --summary-if-larger-than=N
 

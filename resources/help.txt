@@ -14,27 +14,32 @@ String search pattern modifiers:
  --type=contains     Look for string anywhere (default)
 
 Code pattern helpers:
- --I=lib  First look for any modules to load in the "lib" directory
- --M=foo  Load module "foo" before compiling Raku code pattern
+ --repository=lib  First look for any modules to load in the "lib" directory
+ --module=foo      Load module "foo" before compiling Raku code pattern
 
 Haystack specification:
  all other arguments   (default: current directory)
  --follow-symlinks  Whether to follow symlinked directories (default: don't)
 
 Result modifiers:
+ --before-context=N          List N lines before any line with a match
+ --after-context=N           List N lines after any line with a match
+ --context=N                 List N lines around any line with a match
+ --count-only                Only return count of matches
+ --files-with-matches        Only return filenames with matches
+
+Listing modifiers:
+ --human                     Force defaults as if a human is watching
+ --break[=string]            String to show between different files
+ --group-matches             Show filename only once on a separate line
+ --show-filename             Show the filename in which match occurred
+ --show-line-number          Show the line number in which match occurred
  --only-matching             Only produce the actual matches
  --summary-if-larger-than=N  Summarize matching line if longer than N chars
  --trim                      Remove whitespace, true if no context
  --highlight                 Highlight matches if possible
  --highlight-before=xxx      String to put before match
  --highlight-after=yyy       String to put after match
- --count-only                Only return count of matches
- --files-with-matches        Only return filenames with matches
-
-Listing modifiers:
- --before-context=N  List N lines before any line with a match
- --after-context=N   List N lines after any line with a match
- --context=N         List N lines around any line with a match
 
 Resource usage:
  --batch=N   max number of files to process in a thread (default: 64)
@@ -50,8 +55,9 @@ Option management:
 
 General options:
  --help      Show this
- --help foo  Show additional help about: pattern | string | code | haystack |
-             result | listing | resource | edit | option | general
+ --help foo  Show additional help about:
+               pattern | string | code | haystack | result | listing
+               resource | edit | option | general | philosophy | examples
  --version   Show version information
  --verbose   Be more verbose, if applicable
 

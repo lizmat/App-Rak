@@ -61,6 +61,11 @@ Indicate the number of lines that should be shown **after** any line that matche
 
 Indicate the number of lines that should be shown **before** any line that matches. Defaults to **0**. Will be overridden by a `--context` argument.
 
+--break[=string]
+----------------
+
+Indicate whether there should be a visible division between matches of different files. Can also be specified as a string to be used as the divider. Defaults to `True` (using an empty line as a divider) if `--human` is (implicitly) set to `True`, else defaults to `False`.
+
 --context=N
 -----------
 
@@ -76,30 +81,44 @@ Indicate whether just the number of lines with matches should be calculated. Whe
 
 Indicate whether the patterns found should be fed into an editor for inspection and/or changes. Defaults to `False`. Optionally takes the name of the editor to be used.
 
--I=dir
-------
+--group-matches
+---------------
 
-Indicate the directory that should be searched for Raku module loading. Only makes sense if the pattern is executable code.
-
-Please note that contrary to normal use in Raku, the `=` **must** be specified. Also note that you can create a shortcut for most often used arguments of the `-I` option:
-
-```bash
-$ rak --I=. --save=I.
-Saved option '--I.' as: --I='.'
-
-$ rak --I=lib --save=Ilib
-Saved option '--Ilib' as: --I=lib
-```
-
---no-filename
--------------
-
-Indicate whether filenames should **not** be shown. Defaults to `False` if `--human` is (implicitly) set to `True`, else defaults to `True`.
+Indicate whether matches of a file should be grouped together by mentioning the filename only once (instead of on every line). Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
 
 --highlight
 -----------
 
 Indicate whether the pattern should be highlighted in the line in which it was found. Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
+
+--help [area-of-interest]
+-------------------------
+
+Show argument documentation, possibly extended by giving the area of interest, which are:
+
+  * pattern
+
+  * string
+
+  * code
+
+  * haystack
+
+  * result
+
+  * listing
+
+  * resource
+
+  * edit
+
+  * option
+
+  * general
+
+  * philosophy
+
+  * examples
 
 --highlight--after[=string]
 ---------------------------
@@ -132,17 +151,10 @@ im: --ignorecase --ignoremark
 
 If specified with a true value and as the only option, will list all additional options previously saved with `--save`.
 
---line-number
--------------
-
-Indicate whether line numbers should be shown. Defaults to `True` if `--human` is (implicitly) set to `True` and <-h> is **not** set to `True`, else defaults to `False`.
-
--M=module
----------
+--module=foo
+------------
 
 Indicate the Raku module that should be loaded. Only makes sense if the pattern is executable code.
-
-Please note that contrary to normal use in Raku, the `=` **must** be specified.
 
 --only-matching
 ---------------
@@ -163,6 +175,21 @@ Alternative way to specify the pattern to search for. If (implicitly) specified,
 ---------------
 
 Only makes sense if the specified pattern is a `Callable`. Indicates whether the output of the pattern should be applied to the file in which it was found. Defaults to `False`.
+
+--repository=dir
+----------------
+
+Indicate the directory that should be searched for Raku module loading. Only makes sense if the pattern is executable code.
+
+Note that you can create a familiar shortcut for the most common arguments of the `--repository` option:
+
+```bash
+$ rak --repository=. --save=I.
+Saved option '--I.' as: --repository='.'
+
+$ rak --repository=lib --save=Ilib
+Saved option '--Ilib' as: --repository=lib
+```
 
 --save=name
 -----------
@@ -188,6 +215,16 @@ Removed configuration for 'foo'
 Any saved named arguments can be accessed as if it is a standard named boolean argument. Please note that no validity checking on the named arguments is being performed at the moment of saving, as validity may depend on other arguments having been specified.
 
 To remove a saved set of named arguments, use `--save` as the only named argument.
+
+--show-filename
+---------------
+
+Indicate whether filenames should be shown. Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
+
+--show-line-number
+------------------
+
+Indicate whether line numbers should be shown. Defaults to `True` if `--human` is (implicitly) set to `True` and <-h> is **not** set to `True`, else defaults to `False`.
 
 --summary-if-larger-than=N
 --------------------------

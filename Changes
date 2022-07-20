@@ -2,6 +2,15 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.17  2022-07-20T12:52:44+02:00
+    - Rename --I option to --repository to get away from Perlishness
+    - Rename --M option to --module for better clarity
+    - Rename option --no-filename to --show-filename for consistency
+    - Rename option --line-number to --show-line-number for consistency
+    - Add option --break to determine breaking between matches of files
+    - Add option --group-matches to only mention filename once
+    - Adapt documentation
+
 0.0.16  2022-07-19T17:15:09+02:00
     - Bump dependency on "highlighter" to get ":type<ends-with> support
     - Bump dependency on "Files::Containing" to get ":type" support
