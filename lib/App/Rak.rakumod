@@ -110,10 +110,6 @@ my sub HELP($text, @keys, :$verbose) {
     my $header := "$SCRIPT - " ~ DESCRIPTION;
     say $header;
     say "-" x $header.chars;
-    if @keys {
-        say "Specific help about '@keys[]':";
-        say "";
-    }
     say $isa-tty
       ?? $text.lines.map({
               !.starts-with(" ") && .ends-with(":") ?? BON ~ $_ ~ BOFF !! $_

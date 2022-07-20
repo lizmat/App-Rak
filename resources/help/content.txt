@@ -1,0 +1,2 @@
+Content modifiers:
+ --modify-files  Change content of files using the given Callable pattern

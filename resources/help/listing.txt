@@ -1,0 +1,12 @@
+Listing modifiers:
+ --human                     Force defaults as if a human is watching
+ --break[=string]            String to show between different files
+ --group-matches             Show filename only once on a separate line
+ --show-filename             Show the filename in which match occurred
+ --show-line-number          Show the line number in which match occurred
+ --only-matching             Only produce the actual matches
+ --summary-if-larger-than=N  Summarize matching line if longer than N chars
+ --trim                      Remove whitespace, true if no context
+ --highlight                 Highlight matches if possible
+ --highlight-before=xxx      String to put before match
+ --highlight-after=yyy       String to put after match

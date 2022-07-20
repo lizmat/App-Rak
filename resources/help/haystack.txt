@@ -1,0 +1,3 @@
+Haystack specification:
+ all other arguments   (default: current directory)
+ --follow-symlinks  Whether to follow symlinked directories (default: don't)

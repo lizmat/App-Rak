@@ -1,1 +1,2 @@
-See https://raku.land/zef:lizmat/App::Rak#--edit for now
+Edit options:
+ --edit[=editor]  Go edit the result in an editor, (default EDITOR or vim)

@@ -1,0 +1,7 @@
+Result modifiers:
+ --before-context=N     List N lines before any line with a match
+ --after-context=N      List N lines after any line with a match
+ --context=N            List N lines around any line with a match
+ --count-only           Only return count of matches
+ --files-with-matches   Only return filenames with matches
+ --file-separator-null  Separate filenames with null bytes

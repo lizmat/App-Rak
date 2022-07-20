@@ -24,7 +24,19 @@
   },
   "resources": [
     "help.txt",
-    "help/edit.txt"
+    "help/code.txt",
+    "help/content.txt",
+    "help/edit.txt",
+    "help/examples.txt",
+    "help/general.txt",
+    "help/haystack.txt",
+    "help/listing.txt",
+    "help/option.txt",
+    "help/pattern.txt",
+    "help/philosophy.txt",
+    "help/resource.txt",
+    "help/result.txt",
+    "help/string.txt"
   ],
   "source-url": "https://github.com/lizmat/App-Rak.git",
   "tags": [
@@ -35,5 +47,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.0.18"
+  "version": "0.0.19"
 }
