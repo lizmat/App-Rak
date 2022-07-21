@@ -30,6 +30,7 @@
     "help/examples.txt",
     "help/general.txt",
     "help/haystack.txt",
+    "help/input.txt",
     "help/listing.txt",
     "help/option.txt",
     "help/pattern.txt",
@@ -47,5 +48,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.0.19"
+  "version": "0.0.20"
 }

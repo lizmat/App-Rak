@@ -223,15 +223,21 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
       !! @specs.&hyperize(1, %n<degree>).map({ paths($_, |%additional).Slip })
     ).sort(*.fc);
 
-    (my $editor := %n<edit>:delete)
-      ?? go-edit-files($editor, $needle, @paths, %n)
-      !! is-simple-Callable($needle) && (%n<modify-files>:delete)
-        ?? modify-files($needle, @paths, %n)
-        !! (%n<count-only>:delete)
-          ?? count-only($needle, @paths, %n)
-          !! (%n<files-with-matches>:delete)
-            ?? files-only($needle, @paths, %n)
-            !! want-lines($needle, @paths, %n);
+    if %n<edit>:delete -> $editor {
+        go-edit-files($editor, $needle, @paths, %n);
+    }
+    else {
+        (is-simple-Callable($needle) && (%n<modify-files>:delete)
+          ?? &modify-files
+          !! is-simple-Callable($needle) && (%n<json>:delete)
+            ?? &produce-json
+            !! (%n<count-only>:delete)
+              ?? &count-only
+              !! (%n<files-with-matches>:delete)
+                ?? &files-only
+                !! &want-lines
+        )($needle, @paths, %n);
+    }
 }
 
 # Edit / Inspect some files
@@ -336,6 +342,22 @@ my sub modify-files($needle, @paths, %_ --> Nil) {
     }
 
     say $fb;
+}
+
+# Produce JSON to check
+my sub produce-json(&needle, @paths, %_ --> Nil) {
+    my $batch  := %_<batch>:delete;
+    my $degree := %_<degree>:delete;
+    @paths.&hyperize($batch, $degree).map: {
+        my $io := .IO;
+        if try from-json $io.slurp -> $json {
+            if needle($json)<> -> $result {
+                say $result =:= True
+                  ?? $io.relative
+                  !! "$io.relative(): $result"
+            }
+        }
+    }
 }
 
 # Only count matches
@@ -660,6 +682,21 @@ manner.  This means: filenames shown on a separate line, line numbers
 shown, and highlighting performed.  Defaults to C<True> if C<STDOUT> is
 a TTY (aka, someone is actually watching the search results), otherwise
 defaults to C<False>.
+
+=head2 --json
+
+Only makes sense if the needle is a C<Callable>.  If specified with a
+C<True> value, indicates that each selected file will be interpreted
+as JSON, and if valid, will then be given to the needle for introspection.
+If the Callable returns a true value, the filename will be shown.  If
+the returned value is a string, that string will also be mentioned.
+For example:
+
+=begin code :lang<bash>
+
+$ rak '{ $_ with .<auth> }' --json
+
+=end code
 
 =head2 --files-with-matches
 

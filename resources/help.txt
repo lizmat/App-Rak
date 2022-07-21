@@ -13,6 +13,9 @@ String search pattern modifiers:
  --type=ends-with    Look for string at end of a line
  --type=contains     Look for string anywhere (default)
 
+Input modifiers:
+ --json  Call Raku code with parsed JSON only if file contains JSON
+
 Code pattern helpers:
  --repository=lib  First look for any modules to load in the "lib" directory
  --module=foo      Load module "foo" before compiling Raku code pattern

@@ -2,6 +2,9 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.20  2022-07-21T14:24:45+02:00
+    - Add option --json to check JSON files only
+
 0.0.19  2022-07-21T13:07:22+02:00
     - Add option --dry-run to *not* actually make any changes
     - Add option --backup to make backups of any modified files

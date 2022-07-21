@@ -150,6 +150,15 @@ Indicate the string that should be used at the end of the pattern found in a lin
 
 Indicate that search results should be presented in a human readable manner. This means: filenames shown on a separate line, line numbers shown, and highlighting performed. Defaults to `True` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `False`.
 
+--json
+------
+
+Only makes sense if the needle is a `Callable`. If specified with a `True` value, indicates that each selected file will be interpreted as JSON, and if valid, will then be given to the needle for introspection. If the Callable returns a true value, the filename will be shown. If the returned value is a string, that string will also be mentioned. For example:
+
+```bash
+$ rak '{ $_ with .<auth> }' --json
+```
+
 --files-with-matches
 --------------------
 
