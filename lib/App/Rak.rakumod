@@ -262,7 +262,13 @@ my sub s($elems) { $elems == 1 ?? "" !! "s" }
 my sub modify-files($needle, @paths, %_ --> Nil) {
     my $batch   := %_<batch>:delete;
     my $degree  := %_<degree>:delete;
+    my $dryrun  := %_<dryrun>:delete;
     my $verbose := %_<verbose>:delete;
+
+    my $backup = %_<backup>:delete;
+    $backup = ".bak" if $backup<> =:= True;
+    $backup = ".$backup" if $backup && !$backup.starts-with('.');
+
     meh-if-unexpected(%_);
 
     my @files-changed;
@@ -277,7 +283,7 @@ my sub modify-files($needle, @paths, %_ --> Nil) {
         my $io := $path.IO;
         for $io.slurp.lines(:!chomp) {
             my $result := $needle($_);
-            if $result =:= True {
+            if $result =:= True || $result =:= Empty {
                 @lines.push: $_;
             }
             elsif $result =:= False {
@@ -287,12 +293,20 @@ my sub modify-files($needle, @paths, %_ --> Nil) {
                 @lines.push: $_;
             }
             else {
-                @lines.push: $result;
+                @lines.push: $result.join;
                 ++$lines-changed;
             }
         }
         if $lines-changed || $lines-removed {
-            $io.spurt: @lines.join;
+            unless $dryrun {
+                if $backup {
+                    $io.spurt(@lines.join)
+                      if $io.rename($io.sibling($io.basename ~ $backup));
+                }
+                else {
+                    $io.spurt: @lines.join;
+                }
+            }
             @files-changed.push: ($io, $lines-changed, $lines-removed);
             $nr-changed += $lines-changed;
             $nr-removed += $lines-removed;
@@ -313,8 +327,14 @@ my sub modify-files($needle, @paths, %_ --> Nil) {
             $fb ~= " $nr-removed removals" if $nr-removed;
             $fb ~= "\n";
         }
+        $fb ~= "*** no changes where made because of --dryrun ***\n"
+          if $dryrun;
         $fb .= chomp;
     }
+    elsif $dryrun {
+        $fb ~= "\n*** no changes where made because of --dryrun ***";
+    }
+
     say $fb;
 }
 
@@ -379,9 +399,9 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
         $summary-if-larger-than = 160;
     }
 
-    $highlight  = $_ with %_<highlight>:delete;
-    $trim       = $_ with %_<trim>:delete;
-    $only       = $_ with %_<only-matching>:delete;
+    $highlight = $_ with %_<highlight>:delete;
+    $trim      = $_ with %_<trim>:delete;
+    $only      = $_ with %_<only-matching>:delete;
     $before = $after = 0 if $only;
     $summary-if-larger-than = $_ with %_<summary-if-larger-than>:delete;
 
@@ -392,7 +412,7 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
         $pre  = $only ?? " " !! BON  without $pre;
         $post = $only ?? ""  !! BOFF without $post;
 
-        &show-line = $trim 
+        &show-line = $trim
           ?? -> $line {
                  highlighter $line.trim, $needle<>, $pre, $post,
                  :$ignorecase, :$ignoremark, :$only,
@@ -542,6 +562,11 @@ to be thrown with the unexpected options listed.
 Indicate the number of lines that should be shown B<after> any line that
 matches.  Defaults to B<0>.  Will be overridden by a C<--context> argument.
 
+=head2 --backup[=extension]
+
+Indicate whether backups should be made of files that are being modified.
+If specified without extension, the extension C<.bak> will be used.
+
 =head2 --before-context=N
 
 Indicate the number of lines that should be shown B<before> any line that
@@ -566,6 +591,12 @@ Indicate whether just the number of lines with matches should be calculated.
 When specified with a C<True> value, will show a "N matches in M files"
 by default, and if the C<:files-with-matches> option is also specified with
 a C<True> value, will also list the file names with their respective counts.
+
+=head2 --dryrun
+
+Indicate to B<not> actually make any changes to any content modification
+if specified with a C<True> value.  Only makes sense in with the
+C<--modify-files> option.
 
 =head2 --edit[=editor]
 
@@ -664,6 +695,18 @@ Remove this line from the file.  NOTE: this means the exact C<False> value.
 =head3 True
 
 Keep this line unchanged the file.  NOTE: this means the exact C<True> value.
+
+=head3 Empty
+
+Keep this line unchanged the file.  NOTE: this means the exact C<Empty> value.
+This is typically returned as the result of a failed condition.  For example,
+only change the string "foo" into "bar" if the line starts with "#":
+
+=begin code :lang<bash>
+
+$ rak '{ .subst("foo","bar") if .starts-with("#") }' --modify-files
+
+=end code
 
 =head3 any other value
 

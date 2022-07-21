@@ -1,2 +1,4 @@
 Content modifiers:
- --modify-files  Change content of files using the given Callable pattern
+ --modify-files        Change content of files using the Callable pattern
+ --backup[=extension]  Make backup of file with extension (default: .bak)
+ --dry-run             Don't actually make any changes, just run the process

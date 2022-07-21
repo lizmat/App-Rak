@@ -56,6 +56,11 @@ All options are optional. Any unexpected options, will cause an exception to be 
 
 Indicate the number of lines that should be shown **after** any line that matches. Defaults to **0**. Will be overridden by a `--context` argument.
 
+--backup[=extension]
+--------------------
+
+Indicate whether backups should be made of files that are being modified. If specified without extension, the extension `.bak` will be used.
+
 --before-context=N
 ------------------
 
@@ -75,6 +80,11 @@ Indicate the number of lines that should be shown **around** any line that match
 ------------
 
 Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:files-with-matches` option is also specified with a `True` value, will also list the file names with their respective counts.
+
+--dryrun
+--------
+
+Indicate to **not** actually make any changes to any content modification if specified with a `True` value. Only makes sense in with the `--modify-files` option.
 
 --edit[=editor]
 ---------------
@@ -170,6 +180,14 @@ Remove this line from the file. NOTE: this means the exact `False` value.
 ### True
 
 Keep this line unchanged the file. NOTE: this means the exact `True` value.
+
+### Empty
+
+Keep this line unchanged the file. NOTE: this means the exact `Empty` value. This is typically returned as the result of a failed condition. For example, only change the string "foo" into "bar" if the line starts with "#":
+
+```bash
+$ rak '{ .subst("foo","bar") if .starts-with("#") }' --modify-files
+```
 
 ### any other value
 

@@ -1,5 +1,5 @@
 Pattern specification:
- foo                      string
+ foo                      literal string
  '/ << bar >> /'          Raku regex indicated by being bounded by / /
  '{ .ends-with("bar") }'  Raku code indicated by being bounded by { }
  '*.starts--with("foo")'  Raku WhateverCode starting with *.
@@ -18,8 +18,8 @@ Code pattern helpers:
  --module=foo      Load module "foo" before compiling Raku code pattern
 
 Haystack specification:
- all other arguments   (default: current directory)
- --follow-symlinks  Whether to follow symlinked directories (default: don't)
+ all other arguments  (default: current directory)
+ --follow-symlinks    Follow symlinked directories? (default: don't)
 
 Result modifiers:
  --before-context=N     List N lines before any line with a match
@@ -43,7 +43,9 @@ Listing modifiers:
  --highlight-after=yyy       String to put after match
 
 Content modifiers:
- --modify-files  Change content of files using the given Callable pattern
+ --modify-files        Change content of files using the Callable pattern
+ --backup[=extension]  Make backup of file with extension (default: .bak)
+ --dry-run             Don't actually make any changes, just run the process
 
 Resource usage:
  --batch=N   max number of files to process in a thread (default: 64)

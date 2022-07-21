@@ -2,10 +2,15 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.19  2022-07-21T13:07:22+02:00
+    - Add option --dry-run to *not* actually make any changes
+    - Add option --backup to make backups of any modified files
+    - Add initial version of all help sections
+
 0.0.18  2022-07-20T23:14:37+02:00
     - Add option --file-separator-null to get \0 between filenames
     - Allow --no-foo as alternative to --/foo
-    - Add option -modify-files to modify content of files with Callable
+    - Add option --modify-files to modify content of files with Callable
 
 0.0.17  2022-07-20T12:52:44+02:00
     - Rename --I option to --repository to get away from Perlishness
