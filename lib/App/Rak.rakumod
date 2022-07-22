@@ -247,43 +247,51 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     elsif $needle.starts-with('*.') {
         $needle = (prelude() ~ $needle).EVAL;
     }
+    my $is-simple-Callable := is-simple-Callable($needle);
 
     temp $*OUT;
     with %n<output-file>:delete -> $path {
         $*OUT = open($path, :w) if $path ne "-";
     }
 
-    my $root := @specs.head;
-    unless $*IN.t {
+    # Not reading from STDIN
+    if $*IN.t {
+        @specs.unshift(".") unless @specs;
+        my %additional := named-args %n, :follow-symlinks, :file :dir;
+        my @paths = (@specs == 1
+          ?? paths(@specs.head, |%additional)
+          !! @specs.&hyperize(1, %n<degree>).map({ paths($_, |%additional).Slip })
+        ).sort(*.fc);
+
+        if %n<edit>:delete -> $editor {
+            go-edit-files($editor, $needle, @paths, %n);
+        }
+        else {
+            ($is-simple-Callable && (%n<modify-files>:delete)
+              ?? &modify-files
+              !! $is-simple-Callable && (%n<json-per-file>:delete)
+                ?? &produce-json-per-file
+                !! $is-simple-Callable && (%n<json-per-line>:delete)
+                  ?? &produce-json-per-line
+                  !! (%n<count-only>:delete)
+                    ?? &count-only
+                    !! (%n<files-with-matches>:delete)
+                      ?? &files-only
+                      !! &want-lines
+            )($needle, @paths, %n);
+        }
+    }
+
+    # Reading from STDIN
+    else {
+        my $root := @specs.head;
         meh "Specified '$root' while reading from STDIN"
           if $root && $root ne '-';
-        NYI "Under construction";
-    }
-
-    @specs.unshift(".") without $root;
-    my %additional := named-args %n, :follow-symlinks, :file :dir;
-    my @paths = (@specs == 1
-      ?? paths(@specs.head, |%additional)
-      !! @specs.&hyperize(1, %n<degree>).map({ paths($_, |%additional).Slip })
-    ).sort(*.fc);
-
-    if %n<edit>:delete -> $editor {
-        go-edit-files($editor, $needle, @paths, %n);
-    }
-    else {
-        my $is-simple-Callable := is-simple-Callable($needle);
-        ($is-simple-Callable && (%n<modify-files>:delete)
-          ?? &modify-files
-          !! $is-simple-Callable && (%n<json-per-file>:delete)
-            ?? &produce-json-per-file
-            !! $is-simple-Callable && (%n<json-per-line>:delete)
-              ?? &produce-json-per-line
-              !! (%n<count-only>:delete)
-                ?? &count-only
-                !! (%n<files-with-matches>:delete)
-                  ?? &files-only
-                  !! &want-lines
-        )($needle, @paths, %n);
+        meh "Can not specify paths while reading from STDIN"
+          if @specs > 1;
+        $is-simple-Callable && (%n<json-per-line>:delete)
+          ?? stdin-json-per-line($needle, %n)
+          !! stdin($needle, %n)
     }
 }
 
@@ -623,6 +631,32 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
             }
         }
     }
+}
+
+my sub stdin-json-per-line(&needle, %_ --> Nil) {
+    my $count-only       := %_<count-only>:delete;
+    my $show-line-number := %_<show-line-number>:delete;
+    meh-if-unexpected(%_);
+
+    my int $line-number;
+    my int $matches;
+    for $*IN.lines -> $line {
+        ++$line-number;
+        if try from-json $line -> $json {
+            if needle($json) -> \result {
+                $count-only
+                  ?? ++$matches
+                  !! $show-line-number || result =:= True
+                    ?? say($line-number)
+                    !! say($line-number ~ ': ' ~ result)
+            }
+        }
+    }
+    say $matches if $count-only;
+}
+
+my sub stdin($needle, %_ --> Nil) {
+    NYI "from stdin";
 }
 
 =begin pod
