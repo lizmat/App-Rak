@@ -1,0 +1,6 @@
+Pattern specification:
+ foo                      string
+ '/ << bar >> /'          Raku regex indicated by being bounded by / /
+ '{ .ends-with("bar") }'  Raku code indicated by being bounded by { }
+ '*.starts--with("foo")'  Raku WhateverCode starting with *.
+either as first argument, or as --pattern=foo option

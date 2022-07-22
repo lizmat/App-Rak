@@ -2,6 +2,52 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.22  2022-07-22T17:13:41+02:00
+    - Make --json-per-line actually work
+    - Add "count-only" support to json-per-line
+    - Bump dependency on CLI::Help to inhibit -h from triggering
+    - Bump dependency on CLI::Version to inhibit -v from triggering
+    - Fix issue with options indicating False
+
+0.0.21  2022-07-22T14:09:00+02:00
+    - Rename --list-additional-options to --list-custom-options
+    - Rename --json to --json-per-file
+    - Add option --json-per-line to check each line for JSON
+    - Allow specification of value with option replacement
+
+0.0.20  2022-07-21T14:24:45+02:00
+    - Add option --json to check JSON files only
+
+0.0.19  2022-07-21T13:07:22+02:00
+    - Add option --dry-run to *not* actually make any changes
+    - Add option --backup to make backups of any modified files
+    - Add initial version of all help sections
+
+0.0.18  2022-07-20T23:14:37+02:00
+    - Add option --file-separator-null to get \0 between filenames
+    - Allow --no-foo as alternative to --/foo
+    - Add option --modify-files to modify content of files with Callable
+
+0.0.17  2022-07-20T12:52:44+02:00
+    - Rename --I option to --repository to get away from Perlishness
+    - Rename --M option to --module for better clarity
+    - Rename option --no-filename to --show-filename for consistency
+    - Rename option --line-number to --show-line-number for consistency
+    - Add option --break to determine breaking between matches of files
+    - Add option --group-matches to only mention filename once
+    - Adapt documentation
+
+0.0.16  2022-07-19T17:15:09+02:00
+    - Bump dependency on "highlighter" to get ":type<ends-with> support
+    - Bump dependency on "Files::Containing" to get ":type" support
+    - Add support for --type functionality
+    - Initial version of --help documentation
+
+0.0.15  2022-07-19T12:03:57+02:00
+    - Add support for -I functionality
+    - Add support for -M functionality
+    - Worked a bit on the pod
+
 0.0.14  2022-07-18T20:47:50+02:00
     - Add dependency on META::constants 
     - Add dependency on CLI::Help to get --help support

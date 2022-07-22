@@ -1,0 +1,36 @@
+The philosophy of "rak" came from having a personal itch for having
+"ack" on a newly installed machine, but not wanting to fetch that
+from CPAN because, well, it is Perl and I want to move away from it.
+
+And I missed a number of features in "ack", most notably the
+ability to use a search result as direct pointers to places in
+files to edit.  That is now supplied with the --edit option in
+"rak".
+
+The other thing I missed, was the ability to use Raku regexes
+as patterns to search, which is now possible.
+
+I also always get confused with the myriad of options that you
+can specify with programs such as "grep", "ack" or "ag".  And
+"rak" is no different in that sense.  But each option only has
+a single "long" spelling (exceptions are -v / --version and
+-h / --help), so that should reduce the cognitive load a bit
+(although maybe not the typing part).  Fortunately, you can
+create your *own* shortcuts of often used options with --save!
+
+The name "rak" developed from "rack", as in: Raku version of
+"ack".  I decided to drop the "c" to make it more Raku like.
+As it turns out, "rak" in Dutch means a straight part of a
+river.  Which feels oddly appropriate, trying to get to the
+heart of things directly.
+
+At the current stage of development of "rak", it is still
+mainly geared towards my personal itch, although several
+people have already expressed interest in using it also.
+
+Performance is important, but does not currently have a
+strong focus in development: it is more important to get
+things working in a way that is workable for me, and other
+explorers of this new tool.
+
+Elizabeth Mattijsen

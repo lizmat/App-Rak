@@ -35,7 +35,7 @@ POSITIONAL ARGUMENTS
 pattern
 -------
 
-The pattern to search for. This can either be a string, or a regular expression (indicated by a string starting and ending with **/**), or a Callable (indicated by a string starting with **{** and ending with **}**.
+The pattern to search for. This can either be a string, or a [Raku regular expression](https://docs.raku.org/language/regexes) (indicated by a string starting and ending with `/`), a `Callable` (indicated by a string starting with `{` and ending with `}`), or a a result of [`Whatever` currying](https://docs.raku.org/type/Whatever) (indicated by a string starting with `*.`).
 
 Can also be specified with the `--pattern` option, in which case **all** the positional arguments are considered to be a path specification.
 
@@ -51,18 +51,28 @@ SUPPORTED OPTIONS
 
 All options are optional. Any unexpected options, will cause an exception to be thrown with the unexpected options listed.
 
---after-context
----------------
+--after-context=N
+-----------------
 
 Indicate the number of lines that should be shown **after** any line that matches. Defaults to **0**. Will be overridden by a `--context` argument.
 
---before-context
-----------------
+--backup[=extension]
+--------------------
+
+Indicate whether backups should be made of files that are being modified. If specified without extension, the extension `.bak` will be used.
+
+--before-context=N
+------------------
 
 Indicate the number of lines that should be shown **before** any line that matches. Defaults to **0**. Will be overridden by a `--context` argument.
 
---context
----------
+--break[=string]
+----------------
+
+Indicate whether there should be a visible division between matches of different files. Can also be specified as a string to be used as the divider. Defaults to `True` (using an empty line as a divider) if `--human` is (implicitly) set to `True`, else defaults to `False`.
+
+--context=N
+-----------
 
 Indicate the number of lines that should be shown **around** any line that matches. Defaults to **0**. Overrides any a `--after-context` or `--before-context` arguments.
 
@@ -71,83 +81,179 @@ Indicate the number of lines that should be shown **around** any line that match
 
 Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:files-with-matches` option is also specified with a `True` value, will also list the file names with their respective counts.
 
---edit
-------
+--dryrun
+--------
+
+Indicate to **not** actually make any changes to any content modification if specified with a `True` value. Only makes sense in with the `--modify-files` option.
+
+--edit[=editor]
+---------------
 
 Indicate whether the patterns found should be fed into an editor for inspection and/or changes. Defaults to `False`. Optionally takes the name of the editor to be used.
 
---no-filename
--------------
+--file-separator-null
+---------------------
 
-Indicate whether filenames should **not** be shown. Defaults to `False` if `--human` is (implicitely) set to `True`, else defaults to `True`.
+Indicate to separate filenames by null bytes rather than newlines if the `--files-with-matches` option is specified with a `True` value.
+
+--group-matches
+---------------
+
+Indicate whether matches of a file should be grouped together by mentioning the filename only once (instead of on every line). Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
 
 --highlight
 -----------
 
-Indicate whether the pattern should be highlighted in the line in which it was found. Defaults to `True` if `--human` is (implicitely) set to `True`, else defaults to `False`.
+Indicate whether the pattern should be highlighted in the line in which it was found. Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
 
---highlight--after
-------------------
+--help [area-of-interest]
+-------------------------
 
-Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitely) set to `True`. Defaults to the empty string if `--only-matching` is specified with a `True` value, or to the terminal code to end **bold** otherwise.
+Show argument documentation, possibly extended by giving the area of interest, which are:
 
---highlight--before
--------------------
+  * pattern
 
-Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitely) set to `True`. Defaults to a space if `--only-matching` is specified with a `True` value, or to the terminal code to start **bold** otherwise.
+  * string
+
+  * code
+
+  * input
+
+  * haystack
+
+  * result
+
+  * listing
+
+  * resource
+
+  * edit
+
+  * option
+
+  * general
+
+  * philosophy
+
+  * examples
+
+--highlight--after[=string]
+---------------------------
+
+Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitly) set to `True`. Defaults to the empty string if `--only-matching` is specified with a `True` value, or to the terminal code to end **bold** otherwise.
+
+--highlight--before[=string]
+----------------------------
+
+Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitly) set to `True`. Defaults to a space if `--only-matching` is specified with a `True` value, or to the terminal code to start **bold** otherwise.
 
 --human
 -------
 
 Indicate that search results should be presented in a human readable manner. This means: filenames shown on a separate line, line numbers shown, and highlighting performed. Defaults to `True` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `False`.
 
+--json-per-file
+---------------
+
+Only makes sense if the needle is a `Callable`. If specified with a `True` value, indicates that each selected file will be interpreted as JSON, and if valid, will then be given to the needle for introspection. If the Callable returns a true value, the filename will be shown. If the returned value is a string, that string will also be mentioned. For example:
+
+```bash
+$ rak '{ $_ with .<auth> }' --json-per-file
+```
+
+--json-per-line
+---------------
+
+Only makes sense if the needle is a `Callable`. If specified with a `True` value, indicates that each line from the selected files will be interpreted as JSON, and if valid, will then be given to the needle for introspection. If the Callable returns a true value, the filename and line number will be shown. If the returned value is a string, that string will also be mentioned. For example:
+
+```bash
+$ rak '{ $_ with .<auth> }' --json-per-line
+```
+
 --files-with-matches
 --------------------
 
 If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
 
---list-additional-options
--------------------------
+--list-custom-options
+---------------------
 
 ```bash
-$ rak --list-additional-options
+$ rak --list-custom-options
 fs: --'follow-symlinks'
 im: --ignorecase --ignoremark
 ```
 
 If specified with a true value and as the only option, will list all additional options previously saved with `--save`.
 
---line-number
--------------
+--modify-files
+--------------
 
-Indicate whether line numbers should be shown. Defaults to `True` if `--human` is (implicitely) set to `True` and <-h> is **not** set to `True`, else defaults to `False`.
+Only makes sense if the specified pattern is a `Callable`. Indicates whether the output of the pattern should be applied to the file in which it was found. Defaults to `False`.
+
+The `Callable` will be called for each line, giving the line (**including** its line ending). It is then up to the `Callable` to return:
+
+### False
+
+Remove this line from the file. NOTE: this means the exact `False` value.
+
+### True
+
+Keep this line unchanged the file. NOTE: this means the exact `True` value.
+
+### Empty
+
+Keep this line unchanged the file. NOTE: this means the exact `Empty` value. This is typically returned as the result of a failed condition. For example, only change the string "foo" into "bar" if the line starts with "#":
+
+```bash
+$ rak '{ .subst("foo","bar") if .starts-with("#") }' --modify-files
+```
+
+### any other value
+
+Inserts this value in the file instead of the given line. The value can either be a string, or a list of strings.
+
+--module=foo
+------------
+
+Indicate the Raku module that should be loaded. Only makes sense if the pattern is executable code.
 
 --only-matching
 ---------------
 
 Indicate whether only the matched pattern should be produced, rather than the line in which the pattern was found. Defaults to `False`.
 
---output-file
--------------
+--output-file=filename
+----------------------
 
 Indicate the path of the file in which the result of the search should be placed. Defaults to `STDOUT`.
 
---pattern
----------
+--pattern=foo
+-------------
 
-Alternative way to specify the pattern to search for. If (implicitely) specified, will assume the first positional parameter specified is actually a path specification, rather than a pattern. This allows the pattern to be searched for to be saved with `--save`.
+Alternative way to specify the pattern to search for. If (implicitly) specified, will assume the first positional parameter specified is actually a path specification, rather than a pattern. This allows the pattern to be searched for to be saved with `--save`.
 
---replace-files
----------------
+--repository=dir
+----------------
 
-Only makes sense if the specified pattern is a `Callable`. Indicates whether the output of the pattern should be applied to the file in which it was found. Defaults to `False`.
+Indicate the directory that should be searched for Raku module loading. Only makes sense if the pattern is executable code.
 
---save
-------
+Note that you can create a familiar shortcut for the most common arguments of the `--repository` option:
 
-Save all named arguments with the given name in the configuration file (`~/.rak-config.json`), and exit with a message that these options have been saved with the given name.
+```bash
+$ rak --repository=. --save=I.
+Saved option '--I.' as: --repository='.'
 
-This feature can used to both create shortcuts for specific (long) named arguments, or just as a convenient way to combine often used named arguments.
+$ rak --repository=lib --save=Ilib
+Saved option '--Ilib' as: --repository=lib
+```
+
+--save=shortcut-name
+--------------------
+
+Save all options with the given name in the configuration file (`~/.rak-config.json`), and exit with a message that these options have been saved with the given name.
+
+This feature can used to both create shortcuts for specific (long) options, or just as a convenient way to combine often used options.
 
 ```bash
 $ rak --ignorecase --ignoremark --save=im
@@ -159,18 +265,40 @@ $ rak foo --im
 $ rak --follow-symlinks --save=fs
 Saved option '--fs' as: --follow-symlinks
 
+$ rak --break='[---]' --save=B
+Saved option '--B' as: --break='[---]'
+
+$ rak --pattern=! --save=P
+Saved option '--P' as: --pattern='!'
+
 $ rak --save=foo
 Removed configuration for 'foo'
 ```
 
-Any saved named arguments can be accessed as if it is a standard named boolean argument. Please note that no validity checking on the named arguments is being performed at the moment of saving, as validity may depend on other arguments having been specified.
+Any options can be accessed as if it is a standard option. Please note that no validity checking on the options is being performed at the moment of saving, as validity may depend on other options having been specified.
+
+One option can be marked as requiring a value to be specified (with "!") or have a default value (with "[default-value]").
 
 To remove a saved set of named arguments, use `--save` as the only named argument.
 
---summary-if-larger-than
-------------------------
+--show-filename
+---------------
+
+Indicate whether filenames should be shown. Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
+
+--show-line-number
+------------------
+
+Indicate whether line numbers should be shown. Defaults to `True` if `--human` is (implicitly) set to `True` and <-h> is **not** set to `True`, else defaults to `False`.
+
+--summary-if-larger-than=N
+--------------------------
 
 Indicate the maximum size a line may have before it will be summarized. Defaults to `160` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `Inf` effectively (indicating no summarization will ever occur).
+
+  * --type[=words|starts-with|ends-with|contains]
+
+Only makes sense if the pattern is a string. With `words` specified, will look for pattern as a word in a line, with `starts-with` will look for the pattern at the beginning of a line, with `ends-with` will look for the pattern at the end of a line, with `contains` will look for the pattern at any position in a line.
 
 --follow-symlinks
 -----------------

@@ -6,11 +6,11 @@
   "build-depends": [
   ],
   "depends": [
-    "CLI::Help:ver<0.0.2>:auth<zef:lizmat>",
-    "CLI::Version:ver<0.0.3>:auth<zef:lizmat>",
+    "CLI::Help:ver<0.0.3>:auth<zef:lizmat>",
+    "CLI::Version:ver<0.0.4>:auth<zef:lizmat>",
     "META::constants:ver<0.0.2>:auth<zef:lizmat>",
-    "highlighter:ver<0.0.11>:auth<zef:lizmat>",
-    "Files::Containing:ver<0.0.11>:auth<zef:lizmat>",
+    "highlighter:ver<0.0.12>:auth<zef:lizmat>",
+    "Files::Containing:ver<0.0.12>:auth<zef:lizmat>",
     "as-cli-arguments:ver<0.0.3>:auth<zef:lizmat>",
     "Edit::Files:ver<0.0.4>:auth<zef:lizmat>",
     "JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>"
@@ -24,7 +24,20 @@
   },
   "resources": [
     "help.txt",
-    "help/edit.txt"
+    "help/code.txt",
+    "help/content.txt",
+    "help/edit.txt",
+    "help/examples.txt",
+    "help/general.txt",
+    "help/haystack.txt",
+    "help/input.txt",
+    "help/listing.txt",
+    "help/option.txt",
+    "help/pattern.txt",
+    "help/philosophy.txt",
+    "help/resource.txt",
+    "help/result.txt",
+    "help/string.txt"
   ],
   "source-url": "https://github.com/lizmat/App-Rak.git",
   "tags": [
@@ -35,5 +48,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.0.14"
+  "version": "0.0.22"
 }

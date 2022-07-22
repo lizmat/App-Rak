@@ -1,1 +1,80 @@
-See https://raku.land/zef:lizmat/App::Rak for now.
+Pattern specification:
+ foo                      literal string
+ '/ << bar >> /'          Raku regex indicated by being bounded by / /
+ '{ .ends-with("bar") }'  Raku code indicated by being bounded by { }
+ '*.starts--with("foo")'  Raku WhateverCode starting with *.
+either as first argument, or as --pattern=foo option
+
+String search pattern modifiers:
+ --ignorecase  Ignore distinction between upper, lower and title case letters
+ --ignoremark  Only compare base characters, ignore additional marks
+ --type=words        Look for string as a word
+ --type=starts-with  Look for string at start of a line
+ --type=ends-with    Look for string at end of a line
+ --type=contains     Look for string anywhere (default)
+
+Input selection:
+ --json-per-file  Call Raku code with parsed JSON if file contains JSON
+ --json-per-line  Call Raku code with parsed JSON if line contains JSON
+
+Code pattern helpers:
+ --repository=lib  First look for any modules to load in the "lib" directory
+ --module=foo      Load module "foo" before compiling Raku code pattern
+
+Haystack specification:
+ all other arguments  (default: current directory)
+ --follow-symlinks    Follow symlinked directories? (default: don't)
+
+Result modifiers:
+ --before-context=N     List N lines before any line with a match
+ --after-context=N      List N lines after any line with a match
+ --context=N            List N lines around any line with a match
+ --count-only           Only return count of matches
+ --files-with-matches   Only return filenames with matches
+ --file-separator-null  Separate filenames with null bytes
+
+Listing modifiers:
+ --human                     Force defaults as if a human is watching
+ --break[=string]            String to show between different files
+ --group-matches             Show filename only once on a separate line
+ --show-filename             Show the filename in which match occurred
+ --show-line-number          Show the line number in which match occurred
+ --only-matching             Only produce the actual matches
+ --summary-if-larger-than=N  Summarize matching line if longer than N chars
+ --trim                      Remove whitespace, true if no context
+ --highlight                 Highlight matches if possible
+ --highlight-before=xxx      String to put before match
+ --highlight-after=yyy       String to put after match
+ --output-file=filename      Send output to indicated file (default: STDOUT)
+
+Content modifiers:
+ --modify-files        Change content of files using the Callable pattern
+ --backup[=extension]  Make backup of file with extension (default: .bak)
+ --dry-run             Don't actually make any changes, just run the process
+
+Resource usage:
+ --batch=N   max number of files to process in a thread (default: 64)
+ --degree=N  max number of threads to use for processing (default: cores - 1)
+
+Edit options:
+ --edit[=editor]  Go edit the result in an editor, (default EDITOR or vim)
+
+Option management:
+ --save=name            Translate --name to all other options specified,
+                        remove if --save was the only option specified
+ --list-custom-options  List all previously saved options
+
+General options:
+ --help      Show this
+ --help foo  Show additional help about:
+               pattern | string | code | haystack | result | listing
+               content | resource | edit | option | general | philosophy
+               examples
+ --version   Show version information
+ --verbose   Be more verbose, if applicable
+
+Option format:
+ --foo      Option "foo" is True
+ --/foo     Option "foo" is False
+ --no-foo   Option "foo" is False
+ --foo=bar  Option "foo" is "bar"
