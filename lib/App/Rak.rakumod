@@ -140,7 +140,19 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 
     # Saving config
     if %n<save>:delete -> $option {
-        %n ?? (%config{$option} := %n) !! (%config{$option}:delete);
+        if %n {
+            if %n.grep({
+                $_ eq '!' || (.starts-with('[') && .ends-with(']')) with .value
+            }) -> @reps { 
+                meh "Can only have one option with replacement: @reps.map({
+                    '"' ~ .key ~ '"'
+                }).join(", ") were given" if @reps > 1;
+            }
+            %config{$option} := %n;
+        }
+        else {
+            %config{$option}:delete;
+        }
         $config-file.spurt: to-json %config, :!pretty, :sorted-keys;
         say %n
           ?? "Saved option '--$option' as: " ~ as-cli-arguments(%n)
@@ -149,35 +161,64 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     }
 
     # Show what we have
-    elsif %n<list-additional-options>:delete {
+    elsif %n<list-custom-options>:delete {
         meh-if-unexpected(%n);
 
         my $format := '%' ~ %config.keys>>.chars.max ~ 's: ';
-        say sprintf($format,.key) ~ as-cli-arguments(.value)
-          for %config.sort(*.key.fc);
+        for %config.sort(*.key.fc) -> (:$key, :value(%args)) {
+            say sprintf($format,$key) ~ as-cli-arguments(%args);
+        }
         exit;
     }
 
+    my sub is-default($value) {
+        $value.starts-with('[') && $value.ends-with(']')
+    }
+
     # Recursively translate any custom parameters
-    my @strange;
-    my sub translate($option, $value) {
+    my sub translate($option, $original-value) {
         if %config{$option} -> %adding {
-            if Bool.ACCEPTS($value) {
-                %n{$option}:delete;
-                if $value {
-                    translate(.key, .value) unless %n{.key}:exists for %adding;
+            %n{$option}:delete;
+
+            # no specific value given
+            if Bool.ACCEPTS($original-value) {
+
+                # activate option
+                if $original-value {
+                    for %adding -> (:$key, :$value) {
+                        $value eq '!'
+                          ?? meh("Must specify a value for $option for $key")
+                          !! translate(
+                               $key,
+                               is-default($value)
+                                 ?? $value.substr(1, *-1)
+                                 !! $value
+                             );
+                    }
                 }
+                # de-activate option
                 else {
                     %n{.key}:delete for %adding;
                 }
             }
+
+            # some specific value given
             else {
-                @strange.push: "--$option";
+                for %adding -> (:$key, :$value) {
+                    translate(
+                      $key,
+                      $value eq '!' || is-default($value)
+                        ?? $original-value
+                        !! $value
+                    )
+                }
             }
+        }
+        elsif %n{$option}:!exists {
+            %n{$option} = $original-value;
         }
     }
     translate($_, %n{$_}) for original-nameds;
-    meh "These options must be flags, did you mean: @strange[] ?" if @strange;
 
     my $needle = %n<pattern>:delete // @specs.shift;
     meh "Must at least specify a pattern" without $needle;
@@ -194,11 +235,12 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
         $prelude
     }
 
+    # Pre-process non literal string needles
     if $needle.starts-with('/') && $needle.ends-with('/') {
         $needle .= EVAL;
     }
     elsif $needle.starts-with('{') && $needle.ends-with('}') {
-        $needle = (prelude() ~ '-> $_ ' ~ $needle).EVAL;
+        $needle = (prelude() ~ 'my $ = -> $_ ' ~ $needle).EVAL;
     }
     elsif $needle.starts-with('*.') {
         $needle = (prelude() ~ $needle).EVAL;
@@ -227,15 +269,18 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
         go-edit-files($editor, $needle, @paths, %n);
     }
     else {
-        (is-simple-Callable($needle) && (%n<modify-files>:delete)
+        my $is-simple-Callable := is-simple-Callable($needle);
+        ($is-simple-Callable && (%n<modify-files>:delete)
           ?? &modify-files
-          !! is-simple-Callable($needle) && (%n<json>:delete)
-            ?? &produce-json
-            !! (%n<count-only>:delete)
-              ?? &count-only
-              !! (%n<files-with-matches>:delete)
-                ?? &files-only
-                !! &want-lines
+          !! $is-simple-Callable && (%n<json-per-file>:delete)
+            ?? &produce-json-per-file
+            !! $is-simple-Callable && (%n<json-per-line>:delete)
+              ?? &produce-json-per-line
+              !! (%n<count-only>:delete)
+                ?? &count-only
+                !! (%n<files-with-matches>:delete)
+                  ?? &files-only
+                  !! &want-lines
         )($needle, @paths, %n);
     }
 }
@@ -344,17 +389,55 @@ my sub modify-files($needle, @paths, %_ --> Nil) {
     say $fb;
 }
 
-# Produce JSON to check
-my sub produce-json(&needle, @paths, %_ --> Nil) {
-    my $batch  := %_<batch>:delete;
-    my $degree := %_<degree>:delete;
-    @paths.&hyperize($batch, $degree).map: {
+# Produce JSON per file to check
+my sub produce-json-per-file(&needle, @paths, %_ --> Nil) {
+    my $batch         := %_<batch>:delete;
+    my $degree        := %_<degree>:delete;
+    my $show-filename := %_<show-filename>:delete // True;
+    meh-if-unexpected(%_);
+
+    say $_ for @paths.&hyperize($batch, $degree).map: {
         my $io := .IO;
+
         if try from-json $io.slurp -> $json {
-            if needle($json)<> -> $result {
-                say $result =:= True
-                  ?? $io.relative
-                  !! "$io.relative(): $result"
+            if needle($json) -> \result {
+                my $filename := $io.relative;
+                result =:= True
+                  ?? $filename
+                  !! $show-filename
+                    ?? "$filename: " ~ result
+                    !! result
+            }
+        }
+    }
+}
+
+# Produce JSON per line to check
+my sub produce-json-per-line(&needle, @paths, %_ --> Nil) {
+    my $batch            := %_<batch>:delete;
+    my $degree           := %_<degree>:delete;
+    my $show-filename    := %_<show-filename>:delete    // True;
+    my $show-line-number := %_<show-line-number>:delete // True;
+    meh-if-unexpected(%_);
+
+    say $_ for @paths.&hyperize($batch, $degree).map: {
+        my $io := .IO;
+        my int $line-number;
+
+        for $io.lines -> $line {
+            ++$line-number;
+            if try from-json $line -> $json {
+                if needle($json) -> \result {
+                    my $filename := $io.relative;
+                    my $mess     := result =:= True ?? '' !! ': ' ~ result;
+                    $show-filename
+                      ?? $show-line-number
+                        ?? "$filename:$line-number$mess"
+                        !! "$filename$mess"
+                      !! $show-line-number
+                        ?? "$line-number$mess"
+                        !! $mess
+                }
             }
         }
     }
@@ -651,6 +734,7 @@ interest, which are:
 =item pattern
 =item string
 =item code
+=item input
 =item haystack
 =item result
 =item listing
@@ -683,7 +767,7 @@ shown, and highlighting performed.  Defaults to C<True> if C<STDOUT> is
 a TTY (aka, someone is actually watching the search results), otherwise
 defaults to C<False>.
 
-=head2 --json
+=head2 --json-per-file
 
 Only makes sense if the needle is a C<Callable>.  If specified with a
 C<True> value, indicates that each selected file will be interpreted
@@ -694,7 +778,22 @@ For example:
 
 =begin code :lang<bash>
 
-$ rak '{ $_ with .<auth> }' --json
+$ rak '{ $_ with .<auth> }' --json-per-file
+
+=end code
+
+=head2 --json-per-line
+
+Only makes sense if the needle is a C<Callable>.  If specified with a
+C<True> value, indicates that each line from the selected files will be
+interpreted as JSON, and if valid, will then be given to the needle for
+introspection.  If the Callable returns a true value, the filename and
+line number will be shown.  If the returned value is a string, that
+string will also be mentioned.  For example:
+
+=begin code :lang<bash>
+
+$ rak '{ $_ with .<auth> }' --json-per-line
 
 =end code
 
@@ -703,11 +802,11 @@ $ rak '{ $_ with .<auth> }' --json
 If specified with a true value, will only produce the filenames of the
 files in which the pattern was found.  Defaults to C<False>.
 
-=head2 --list-additional-options
+=head2 --list-custom-options
 
 =begin code :lang<bash>
 
-$ rak --list-additional-options
+$ rak --list-custom-options
 fs: --'follow-symlinks'
 im: --ignorecase --ignoremark
 
@@ -790,14 +889,14 @@ Saved option '--Ilib' as: --repository=lib
 
 =end code
 
-=head2 --save=name
+=head2 --save=shortcut-name
 
-Save all named arguments with the given name in the configuration file
+Save all options with the given name in the configuration file
 (C<~/.rak-config.json>), and exit with a message that these options have
 been saved with the given name.
 
-This feature can used to both create shortcuts for specific (long) named
-arguments, or just as a convenient way to combine often used named arguments.
+This feature can used to both create shortcuts for specific (long) options,
+or just as a convenient way to combine often used options.
 
 =begin code :lang<bash>
 
@@ -810,15 +909,23 @@ $ rak foo --im
 $ rak --follow-symlinks --save=fs
 Saved option '--fs' as: --follow-symlinks
 
+$ rak --break='[---]' --save=B
+Saved option '--B' as: --break='[---]'
+
+$ rak --pattern=! --save=P
+Saved option '--P' as: --pattern='!'
+
 $ rak --save=foo
 Removed configuration for 'foo'
 
 =end code
 
-Any saved named arguments can be accessed as if it is a standard named
-boolean argument.  Please note that no validity checking on the named
-arguments is being performed at the moment of saving, as validity may
-depend on other arguments having been specified.
+Any options can be accessed as if it is a standard option.  Please note
+that no validity checking on the options is being performed at the moment
+of saving, as validity may depend on other options having been specified.
+
+One option can be marked as requiring a value to be specified (with "!")
+or have a default value (with "[default-value]").
 
 To remove a saved set of named arguments, use C<--save> as the only
 named argument.

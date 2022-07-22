@@ -14,7 +14,7 @@ Count occurrences of the exact pattern FOO
 
 Same as above but ignoring case
 
-  $ raku FOO myfile --count-only --ignorecase
+  $ rak FOO myfile --count-only --ignorecase
 
 Find all occurrences of the pattern ‘.Pp’ at the beginning of a line
 

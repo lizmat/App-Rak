@@ -117,6 +117,8 @@ Show argument documentation, possibly extended by giving the area of interest, w
 
   * code
 
+  * input
+
   * haystack
 
   * result
@@ -150,13 +152,22 @@ Indicate the string that should be used at the end of the pattern found in a lin
 
 Indicate that search results should be presented in a human readable manner. This means: filenames shown on a separate line, line numbers shown, and highlighting performed. Defaults to `True` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `False`.
 
---json
-------
+--json-per-file
+---------------
 
 Only makes sense if the needle is a `Callable`. If specified with a `True` value, indicates that each selected file will be interpreted as JSON, and if valid, will then be given to the needle for introspection. If the Callable returns a true value, the filename will be shown. If the returned value is a string, that string will also be mentioned. For example:
 
 ```bash
-$ rak '{ $_ with .<auth> }' --json
+$ rak '{ $_ with .<auth> }' --json-per-file
+```
+
+--json-per-line
+---------------
+
+Only makes sense if the needle is a `Callable`. If specified with a `True` value, indicates that each line from the selected files will be interpreted as JSON, and if valid, will then be given to the needle for introspection. If the Callable returns a true value, the filename and line number will be shown. If the returned value is a string, that string will also be mentioned. For example:
+
+```bash
+$ rak '{ $_ with .<auth> }' --json-per-line
 ```
 
 --files-with-matches
@@ -164,11 +175,11 @@ $ rak '{ $_ with .<auth> }' --json
 
 If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
 
---list-additional-options
--------------------------
+--list-custom-options
+---------------------
 
 ```bash
-$ rak --list-additional-options
+$ rak --list-custom-options
 fs: --'follow-symlinks'
 im: --ignorecase --ignoremark
 ```
@@ -237,12 +248,12 @@ $ rak --repository=lib --save=Ilib
 Saved option '--Ilib' as: --repository=lib
 ```
 
---save=name
------------
+--save=shortcut-name
+--------------------
 
-Save all named arguments with the given name in the configuration file (`~/.rak-config.json`), and exit with a message that these options have been saved with the given name.
+Save all options with the given name in the configuration file (`~/.rak-config.json`), and exit with a message that these options have been saved with the given name.
 
-This feature can used to both create shortcuts for specific (long) named arguments, or just as a convenient way to combine often used named arguments.
+This feature can used to both create shortcuts for specific (long) options, or just as a convenient way to combine often used options.
 
 ```bash
 $ rak --ignorecase --ignoremark --save=im
@@ -254,11 +265,19 @@ $ rak foo --im
 $ rak --follow-symlinks --save=fs
 Saved option '--fs' as: --follow-symlinks
 
+$ rak --break='[---]' --save=B
+Saved option '--B' as: --break='[---]'
+
+$ rak --pattern=! --save=P
+Saved option '--P' as: --pattern='!'
+
 $ rak --save=foo
 Removed configuration for 'foo'
 ```
 
-Any saved named arguments can be accessed as if it is a standard named boolean argument. Please note that no validity checking on the named arguments is being performed at the moment of saving, as validity may depend on other arguments having been specified.
+Any options can be accessed as if it is a standard option. Please note that no validity checking on the options is being performed at the moment of saving, as validity may depend on other options having been specified.
+
+One option can be marked as requiring a value to be specified (with "!") or have a default value (with "[default-value]").
 
 To remove a saved set of named arguments, use `--save` as the only named argument.
 

@@ -13,8 +13,9 @@ String search pattern modifiers:
  --type=ends-with    Look for string at end of a line
  --type=contains     Look for string anywhere (default)
 
-Input modifiers:
- --json  Call Raku code with parsed JSON only if file contains JSON
+Input selection:
+ --json-per-file  Call Raku code with parsed JSON if file contains JSON
+ --json-per-line  Call Raku code with parsed JSON if line contains JSON
 
 Code pattern helpers:
  --repository=lib  First look for any modules to load in the "lib" directory
@@ -44,6 +45,7 @@ Listing modifiers:
  --highlight                 Highlight matches if possible
  --highlight-before=xxx      String to put before match
  --highlight-after=yyy       String to put after match
+ --output-file=filename      Send output to indicated file (default: STDOUT)
 
 Content modifiers:
  --modify-files        Change content of files using the Callable pattern
@@ -58,9 +60,9 @@ Edit options:
  --edit[=editor]  Go edit the result in an editor, (default EDITOR or vim)
 
 Option management:
- --save=name                Translate --name to all other options specified,
-                            remove if --save was the only option specified
- --list-additional-options  List all previously saved options
+ --save=name            Translate --name to all other options specified,
+                        remove if --save was the only option specified
+ --list-custom-options  List all previously saved options
 
 General options:
  --help      Show this

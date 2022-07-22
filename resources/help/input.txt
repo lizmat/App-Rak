@@ -1,2 +1,3 @@
-Input modifiers:
- --json  Call Raku code with parsed JSON only if file contains JSON
+Input selection:
+ --json-per-file  Call Raku code with parsed JSON if file contains JSON
+ --json-per-line  Call Raku code with parsed JSON if line contains JSON
