@@ -2,6 +2,13 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.22  2022-07-22T17:13:41+02:00
+    - Make --json-per-line actually work
+    - Add "count-only" support to json-per-line
+    - Bump dependency on CLI::Help to inhibit -h from triggering
+    - Bump dependency on CLI::Version to inhibit -v from triggering
+    - Fix issue with options indicating False
+
 0.0.21  2022-07-22T14:09:00+02:00
     - Rename --list-additional-options to --list-custom-options
     - Rename --json to --json-per-file

@@ -45,11 +45,13 @@ my sub before(Str:D $string, Str:D $marker) {
 # Return named variables in order of specification on the command line
 my sub original-nameds() {
     @*ARGS.map: {
-        .starts-with("--")
-          ?? before(.substr(2), "=")
-          !! .starts-with("-")
-            ?? before(.substr(1), "=")
-            !! Empty
+        .starts-with('--/')
+          ?? before(.substr(3), '=')
+          !! .starts-with('--' | '-/')
+            ?? before(.substr(2), '=')
+            !! .starts-with('-')
+              ?? before(.substr(1), '=')
+              !! Empty
     }
 }
 
@@ -131,8 +133,8 @@ $_ = .subst(/^ '--' no '-' /, '--/') for @*ARGS;
 my proto sub MAIN(|) is export {*}
 
 # Make sure we can do --help and --version
-use CLI::Version:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION, &MAIN;
-use CLI::Help:ver<0.0.2>:auth<zef:lizmat>    %?RESOURCES,    &MAIN, &HELP;
+use CLI::Version:ver<0.0.4>:auth<zef:lizmat>  $?DISTRIBUTION, &MAIN, 'long';
+use CLI::Help:ver<0.0.3>:auth<zef:lizmat> %?RESOURCES, &MAIN, &HELP, 'long';
 
 # Main handler
 my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
@@ -414,31 +416,54 @@ my sub produce-json-per-file(&needle, @paths, %_ --> Nil) {
 
 # Produce JSON per line to check
 my sub produce-json-per-line(&needle, @paths, %_ --> Nil) {
-    my $batch            := %_<batch>:delete;
-    my $degree           := %_<degree>:delete;
-    my $show-filename    := %_<show-filename>:delete    // True;
-    my $show-line-number := %_<show-line-number>:delete // True;
-    meh-if-unexpected(%_);
+    my $batch         := %_<batch>:delete;
+    my $degree        := %_<degree>:delete;
+    my $show-filename := %_<show-filename>:delete // True;
 
-    say $_ for @paths.&hyperize($batch, $degree).map: {
-        my $io := .IO;
-        my int $line-number;
+    if %_<count-only>:delete {
+        meh-if-unexpected(%_);
+        my int $total;
 
-        for $io.lines -> $line {
-            ++$line-number;
-            if try from-json $line -> $json {
-                if needle($json) -> \result {
-                    my $filename := $io.relative;
-                    my $mess     := result =:= True ?? '' !! ': ' ~ result;
-                    $show-filename
-                      ?? $show-line-number
-                        ?? "$filename:$line-number$mess"
-                        !! "$filename$mess"
-                      !! $show-line-number
-                        ?? "$line-number$mess"
-                        !! $mess
+        say $_ for @paths.&hyperize($batch, $degree).map: {
+            my $io := .IO;
+            my int $found;
+
+            for $io.lines -> $line {
+                if try from-json $line -> $json {
+                    ++$found if needle($json);
                 }
             }
+
+            $total += $found;
+            "$io.relative(): $found" if $show-filename;
+        }
+        say $total;
+    }
+
+    else {
+        my $show-line-number := %_<show-line-number>:delete // True;
+        meh-if-unexpected(%_);
+
+        say $_ for @paths.&hyperize($batch, $degree).map: {
+            my $io := .IO;
+            my int $line-number;
+
+            $io.lines.map(-> $line {
+                ++$line-number;
+                if try from-json $line -> $json {
+                    if needle($json) -> \result {
+                        my $filename := $io.relative;
+                        my $mess     := result =:= True ?? '' !! ': ' ~ result;
+                        $show-filename
+                          ?? $show-line-number
+                            ?? "$filename:$line-number$mess"
+                            !! "$filename$mess"
+                          !! $show-line-number
+                            ?? "$line-number$mess"
+                            !! $mess
+                    }
+                }
+            }).Slip
         }
     }
 }
