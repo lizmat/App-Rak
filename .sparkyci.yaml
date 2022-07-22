@@ -2,6 +2,6 @@ main:
   build:
     pre: |
       set -x
-      zef install . --/test
-      zef install --/test Tomty
-      tomty  --all --verbose
+      zef install . --/test 2>&1
+      zef install --/test Tomty 2>&1
+      tomty  --all --verbose 2>&1
