@@ -1,0 +1,7 @@
+main:
+  build:
+    pre: |
+      set -x
+      zef install . --/test
+      zef install --/test Tomty
+      tomty  --all --verbose
