@@ -6,6 +6,6 @@ cd $cache_root_dir
 echo "run: rak foo --files-with-matches"
 
 echo "<<<"
-rak foo --files-with-matches
+rak foo --files-with-matches 2>&1
 echo ">>>"
 

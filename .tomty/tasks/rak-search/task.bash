@@ -6,6 +6,6 @@ cd $cache_root_dir
 echo "run: rak foo --highlight=False --human"
 
 echo "<<<"
-rak foo --highlight=False --human
+rak foo --highlight=False --human 2>&1
 echo ">>>"
 

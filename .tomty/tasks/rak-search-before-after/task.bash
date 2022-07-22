@@ -26,6 +26,6 @@ cat file.txt
 echo "run: rak foo --before-context=$lb --after-context=$la --highlight=False --human"
 
 echo "<<<"
-rak foo --before-context=$lb --after-context=$la --highlight=False --human
+rak foo --before-context=$lb --after-context=$la --highlight=False --human 2>&1
 echo ">>>"
 
