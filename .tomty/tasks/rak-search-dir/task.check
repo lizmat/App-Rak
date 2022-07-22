@@ -1,6 +1,6 @@
 begin:
 <<<
 bar/file.txt
-regexp: ^^ \s+ '1:' \s+ 'foo' \s* $$
+regexp: ^^ \s* '1:foo' \s* $$
 >>>
 end:

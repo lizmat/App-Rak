@@ -22,7 +22,10 @@ cd $cache_root_dir
 echo "file: "
 cat file.txt
 
+
+echo "run: rak foo --before-context=$lb --after-context=$la --highlight=False --human"
+
 echo "<<<"
-rak foo --before=$lb --after=$la --highlight=False --human
+rak foo --before-context=$lb --after-context=$la --highlight=False --human
 echo ">>>"
 
