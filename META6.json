@@ -10,7 +10,7 @@
     "CLI::Version:ver<0.0.4>:auth<zef:lizmat>",
     "META::constants:ver<0.0.2>:auth<zef:lizmat>",
     "highlighter:ver<0.0.12>:auth<zef:lizmat>",
-    "Files::Containing:ver<0.0.12>:auth<zef:lizmat>",
+    "Files::Containing:ver<0.0.13>:auth<zef:lizmat>",
     "as-cli-arguments:ver<0.0.3>:auth<zef:lizmat>",
     "Edit::Files:ver<0.0.4>:auth<zef:lizmat>",
     "JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>"
