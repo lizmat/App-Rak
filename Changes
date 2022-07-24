@@ -2,6 +2,10 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.23  2022-07-23T22:17:46+02:00
+    - Bump dependency on Files::Containing to get "has-word"
+    - First working version of reading lines from STDIN
+
 0.0.22  2022-07-22T17:13:41+02:00
     - Make --json-per-line actually work
     - Add "count-only" support to json-per-line

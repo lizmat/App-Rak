@@ -1,6 +1,6 @@
 # The modules that we need here, with their full identities
 use highlighter:ver<0.0.12>:auth<zef:lizmat>;
-use Files::Containing:ver<0.0.12>:auth<zef:lizmat>;
+use Files::Containing:ver<0.0.13>:auth<zef:lizmat>;
 use as-cli-arguments:ver<0.0.3>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
@@ -247,43 +247,51 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     elsif $needle.starts-with('*.') {
         $needle = (prelude() ~ $needle).EVAL;
     }
+    my $is-simple-Callable := is-simple-Callable($needle);
 
     temp $*OUT;
     with %n<output-file>:delete -> $path {
         $*OUT = open($path, :w) if $path ne "-";
     }
 
-    my $root := @specs.head;
-    unless $*IN.t {
+    # Not reading from STDIN
+    if $*IN.t {
+        @specs.unshift(".") unless @specs;
+        my %additional := named-args %n, :follow-symlinks, :file :dir;
+        my @paths = (@specs == 1
+          ?? paths(@specs.head, |%additional)
+          !! @specs.&hyperize(1, %n<degree>).map({ paths($_, |%additional).Slip })
+        ).sort(*.fc);
+
+        if %n<edit>:delete -> $editor {
+            go-edit-files($editor, $needle, @paths, %n);
+        }
+        else {
+            ($is-simple-Callable && (%n<modify-files>:delete)
+              ?? &modify-files
+              !! $is-simple-Callable && (%n<json-per-file>:delete)
+                ?? &produce-json-per-file
+                !! $is-simple-Callable && (%n<json-per-line>:delete)
+                  ?? &produce-json-per-line
+                  !! (%n<count-only>:delete)
+                    ?? &count-only
+                    !! (%n<files-with-matches>:delete)
+                      ?? &files-only
+                      !! &want-lines
+            )($needle, @paths, %n);
+        }
+    }
+
+    # Reading from STDIN
+    else {
+        my $root := @specs.head;
         meh "Specified '$root' while reading from STDIN"
           if $root && $root ne '-';
-        NYI "Under construction";
-    }
-
-    @specs.unshift(".") without $root;
-    my %additional := named-args %n, :follow-symlinks, :file :dir;
-    my @paths = (@specs == 1
-      ?? paths(@specs.head, |%additional)
-      !! @specs.&hyperize(1, %n<degree>).map({ paths($_, |%additional).Slip })
-    ).sort(*.fc);
-
-    if %n<edit>:delete -> $editor {
-        go-edit-files($editor, $needle, @paths, %n);
-    }
-    else {
-        my $is-simple-Callable := is-simple-Callable($needle);
-        ($is-simple-Callable && (%n<modify-files>:delete)
-          ?? &modify-files
-          !! $is-simple-Callable && (%n<json-per-file>:delete)
-            ?? &produce-json-per-file
-            !! $is-simple-Callable && (%n<json-per-line>:delete)
-              ?? &produce-json-per-line
-              !! (%n<count-only>:delete)
-                ?? &count-only
-                !! (%n<files-with-matches>:delete)
-                  ?? &files-only
-                  !! &want-lines
-        )($needle, @paths, %n);
+        meh "Can not specify paths while reading from STDIN"
+          if @specs > 1;
+        $is-simple-Callable && (%n<json-per-line>:delete)
+          ?? stdin-json-per-line($needle, %n)
+          !! stdin($needle, %n)
     }
 }
 
@@ -621,6 +629,134 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
             else {
                 say show-line(.value) for @matches;
             }
+        }
+    }
+}
+
+my sub stdin-json-per-line(&needle, %_ --> Nil) {
+    my $count-only       := %_<count-only>:delete;
+    my $show-line-number := %_<show-line-number>:delete;
+    meh-if-unexpected(%_);
+
+    my int $line-number;
+    my int $matches;
+    for $*IN.lines -> $line {
+        ++$line-number;
+        if try from-json $line -> $json {
+            if needle($json) -> \result {
+                $count-only
+                  ?? ++$matches
+                  !! result =:= True
+                    ?? say($line-number)
+                    !! $show-line-number
+                      ?? say($line-number ~ ': ' ~ result)
+                      !! say(result)
+            }
+        }
+    }
+    say $matches if $count-only;
+}
+
+my sub stdin($needle, %_ --> Nil) {
+    my Bool() $highlight;
+    my Bool() $trim;
+    my Bool() $show-line-number;
+    my Bool() $only;
+    my Int()  $summary-if-larger-than;
+
+    my UInt() $before = $_ with %_<before-context>:delete;
+    my UInt() $after  = $_ with %_<after-context>:delete;
+    $before = $after  = $_ with %_<context>:delete;
+    $before = 0 without $before;
+    $after  = 0 without $after;
+
+    my $human := %_<human>:delete // $isa-tty;
+    if $human {
+        $highlight = !is-simple-Callable($needle);
+        $show-line-number = True;
+        $only = False;
+        $trim = !($before || $after || is-simple-Callable($needle));
+        $summary-if-larger-than = 160;
+    }
+
+    $highlight = $_ with %_<highlight>:delete;
+    $trim      = $_ with %_<trim>:delete;
+    $only      = $_ with %_<only-matching>:delete;
+    $before = $after = 0 if $only;
+    $show-line-number       = $_ with %_<show-line-number>:delete;
+    $summary-if-larger-than = $_ with %_<summary-if-larger-than>:delete;
+
+    my $ignorecase := %_<ignorecase>:delete;
+    my $ignoremark := %_<ignoremark>:delete;
+    my &show-line;
+    if $highlight {
+        my Str() $pre = my Str() $post = $_ with %_<highlight-before>:delete;
+        $post = $_ with %_<highlight-after>:delete;
+        $pre  = $only ?? " " !! BON  without $pre;
+        $post = $only ?? ""  !! BOFF without $post;
+
+        &show-line = $trim
+          ?? -> $line {
+                 highlighter $line.trim, $needle<>, $pre, $post,
+                 :$ignorecase, :$ignoremark, :$only,
+                 :$summary-if-larger-than
+             }
+          !! -> $line {
+                 highlighter $line, $needle<>, $pre, $post,
+                 :$ignorecase, :$ignoremark, :$only,
+                 :$summary-if-larger-than
+             }
+        ;
+    }
+    else {
+        &show-line = $only
+          ?? -> $line { highlighter $line, $needle, "", " ", :$only }
+          !! $trim
+            ?? *.trim
+            !! -> $line { $line }
+        ;
+    }
+
+    my &matcher;
+    if Callable.ACCEPTS($needle) {
+        &matcher = Regex.ACCEPTS($needle)
+          ?? { $needle.ACCEPTS($_) }
+          !! $needle
+    }
+    else {
+        my $type := %_<type>:delete // 'contains';
+        &matcher  = $type eq 'words'
+          ?? *.&has-word($needle, :$ignorecase, :$ignoremark)
+          !! $type eq 'starts-with'
+            ?? *.starts-with($needle, :$ignorecase, :$ignoremark)
+            !! $type eq 'ends-with'
+              ?? *.ends-with($needle, :$ignorecase, :$ignoremark)
+              !! *.contains($needle, :$ignorecase, :$ignoremark);
+    }
+    meh-if-unexpected(%_);
+
+    my int $line-number;
+    my int $todo-after;
+    my str @before;
+    for $*IN.lines -> $line {
+        ++$line-number;
+        if matcher($line) -> \result {
+            say @before.shift while @before;
+            my $text := result =:= True ?? show-line($line) !! result;
+            say $show-line-number ?? ($line-number ~ ':' ~ $text) !! $text;
+            $todo-after = $after;
+        }
+        elsif $todo-after {
+            say $show-line-number
+              ?? $line-number ~ ':' ~ $line
+              !! $line;
+            --$todo-after;
+        }
+        elsif $before {
+            @before.shift if @before.elems == $before;
+            @before.push: $show-line-number
+              ?? $line-number ~ ':' ~ $line
+              !! $line;
         }
     }
 }
