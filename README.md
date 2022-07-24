@@ -91,6 +91,26 @@ Indicate to **not** actually make any changes to any content modification if spe
 
 Indicate whether the patterns found should be fed into an editor for inspection and/or changes. Defaults to `False`. Optionally takes the name of the editor to be used.
 
+--extensions=spec
+-----------------
+
+Indicate the extensions of the filenames that should be inspected. By default, no limitation on filename extensions will be done.
+
+Extensions can be specified as a comma-separated list, or one of the predefined groups, indicated by `#name`.
+
+```bash
+# inspect files with extensions used by Raku
+$ rak foo --extensions=#raku
+
+# inspect files with Markdown content
+$ rak foo --extensions=md,markdown
+
+# inspect files without extension
+$ rak foo --extensions=
+```
+
+Predefined groups are `#raku`, `#perl`, `#c`, `#c++` and `#yaml`.
+
 --file-separator-null
 ---------------------
 
@@ -195,6 +215,16 @@ im: --ignorecase --ignoremark
 ```
 
 If specified with a true value and as the only option, will list all additional options previously saved with `--save`.
+
+--list-expanded-options
+-----------------------
+
+```bash
+$ rak --im --list-expanded-options
+--ignorecase --ignoremark
+```
+
+If specified with a true value, will show all actual options being activated after having been recursively expanded, and then exit. Intended as a debugging aid if you have many custom options defined.
 
 --modify-files
 --------------

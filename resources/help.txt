@@ -24,6 +24,7 @@ Code pattern helpers:
 
 Haystack specification:
  path1 path2 ...    All other arguments are paths (default: current dir)
+ --extensions       Extensions as group (e.g. #raku) or comma separated
  --paths-from=file  Read path specifications from given file
  --follow-symlinks  Follow symlinked directories? (default: don't)
  --files-from=file  Read files to inspect from given file
@@ -63,9 +64,10 @@ Edit options:
  --edit[=editor]  Go edit the result in an editor, (default EDITOR or vim)
 
 Option management:
- --save=name            Translate --name to all other options specified,
-                        remove if --save was the only option specified
- --list-custom-options  List all previously saved options
+ --save=name              Translate --name to all other options specified,
+                          remove if --save was the only option specified
+ --list-custom-options    List all previously saved options
+ --list-expanded-options  List all options given after having been expanded
 
 General options:
  --help      Show this

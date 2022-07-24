@@ -2,6 +2,10 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.26  2022-07-24T23:53:03+02:00
+    - Add --list-expanded-options option for debugging
+    - Add --extensions option to specify extensions to look for
+
 0.0.25  2022-07-24T17:53:12+02:00
     - Add --paths-from option to read paths from a file
     - Add --files-from option to read filenames from a file

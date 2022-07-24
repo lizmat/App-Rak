@@ -12,9 +12,14 @@ my constant BOFF = "\e[22m";  # RESET
 # Make sure we remember if there's a human watching (terminal connected)
 my $isa-tty := $*OUT.t;
 
-my constant @raku-extensions = <
-   raku rakumod rakutest nqp t pm6 pl6
->;
+# Set up default extension sets
+my constant %exts =
+  '#raku' => ('', <raku rakumod rakutest nqp t pm6 pl6>).flat,
+  '#perl' => ('', <pl pm t>).flat,
+  '#c'    => <c h hdl>,
+  '#c++'  => <cpp cxx hpp hxx>,
+  '#yaml' => <yaml yml>,
+;
 
 # Place to keep tagged configurations
 my $config-file := $*HOME.add('.rak-config.json');
@@ -55,8 +60,19 @@ my sub original-nameds() {
     }
 }
 
+# Return extension of filename, if any
+my sub extension(str $filename) {
+    with rindex($filename, '.') {
+        substr($filename, $_ + 1)
+    }
+    else {
+        ""
+    }
+}
+
+# Message for humans on STDERR
 my sub human-on-stdin(--> Nil) {
-    say "Reading from STDIN, please enter source and ^D when done:";
+    note "Reading from STDIN, please enter source and ^D when done:";
 }
 
 # Return object to call .lines on from STDIN
@@ -119,6 +135,34 @@ my sub add-before-after($io, @initially-selected, int $before, int $after) {
     }
 
     @selected
+}
+
+# Return prelude from --repository and --module parameters
+my sub prelude(%_) {
+    my $prelude = "";
+    if %_<I>:delete -> \libs {
+        $prelude = libs.map({"use lib '$_'; "}).join;
+    }
+    if %_<M>:delete -> \modules {
+        $prelude ~= modules.map({"use $_; "}).join;
+    }
+    $prelude
+}
+
+# Pre-process non literal string needles, return Callable if possible
+my sub codify($needle, %_?) {
+    $needle.starts-with('/') && $needle.ends-with('/')
+      ?? $needle.EVAL
+      !! $needle.starts-with('{') && $needle.ends-with('}')
+        ?? (prelude(%_) ~ 'my $ = -> $_ ' ~ $needle).EVAL
+        !! $needle.starts-with('*.')
+          ?? (prelude(%_) ~ $needle).EVAL
+          !! $needle
+}
+
+# Change list of conditions into a Callable for :file
+my sub codify-extensions(@extensions) {
+    -> $_ { extension($_) (elem) @extensions }
 }
 
 # Set up the --help handler
@@ -238,31 +282,17 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     }
     translate($_, %n{$_}) for original-nameds;
 
+    # What did we do?
+    if %n<list-expanded-options>:delete {
+        say as-cli-arguments(%n);
+        exit;
+    }
+
     my $needle = %n<pattern>:delete // @specs.shift;
     meh "Must at least specify a pattern" without $needle;
 
-    # Return prelude from --repository and --module parameters
-    my sub prelude() {
-        my $prelude = "";
-        if %n<I>:delete -> \libs {
-            $prelude = libs.map({"use lib '$_'; "}).join;
-        }
-        if %n<M>:delete -> \modules {
-            $prelude ~= modules.map({"use $_; "}).join;
-        }
-        $prelude
-    }
-
     # Pre-process non literal string needles
-    if $needle.starts-with('/') && $needle.ends-with('/') {
-        $needle .= EVAL;
-    }
-    elsif $needle.starts-with('{') && $needle.ends-with('}') {
-        $needle = (prelude() ~ 'my $ = -> $_ ' ~ $needle).EVAL;
-    }
-    elsif $needle.starts-with('*.') {
-        $needle = (prelude() ~ $needle).EVAL;
-    }
+    $needle = codify($needle, %n);
     my $is-simple-Callable := is-simple-Callable($needle);
 
     temp $*OUT;
@@ -289,7 +319,24 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 
     # Not reading from STDIN
     else {
-        my %additional := named-args %n, :follow-symlinks, :file :dir;
+        my %additional = named-args %n, :follow-symlinks, :file :dir;
+        if %additional<file>:exists {
+            ...
+        }
+        elsif %n<extensions>:delete -> $extensions {
+            if $extensions.starts-with('#') {
+                if %exts{$extensions} -> @exts {
+                    %additional<file> := codify-extensions(@exts);
+                }
+                else {
+                    meh "No extensions known for '$extensions'";
+                }
+            }
+            else {
+                %additional<file> := codify-extensions($extensions.split(','));
+            }
+        }
+
         my $seq := do if %n<files-from>:delete -> $from {
             meh "Cannot specify --files-from with path specification: @specs[]"
               if @specs;
@@ -925,6 +972,29 @@ Indicate whether the patterns found should be fed into an editor for
 inspection and/or changes.  Defaults to C<False>.  Optionally takes the
 name of the editor to be used.
 
+=head2 --extensions=spec
+
+Indicate the extensions of the filenames that should be inspected.
+By default, no limitation on filename extensions will be done.
+
+Extensions can be specified as a comma-separated list, or one of
+the predefined groups, indicated by C<#name>.
+
+=begin code :lang<bash>
+
+# inspect files with extensions used by Raku
+$ rak foo --extensions=#raku
+
+# inspect files with Markdown content
+$ rak foo --extensions=md,markdown
+
+# inspect files without extension
+$ rak foo --extensions=
+
+=end code
+
+Predefined groups are C<#raku>, C<#perl>, C<#c>, C<#c++> and C<#yaml>.
+
 =head2 --file-separator-null
 
 Indicate to separate filenames by null bytes rather than newlines if the
@@ -1042,6 +1112,19 @@ im: --ignorecase --ignoremark
 
 If specified with a true value and as the only option, will list all
 additional options previously saved with C<--save>.
+
+=head2 --list-expanded-options
+
+=begin code :lang<bash>
+
+$ rak --im --list-expanded-options
+--ignorecase --ignoremark
+
+=end code
+
+If specified with a true value, will show all actual options being
+activated after having been recursively expanded, and then exit.
+Intended as a debugging aid if you have many custom options defined.
 
 =head2 --modify-files
 
