@@ -2,6 +2,10 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.25  2022-07-24T17:53:12+02:00
+    - Add --paths-from option to read paths from a file
+    - Add --files-from option to read filenames from a file
+
 0.0.24  2022-07-24T16:44:28+02:00
     - Add --find option to interprete selected paths as lines
     - Add -json-per-file option when reading from STDIN

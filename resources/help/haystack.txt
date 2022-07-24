@@ -1,3 +1,5 @@
 Haystack specification:
- all other arguments   (default: current directory)
- --follow-symlinks  Whether to follow symlinked directories (default: don't)
+ path1 path2 ...    All other arguments are paths (default: current dir)
+ --paths-from=file  Read path specifications from given file
+ --follow-symlinks  Follow symlinked directories? (default: don't)
+ --files-from=file  Read files to inspect from given file

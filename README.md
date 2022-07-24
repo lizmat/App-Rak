@@ -96,6 +96,11 @@ Indicate whether the patterns found should be fed into an editor for inspection 
 
 Indicate to separate filenames by null bytes rather than newlines if the `--files-with-matches` option is specified with a `True` value.
 
+--files-from=filename
+---------------------
+
+Indicate the path of the file to read filenames from instead of the expansion of paths from any positional arguments. "-" can be specified to read filenames from STDIN.
+
 --find
 ------
 
@@ -232,6 +237,11 @@ Indicate whether only the matched pattern should be produced, rather than the li
 ----------------------
 
 Indicate the path of the file in which the result of the search should be placed. Defaults to `STDOUT`.
+
+--paths-from=filename
+---------------------
+
+Indicate the path of the file to read path specifications from instead of from any positional arguments. "-" can be specified to read path specifications from STDIN.
 
 --pattern=foo
 -------------

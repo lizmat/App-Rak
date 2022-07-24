@@ -289,19 +289,35 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 
     # Not reading from STDIN
     else {
-        @specs.unshift(".") unless @specs;
         my %additional := named-args %n, :follow-symlinks, :file :dir;
-        my @paths = (@specs == 1
-          ?? paths(@specs.head, |%additional)
-          !! @specs.&hyperize(1, %n<degree>).map({ paths($_, |%additional).Slip })
-        ).sort(*.fc);
+        my $seq := do if %n<files-from>:delete -> $from {
+            meh "Cannot specify --files-from with path specification: @specs[]"
+              if @specs;
+            $seq := $from eq "-" ?? $*IN.lines !! $from.IO.lines
+        }
+        elsif %n<paths-from>:delete -> $from {
+            meh "Cannot specify --paths-from with path specification: @specs[]"
+              if @specs;
+
+            ( 
+              $from eq "-" ?? $*IN.lines !! $from.IO.lines
+            ).&hyperize(1,%n<degree>).map: { paths($_, |%additional).Slip }
+        }
+        else {
+            @specs.unshift(".") unless @specs;
+            @specs == 1
+              ?? paths(@specs.head, |%additional)
+              !! @specs.&hyperize(1,%n<degree>).map: {
+                     paths($_, |%additional).Slip
+                 }
+        }
 
         if %n<edit>:delete -> $editor {
-            go-edit-files($editor, $needle, @paths, %n);
+            go-edit-files($editor, $needle, $seq.sort(*.fc), %n);
         }
         elsif %n<find>:delete {
             %n<show-line-number> //= False;
-            stdin($needle, %n, @paths);
+            stdin($needle, %n, $seq);
         }
         else {
             ($is-simple-Callable && (%n<modify-files>:delete)
@@ -315,7 +331,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
                     !! (%n<files-with-matches>:delete)
                       ?? &files-only
                       !! &want-lines
-            )($needle, @paths, %n);
+            )($needle, $seq.sort(*.fc), %n);
         }
     }
 }
@@ -914,6 +930,12 @@ name of the editor to be used.
 Indicate to separate filenames by null bytes rather than newlines if the
 C<--files-with-matches> option is specified with a C<True> value.
 
+=head2 --files-from=filename
+
+Indicate the path of the file to read filenames from instead of the
+expansion of paths from any positional arguments.  "-" can be specified
+to read filenames from STDIN.
+
 =head2 --find
 
 If specified with a true value, will B<not> look at the contents of the
@@ -1069,6 +1091,12 @@ the line in which the pattern was found.  Defaults to C<False>.
 
 Indicate the path of the file in which the result of the search should
 be placed.  Defaults to C<STDOUT>.
+
+=head2 --paths-from=filename
+
+Indicate the path of the file to read path specifications from instead of
+from any positional arguments.  "-" can be specified to read path
+specifications from STDIN.
 
 =head2 --pattern=foo
 
