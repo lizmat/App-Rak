@@ -96,6 +96,11 @@ Indicate whether the patterns found should be fed into an editor for inspection 
 
 Indicate to separate filenames by null bytes rather than newlines if the `--files-with-matches` option is specified with a `True` value.
 
+--find
+------
+
+If specified with a true value, will **not** look at the contents of the selected paths, but instead consider the selected paths as lines in a virtual file.
+
 --group-matches
 ---------------
 

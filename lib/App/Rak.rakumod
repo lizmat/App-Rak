@@ -1,7 +1,7 @@
 # The modules that we need here, with their full identities
 use highlighter:ver<0.0.12>:auth<zef:lizmat>;
 use Files::Containing:ver<0.0.13>:auth<zef:lizmat>;
-use as-cli-arguments:ver<0.0.3>:auth<zef:lizmat>;
+use as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
 
@@ -24,7 +24,7 @@ my sub meh($message) { exit note $message }
 
 # Quit if unexpected named arguments hash
 my sub meh-if-unexpected(%_) {
-    meh "Unexpected arguments: &as-cli-arguments(%_)" if %_;
+    meh "Unexpected option{"s" if %_.elems != 1}: &as-cli-arguments(%_)" if %_;
 }
 
 # Is a needle a simple Callable?
@@ -49,9 +49,25 @@ my sub original-nameds() {
           ?? before(.substr(3), '=')
           !! .starts-with('--' | '-/')
             ?? before(.substr(2), '=')
-            !! .starts-with('-')
+            !! .starts-with('-') && $_ ne '-'
               ?? before(.substr(1), '=')
               !! Empty
+    }
+}
+
+my sub human-on-stdin(--> Nil) {
+    say "Reading from STDIN, please enter source and ^D when done:";
+}
+
+# Return object to call .lines on from STDIN
+my sub stdin-source() {
+    # handle humans
+    if $*IN.t {
+        human-on-stdin;
+        $*IN.slurp(:enc<utf8-c8>).lines
+    }
+    else {
+        $*IN.lines
     }
 }
 
@@ -254,8 +270,25 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
         $*OUT = open($path, :w) if $path ne "-";
     }
 
+    # Reading from STDIN
+    my $root := @specs.head;
+    if ($root && $root eq '-') || !$*IN.t  {
+        meh "Specified '$root' while reading from STDIN"
+          if $root && $root ne '-';
+        meh "Can not specify paths while reading from STDIN"
+          if @specs > 1;
+        ($is-simple-Callable
+          ?? (%n<json-per-file>:delete)
+            ?? &stdin-json-per-file
+            !! (%n<json-per-line>:delete)
+              ?? &stdin-json-per-line
+              !! &stdin
+          !! &stdin
+        )($needle, %n);
+    }
+
     # Not reading from STDIN
-    if $*IN.t {
+    else {
         @specs.unshift(".") unless @specs;
         my %additional := named-args %n, :follow-symlinks, :file :dir;
         my @paths = (@specs == 1
@@ -265,6 +298,10 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 
         if %n<edit>:delete -> $editor {
             go-edit-files($editor, $needle, @paths, %n);
+        }
+        elsif %n<find>:delete {
+            %n<show-line-number> //= False;
+            stdin($needle, %n, @paths);
         }
         else {
             ($is-simple-Callable && (%n<modify-files>:delete)
@@ -280,18 +317,6 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
                       !! &want-lines
             )($needle, @paths, %n);
         }
-    }
-
-    # Reading from STDIN
-    else {
-        my $root := @specs.head;
-        meh "Specified '$root' while reading from STDIN"
-          if $root && $root ne '-';
-        meh "Can not specify paths while reading from STDIN"
-          if @specs > 1;
-        $is-simple-Callable && (%n<json-per-line>:delete)
-          ?? stdin-json-per-line($needle, %n)
-          !! stdin($needle, %n)
     }
 }
 
@@ -633,6 +658,19 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
     }
 }
 
+# Read from STDIN, assume JSON per line
+my sub stdin-json-per-file(&needle, %_ --> Nil) {
+    meh-if-unexpected(%_);
+
+    human-on-stdin if $*IN.t;
+    if try from-json $*IN.slurp(:enc<utf8-c8>) -> $json {
+        if needle($json) -> \result {
+            say result;
+        }
+    }
+}
+
+# Read from STDIN, assume JSON per line
 my sub stdin-json-per-line(&needle, %_ --> Nil) {
     my $count-only       := %_<count-only>:delete;
     my $show-line-number := %_<show-line-number>:delete;
@@ -640,7 +678,7 @@ my sub stdin-json-per-line(&needle, %_ --> Nil) {
 
     my int $line-number;
     my int $matches;
-    for $*IN.lines -> $line {
+    for stdin-source() -> $line {
         ++$line-number;
         if try from-json $line -> $json {
             if needle($json) -> \result {
@@ -657,7 +695,8 @@ my sub stdin-json-per-line(&needle, %_ --> Nil) {
     say $matches if $count-only;
 }
 
-my sub stdin($needle, %_ --> Nil) {
+# Handle general searching on STDIN
+my sub stdin($needle, %_, $source = stdin-source --> Nil) {
     my Bool() $highlight;
     my Bool() $trim;
     my Bool() $show-line-number;
@@ -738,7 +777,7 @@ my sub stdin($needle, %_ --> Nil) {
     my int $line-number;
     my int $todo-after;
     my str @before;
-    for $*IN.lines -> $line {
+    for $source<> -> $line {
         ++$line-number;
         if matcher($line) -> \result {
             say @before.shift while @before;
@@ -874,6 +913,12 @@ name of the editor to be used.
 
 Indicate to separate filenames by null bytes rather than newlines if the
 C<--files-with-matches> option is specified with a C<True> value.
+
+=head2 --find
+
+If specified with a true value, will B<not> look at the contents of the
+selected paths, but instead consider the selected paths as lines in a
+virtual file.
 
 =head2 --group-matches
 

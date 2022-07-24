@@ -2,6 +2,13 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.24  2022-07-24T16:44:28+02:00
+    - Add --find option to interprete selected paths as lines
+    - Add -json-per-file option when reading from STDIN
+    - Fix handling of "-" as a positional parameter
+    - Fix handling of STDIN if a human is typing
+    - Bump dependency of "as-cli-arguments" for fixes
+
 0.0.23  2022-07-23T22:17:46+02:00
     - Bump dependency on Files::Containing to get "has-word"
     - First working version of reading lines from STDIN
