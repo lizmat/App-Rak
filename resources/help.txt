@@ -14,6 +14,7 @@ String search pattern modifiers:
  --type=contains     Look for string anywhere (default)
 
 Input selection:
+ --find           Interprete selected paths as the lines to inspect
  --json-per-file  Call Raku code with parsed JSON if file contains JSON
  --json-per-line  Call Raku code with parsed JSON if line contains JSON
 
@@ -22,8 +23,10 @@ Code pattern helpers:
  --module=foo      Load module "foo" before compiling Raku code pattern
 
 Haystack specification:
- all other arguments  (default: current directory)
- --follow-symlinks    Follow symlinked directories? (default: don't)
+ path1 path2 ...    All other arguments are paths (default: current dir)
+ --paths-from=file  Read path specifications from given file
+ --follow-symlinks  Follow symlinked directories? (default: don't)
+ --files-from=file  Read files to inspect from given file
 
 Result modifiers:
  --before-context=N     List N lines before any line with a match
