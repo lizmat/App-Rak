@@ -1,5 +1,7 @@
 set -e
 
+cat $root_dir/task.bash
+
 lb=$(config 'lines-before')
 la=$(config 'lines-after')
 
@@ -19,13 +21,12 @@ done
 
 cd $cache_root_dir
 
-echo "file: "
+echo "====="
 cat file.txt
+echo "====="
 
-
-echo "run: rak foo --before-context=$lb --after-context=$la --highlight=False --human"
 
 echo "<<<"
-rak foo --before-context=$lb --after-context=$la --highlight=False --human 2>&1
+rak foo --before-context=$lb --after-context=$la --/highlight --human 2>&1
 echo ">>>"
 
