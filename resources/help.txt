@@ -23,11 +23,12 @@ Code pattern helpers:
  --module=foo      Load module "foo" before compiling Raku code pattern
 
 Haystack specification:
- path1 path2 ...    All other arguments are paths (default: current dir)
- --extensions       Extensions as group (e.g. #raku) or comma separated
- --paths-from=file  Read path specifications from given file
- --follow-symlinks  Follow symlinked directories? (default: don't)
- --files-from=file  Read files to inspect from given file
+ path1 path2 ...     All other arguments are paths (default: current dir)
+ --extensions        Extensions as group (e.g. #raku) or comma separated
+ --known-extensions  Only search files with known extensions
+ --paths-from=file   Read path specifications from given file
+ --follow-symlinks   Follow symlinked directories? (default: don't)
+ --files-from=file   Read files to inspect from given file
 
 Result modifiers:
  --before-context=N     List N lines before any line with a match
@@ -50,6 +51,8 @@ Listing modifiers:
  --highlight-before=xxx      String to put before match
  --highlight-after=yyy       String to put after match
  --output-file=filename      Send output to indicated file (default: STDOUT)
+ --pager                     Pager to use (default: ACK_PAGER // none)
+ --passthru                  Accept all lines (default: only matching pattern)
 
 Content modifiers:
  --modify-files        Change content of files using the Callable pattern

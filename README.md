@@ -109,7 +109,7 @@ $ rak foo --extensions=md,markdown
 $ rak foo --extensions=
 ```
 
-Predefined groups are `#raku`, `#perl`, `#c`, `#c++` and `#yaml`.
+Predefined groups are `#raku`, `#perl`, `#c`, `#c++`, `#yaml`, <#ruby> `#python`, `#markdown` and `#text`.
 
 --file-separator-null
 ---------------------
@@ -120,6 +120,11 @@ Indicate to separate filenames by null bytes rather than newlines if the `--file
 ---------------------
 
 Indicate the path of the file to read filenames from instead of the expansion of paths from any positional arguments. "-" can be specified to read filenames from STDIN.
+
+--files-with-matches
+--------------------
+
+If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
 
 --find
 ------
@@ -200,10 +205,10 @@ Only makes sense if the needle is a `Callable`. If specified with a `True` value
 $ rak '{ $_ with .<auth> }' --json-per-line
 ```
 
---files-with-matches
---------------------
+--known-extensions
+------------------
 
-If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
+Indicate that only files with known extensions (occuring in any of the `#groups`) should be searched.
 
 --list-custom-options
 ---------------------
@@ -267,6 +272,27 @@ Indicate whether only the matched pattern should be produced, rather than the li
 ----------------------
 
 Indicate the path of the file in which the result of the search should be placed. Defaults to `STDOUT`.
+
+--pager
+-------
+
+Indicate the name (and arguments) of a pager program to be used to page through the generated output. Defaults to the `RAK_PAGER` environment variable. If that isn't specified either, then no pager program will be run.
+
+```bash
+$ RAK_PAGER='more -r' rak foo
+
+$ rak foo --pager='less -r'
+```
+
+--passthru
+----------
+
+Indicate whether **all** lines from source should be shown, even if they do **not** match the pattern. Highlighting will still be performed, if so (implicitely) specified.
+
+```bash
+# Watch a log file, and highlight a certain IP address.
+$ tail -f ~/access.log | rak --passthru 123.45.67.89
+```
 
 --paths-from=filename
 ---------------------

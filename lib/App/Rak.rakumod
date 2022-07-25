@@ -14,12 +14,19 @@ my $isa-tty := $*OUT.t;
 
 # Set up default extension sets
 my constant %exts =
-  '#raku' => ('', <raku rakumod rakutest nqp t pm6 pl6>).flat,
-  '#perl' => ('', <pl pm t>).flat,
-  '#c'    => <c h hdl>,
-  '#c++'  => <cpp cxx hpp hxx>,
-  '#yaml' => <yaml yml>,
+  '#c'        => <c h hdl>,
+  '#c++'      => <cpp cxx hpp hxx>,
+  '#markdown' => <md markdown>,
+  '#perl'     => ('', <pl pm t>).flat,
+  '#python'   => <py>,
+  '#raku'     => ('', <raku rakumod rakutest nqp t pm6 pl6>).flat,
+  '#ruby'     => <rb>,
+  '#text'     => ('', <txt>).flat,
+  '#yaml'     => <yaml yml>,
 ;
+
+# Known extensions
+my constant @known-extensions = %exts.values.flat.unique.sort;
 
 # Place to keep tagged configurations
 my $config-file := $*HOME.add('.rak-config.json');
@@ -295,9 +302,17 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     $needle = codify($needle, %n);
     my $is-simple-Callable := is-simple-Callable($needle);
 
+    # Set up output file if needed
     temp $*OUT;
     with %n<output-file>:delete -> $path {
         $*OUT = open($path, :w) if $path ne "-";
+    }
+
+    # Set up pager if necessary
+    if %n<pager>:delete // %*ENV<RAK_PAGER> -> \pager {
+        pager =:= True
+          ?? meh("Must specify a specific pager to use: --pager=foo")
+          !! ($*OUT = (run pager.words, :in).in);
     }
 
     # Reading from STDIN
@@ -335,6 +350,9 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
             else {
                 %additional<file> := codify-extensions($extensions.split(','));
             }
+        }
+        elsif %n<known-extensions>:delete {
+            %additional<file> := codify-extensions @known-extensions;
         }
 
         my $seq := do if %n<files-from>:delete -> $from {
@@ -381,6 +399,9 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
             )($needle, $seq.sort(*.fc), %n);
         }
     }
+
+    # In case we're running a pager
+    $*OUT.close;
 }
 
 # Edit / Inspect some files
@@ -775,7 +796,7 @@ my sub stdin($needle, %_, $source = stdin-source --> Nil) {
     my $human := %_<human>:delete // $isa-tty;
     if $human {
         $highlight = !is-simple-Callable($needle);
-        $show-line-number = True;
+        $show-line-number = !%_<passthru>;
         $only = False;
         $trim = !($before || $after || is-simple-Callable($needle));
         $summary-if-larger-than = 160;
@@ -819,15 +840,17 @@ my sub stdin($needle, %_, $source = stdin-source --> Nil) {
         ;
     }
 
-    my &matcher;
-    if Callable.ACCEPTS($needle) {
-        &matcher = Regex.ACCEPTS($needle)
+    my &matcher := do if Callable.ACCEPTS($needle) {
+        Regex.ACCEPTS($needle)
           ?? { $needle.ACCEPTS($_) }
           !! $needle
     }
+    elsif %_<passthru>:delete {
+        -> $ --> True { }
+    }
     else {
         my $type := %_<type>:delete // 'contains';
-        &matcher  = $type eq 'words'
+        $type eq 'words'
           ?? *.&has-word($needle, :$ignorecase, :$ignoremark)
           !! $type eq 'starts-with'
             ?? *.starts-with($needle, :$ignorecase, :$ignoremark)
@@ -993,7 +1016,8 @@ $ rak foo --extensions=
 
 =end code
 
-Predefined groups are C<#raku>, C<#perl>, C<#c>, C<#c++> and C<#yaml>.
+Predefined groups are C<#raku>, C<#perl>, C<#c>, C<#c++>, C<#yaml>, <#ruby>
+C<#python>, C<#markdown> and C<#text>.
 
 =head2 --file-separator-null
 
@@ -1005,6 +1029,11 @@ C<--files-with-matches> option is specified with a C<True> value.
 Indicate the path of the file to read filenames from instead of the
 expansion of paths from any positional arguments.  "-" can be specified
 to read filenames from STDIN.
+
+=head2 --files-with-matches
+
+If specified with a true value, will only produce the filenames of the
+files in which the pattern was found.  Defaults to C<False>.
 
 =head2 --find
 
@@ -1095,10 +1124,10 @@ $ rak '{ $_ with .<auth> }' --json-per-line
 
 =end code
 
-=head2 --files-with-matches
+=head2 --known-extensions
 
-If specified with a true value, will only produce the filenames of the
-files in which the pattern was found.  Defaults to C<False>.
+Indicate that only files with known extensions (occuring in any of the
+C<#groups>) should be searched.
 
 =head2 --list-custom-options
 
@@ -1174,6 +1203,34 @@ the line in which the pattern was found.  Defaults to C<False>.
 
 Indicate the path of the file in which the result of the search should
 be placed.  Defaults to C<STDOUT>.
+
+=head2 --pager
+
+Indicate the name (and arguments) of a pager program to be used to page
+through the generated output.  Defaults to the C<RAK_PAGER> environment
+variable.  If that isn't specified either, then no pager program will be
+run.
+
+=begin code :lang<bash>
+
+$ RAK_PAGER='more -r' rak foo
+
+$ rak foo --pager='less -r'
+
+=end code
+
+=head2 --passthru
+
+Indicate whether B<all> lines from source should be shown, even if they
+do B<not> match the pattern.  Highlighting will still be performed, if
+so (implicitely) specified.
+
+=begin code :lang<bash>
+
+# Watch a log file, and highlight a certain IP address.
+$ tail -f ~/access.log | rak --passthru 123.45.67.89
+
+=end code
 
 =head2 --paths-from=filename
 
