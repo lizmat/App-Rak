@@ -14,6 +14,7 @@ which rak
 rak --version
 
 echo "<<<"
-rak foo --/highlight --human
+#rak foo --/highlight --human
+rak foo
 echo ">>>"
 
