@@ -2,6 +2,11 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.28  2022-07-26T14:14:02+02:00
+    - Add --smartcase option like --ignorecase without uppercase
+    - Add --vimgrep option for integration into the :grep feature of vim
+    - Made "Creating your own options" documentation more prominent
+
 0.0.27  2022-07-25T22:12:00+02:00
     - Add --known-extensions to allow only known extensions
     - Add --passthru option to allow only highlighting

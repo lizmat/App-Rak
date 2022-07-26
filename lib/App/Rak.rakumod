@@ -302,6 +302,12 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     $needle = codify($needle, %n);
     my $is-simple-Callable := is-simple-Callable($needle);
 
+    # Handle --smartcase
+    %n<ignorecase> = !$needle.contains(/ <:upper> /)
+      if Str.ACCEPTS($needle)
+      && (%n<ignorecase>:!exists)
+      && (%n<smartcase>:delete);
+
     # Set up output file if needed
     temp $*OUT;
     with %n<output-file>:delete -> $path {
@@ -395,7 +401,9 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
                     ?? &count-only
                     !! (%n<files-with-matches>:delete)
                       ?? &files-only
-                      !! &want-lines
+                      !! (%n<vimgrep>:delete)
+                        ?? &vimgrep
+                        !! &want-lines
             )($needle, $seq.sort(*.fc), %n);
         }
     }
@@ -422,7 +430,8 @@ my sub go-edit-files($editor, $needle, @paths, %_ --> Nil) {
              .value.map({
                  $path => .key + 1 => columns(.value, $needle, |%ignore).head
              }).Slip
-         }),
+         }
+      ),
       :editor(Bool.ACCEPTS($editor) ?? Any !! $editor)
 }
 
@@ -742,6 +751,26 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
     }
 }
 
+# Provide output that can be used by vim to page through
+my sub vimgrep($needle, @paths, %_ --> Nil) {
+    my $ignorecase := %_<ignorecase>:delete;
+    my $ignoremark := %_<ignoremark>:delete;
+    my %additional := named-args %_, :max-count, :type, :batch, :degree;
+    meh-if-unexpected(%_);
+
+    say $_ for files-containing(
+      $needle, @paths, :$ignorecase, :$ignoremark, :offset(1), |%additional
+    ).map: {
+        my $path := .key.relative;
+        .value.map({
+            $path
+              ~ ':' ~ (.key + 1)
+              ~ ':' ~ columns(.value, $needle, :$ignorecase, :$ignoremark).head
+              ~ ':' ~ .value
+        }).Slip
+    }
+}
+
 # Read from STDIN, assume JSON per line
 my sub stdin-json-per-file(&needle, %_ --> Nil) {
     meh-if-unexpected(%_);
@@ -943,6 +972,25 @@ this can be changed with the C<--dir> option).
 By default, all files will be searched in the directories.  This can be
 changed with the C<--file> option
 
+=head1 CREATING YOUR OWN OPTIONS
+
+App::Rak provides B<many> options.  If you are happy with a set of options
+for a certain workflow, You can use the C<--save> option to save that set
+of options and than later access them with the given name:
+
+=begin code :lang<bash>
+
+$ rak --ignorecase --ignoremark --save=im
+Saved option '--im' as: --ignorecase --ignoremark
+
+# same as --ignorecase --ignoremark
+$ rak foo --im
+
+=end code
+
+You can use the C<--list-custom-options> to see what options you have saved
+before.
+
 =head1 SUPPORTED OPTIONS
 
 All options are optional.  Any unexpected options, will cause an exception
@@ -1040,6 +1088,11 @@ files in which the pattern was found.  Defaults to C<False>.
 If specified with a true value, will B<not> look at the contents of the
 selected paths, but instead consider the selected paths as lines in a
 virtual file.
+
+=head2 --follow-symlinks
+
+Indicate whether symbolic links to directories should be followed.  Defaults
+to C<False>.
 
 =head2 --group-matches
 
@@ -1315,6 +1368,12 @@ Indicate whether line numbers should be shown.  Defaults to C<True> if
 C<--human> is (implicitly) set to C<True> and <-h> is B<not> set to C<True>,
 else defaults to C<False>.
 
+=head2 --smartcase
+
+An intelligent version of C<--ignorecase>.  If the pattern does B<not>
+contain any uppercase characters, it will act as if C<--ignorecase> was
+specified.  Otherwise it is ignored.
+
 =head2 --summary-if-larger-than=N
 
 Indicate the maximum size a line may have before it will be summarized.
@@ -1330,11 +1389,6 @@ look for the pattern at the beginning of a line, with C<ends-with>
 will look for the pattern at the end of a line, with C<contains> will
 look for the pattern at any position in a line.
 
-=head2 --follow-symlinks
-
-Indicate whether symbolic links to directories should be followed.  Defaults
-to C<False>.
-
 =head2 --trim
 
 Indicate whether lines that have the pattern, should have any whitespace
@@ -1346,20 +1400,11 @@ context for lines was specified, else defaults to C<False>.
 If the only argument, shows the name and version of the script, and the
 system it is running on.
 
-=head1 CREATING YOUR OWN OPTIONS
+=head2 --vimgrep
 
-You can use the C<--save> option to save a set of options and than later
-access them with the given name:
-
-=begin code :lang<bash>
-
-$ rak --ignorecase --ignoremark --save=im
-Saved option '--im' as: --ignorecase --ignoremark
-
-# same as --ignorecase --ignoremark
-$ rak foo --im
-
-=end code
+If specified with a true value, will output search results in the format
+"filename:linenumber:column:line".  This allows integration with the
+C<:grep> action in vim-like editors.
 
 =head1 AUTHOR
 

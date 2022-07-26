@@ -46,6 +46,21 @@ Optional. Either indicates the path of the directory (and its sub-directories), 
 
 By default, all files will be searched in the directories. This can be changed with the `--file` option
 
+CREATING YOUR OWN OPTIONS
+=========================
+
+App::Rak provides **many** options. If you are happy with a set of options for a certain workflow, You can use the `--save` option to save that set of options and than later access them with the given name:
+
+```bash
+$ rak --ignorecase --ignoremark --save=im
+Saved option '--im' as: --ignorecase --ignoremark
+
+# same as --ignorecase --ignoremark
+$ rak foo --im
+```
+
+You can use the `--list-custom-options` to see what options you have saved before.
+
 SUPPORTED OPTIONS
 =================
 
@@ -130,6 +145,11 @@ If specified with a true value, will only produce the filenames of the files in 
 ------
 
 If specified with a true value, will **not** look at the contents of the selected paths, but instead consider the selected paths as lines in a virtual file.
+
+--follow-symlinks
+-----------------
+
+Indicate whether symbolic links to directories should be followed. Defaults to `False`.
 
 --group-matches
 ---------------
@@ -362,6 +382,11 @@ Indicate whether filenames should be shown. Defaults to `True` if `--human` is (
 
 Indicate whether line numbers should be shown. Defaults to `True` if `--human` is (implicitly) set to `True` and <-h> is **not** set to `True`, else defaults to `False`.
 
+--smartcase
+-----------
+
+An intelligent version of `--ignorecase`. If the pattern does **not** contain any uppercase characters, it will act as if `--ignorecase` was specified. Otherwise it is ignored.
+
 --summary-if-larger-than=N
 --------------------------
 
@@ -370,11 +395,6 @@ Indicate the maximum size a line may have before it will be summarized. Defaults
   * --type[=words|starts-with|ends-with|contains]
 
 Only makes sense if the pattern is a string. With `words` specified, will look for pattern as a word in a line, with `starts-with` will look for the pattern at the beginning of a line, with `ends-with` will look for the pattern at the end of a line, with `contains` will look for the pattern at any position in a line.
-
---follow-symlinks
------------------
-
-Indicate whether symbolic links to directories should be followed. Defaults to `False`.
 
 --trim
 ------
@@ -386,18 +406,10 @@ Indicate whether lines that have the pattern, should have any whitespace at the 
 
 If the only argument, shows the name and version of the script, and the system it is running on.
 
-CREATING YOUR OWN OPTIONS
-=========================
+--vimgrep
+---------
 
-You can use the `--save` option to save a set of options and than later access them with the given name:
-
-```bash
-$ rak --ignorecase --ignoremark --save=im
-Saved option '--im' as: --ignorecase --ignoremark
-
-# same as --ignorecase --ignoremark
-$ rak foo --im
-```
+If specified with a true value, will output search results in the format "filename:linenumber:column:line". This allows integration with the `:grep` action in vim-like editors.
 
 AUTHOR
 ======
