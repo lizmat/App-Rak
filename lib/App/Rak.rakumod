@@ -12,9 +12,21 @@ my constant BOFF = "\e[22m";  # RESET
 # Make sure we remember if there's a human watching (terminal connected)
 my $isa-tty := $*OUT.t;
 
-my constant @raku-extensions = <
-   raku rakumod rakutest nqp t pm6 pl6
->;
+# Set up default extension sets
+my constant %exts =
+  '#c'        => <c h hdl>,
+  '#c++'      => <cpp cxx hpp hxx>,
+  '#markdown' => <md markdown>,
+  '#perl'     => ('', <pl pm t>).flat,
+  '#python'   => <py>,
+  '#raku'     => ('', <raku rakumod rakutest nqp t pm6 pl6>).flat,
+  '#ruby'     => <rb>,
+  '#text'     => ('', <txt>).flat,
+  '#yaml'     => <yaml yml>,
+;
+
+# Known extensions
+my constant @known-extensions = %exts.values.flat.unique.sort;
 
 # Place to keep tagged configurations
 my $config-file := $*HOME.add('.rak-config.json');
@@ -55,8 +67,19 @@ my sub original-nameds() {
     }
 }
 
+# Return extension of filename, if any
+my sub extension(str $filename) {
+    with rindex($filename, '.') {
+        substr($filename, $_ + 1)
+    }
+    else {
+        ""
+    }
+}
+
+# Message for humans on STDERR
 my sub human-on-stdin(--> Nil) {
-    say "Reading from STDIN, please enter source and ^D when done:";
+    note "Reading from STDIN, please enter source and ^D when done:";
 }
 
 # Return object to call .lines on from STDIN
@@ -119,6 +142,34 @@ my sub add-before-after($io, @initially-selected, int $before, int $after) {
     }
 
     @selected
+}
+
+# Return prelude from --repository and --module parameters
+my sub prelude(%_) {
+    my $prelude = "";
+    if %_<I>:delete -> \libs {
+        $prelude = libs.map({"use lib '$_'; "}).join;
+    }
+    if %_<M>:delete -> \modules {
+        $prelude ~= modules.map({"use $_; "}).join;
+    }
+    $prelude
+}
+
+# Pre-process non literal string needles, return Callable if possible
+my sub codify($needle, %_?) {
+    $needle.starts-with('/') && $needle.ends-with('/')
+      ?? $needle.EVAL
+      !! $needle.starts-with('{') && $needle.ends-with('}')
+        ?? (prelude(%_) ~ 'my $ = -> $_ ' ~ $needle).EVAL
+        !! $needle.starts-with('*.')
+          ?? (prelude(%_) ~ $needle).EVAL
+          !! $needle
+}
+
+# Change list of conditions into a Callable for :file
+my sub codify-extensions(@extensions) {
+    -> $_ { extension($_) (elem) @extensions }
 }
 
 # Set up the --help handler
@@ -238,36 +289,36 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     }
     translate($_, %n{$_}) for original-nameds;
 
+    # What did we do?
+    if %n<list-expanded-options>:delete {
+        say as-cli-arguments(%n);
+        exit;
+    }
+
     my $needle = %n<pattern>:delete // @specs.shift;
     meh "Must at least specify a pattern" without $needle;
 
-    # Return prelude from --repository and --module parameters
-    my sub prelude() {
-        my $prelude = "";
-        if %n<I>:delete -> \libs {
-            $prelude = libs.map({"use lib '$_'; "}).join;
-        }
-        if %n<M>:delete -> \modules {
-            $prelude ~= modules.map({"use $_; "}).join;
-        }
-        $prelude
-    }
-
     # Pre-process non literal string needles
-    if $needle.starts-with('/') && $needle.ends-with('/') {
-        $needle .= EVAL;
-    }
-    elsif $needle.starts-with('{') && $needle.ends-with('}') {
-        $needle = (prelude() ~ 'my $ = -> $_ ' ~ $needle).EVAL;
-    }
-    elsif $needle.starts-with('*.') {
-        $needle = (prelude() ~ $needle).EVAL;
-    }
+    $needle = codify($needle, %n);
     my $is-simple-Callable := is-simple-Callable($needle);
 
+    # Handle --smartcase
+    %n<ignorecase> = !$needle.contains(/ <:upper> /)
+      if Str.ACCEPTS($needle)
+      && (%n<ignorecase>:!exists)
+      && (%n<smartcase>:delete);
+
+    # Set up output file if needed
     temp $*OUT;
     with %n<output-file>:delete -> $path {
         $*OUT = open($path, :w) if $path ne "-";
+    }
+
+    # Set up pager if necessary
+    if %n<pager>:delete // %*ENV<RAK_PAGER> -> \pager {
+        pager =:= True
+          ?? meh("Must specify a specific pager to use: --pager=foo")
+          !! ($*OUT = (run pager.words, :in).in);
     }
 
     # Reading from STDIN
@@ -289,7 +340,27 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 
     # Not reading from STDIN
     else {
-        my %additional := named-args %n, :follow-symlinks, :file :dir;
+        my %additional = named-args %n, :follow-symlinks, :file :dir;
+        if %additional<file>:exists {
+            ...
+        }
+        elsif %n<extensions>:delete -> $extensions {
+            if $extensions.starts-with('#') {
+                if %exts{$extensions} -> @exts {
+                    %additional<file> := codify-extensions(@exts);
+                }
+                else {
+                    meh "No extensions known for '$extensions'";
+                }
+            }
+            else {
+                %additional<file> := codify-extensions($extensions.split(','));
+            }
+        }
+        elsif %n<known-extensions>:delete {
+            %additional<file> := codify-extensions @known-extensions;
+        }
+
         my $seq := do if %n<files-from>:delete -> $from {
             meh "Cannot specify --files-from with path specification: @specs[]"
               if @specs;
@@ -330,10 +401,15 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
                     ?? &count-only
                     !! (%n<files-with-matches>:delete)
                       ?? &files-only
-                      !! &want-lines
+                      !! (%n<vimgrep>:delete)
+                        ?? &vimgrep
+                        !! &want-lines
             )($needle, $seq.sort(*.fc), %n);
         }
     }
+
+    # In case we're running a pager
+    $*OUT.close;
 }
 
 # Edit / Inspect some files
@@ -354,7 +430,8 @@ my sub go-edit-files($editor, $needle, @paths, %_ --> Nil) {
              .value.map({
                  $path => .key + 1 => columns(.value, $needle, |%ignore).head
              }).Slip
-         }),
+         }
+      ),
       :editor(Bool.ACCEPTS($editor) ?? Any !! $editor)
 }
 
@@ -674,6 +751,26 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
     }
 }
 
+# Provide output that can be used by vim to page through
+my sub vimgrep($needle, @paths, %_ --> Nil) {
+    my $ignorecase := %_<ignorecase>:delete;
+    my $ignoremark := %_<ignoremark>:delete;
+    my %additional := named-args %_, :max-count, :type, :batch, :degree;
+    meh-if-unexpected(%_);
+
+    say $_ for files-containing(
+      $needle, @paths, :$ignorecase, :$ignoremark, :offset(1), |%additional
+    ).map: {
+        my $path := .key.relative;
+        .value.map({
+            $path
+              ~ ':' ~ (.key + 1)
+              ~ ':' ~ columns(.value, $needle, :$ignorecase, :$ignoremark).head
+              ~ ':' ~ .value
+        }).Slip
+    }
+}
+
 # Read from STDIN, assume JSON per line
 my sub stdin-json-per-file(&needle, %_ --> Nil) {
     meh-if-unexpected(%_);
@@ -728,7 +825,7 @@ my sub stdin($needle, %_, $source = stdin-source --> Nil) {
     my $human := %_<human>:delete // $isa-tty;
     if $human {
         $highlight = !is-simple-Callable($needle);
-        $show-line-number = True;
+        $show-line-number = !%_<passthru>;
         $only = False;
         $trim = !($before || $after || is-simple-Callable($needle));
         $summary-if-larger-than = 160;
@@ -772,15 +869,17 @@ my sub stdin($needle, %_, $source = stdin-source --> Nil) {
         ;
     }
 
-    my &matcher;
-    if Callable.ACCEPTS($needle) {
-        &matcher = Regex.ACCEPTS($needle)
+    my &matcher := do if Callable.ACCEPTS($needle) {
+        Regex.ACCEPTS($needle)
           ?? { $needle.ACCEPTS($_) }
           !! $needle
     }
+    elsif %_<passthru>:delete {
+        -> $ --> True { }
+    }
     else {
         my $type := %_<type>:delete // 'contains';
-        &matcher  = $type eq 'words'
+        $type eq 'words'
           ?? *.&has-word($needle, :$ignorecase, :$ignoremark)
           !! $type eq 'starts-with'
             ?? *.starts-with($needle, :$ignorecase, :$ignoremark)
@@ -873,6 +972,25 @@ this can be changed with the C<--dir> option).
 By default, all files will be searched in the directories.  This can be
 changed with the C<--file> option
 
+=head1 CREATING YOUR OWN OPTIONS
+
+App::Rak provides B<many> options.  If you are happy with a set of options
+for a certain workflow, You can use the C<--save> option to save that set
+of options and than later access them with the given name:
+
+=begin code :lang<bash>
+
+$ rak --ignorecase --ignoremark --save=im
+Saved option '--im' as: --ignorecase --ignoremark
+
+# same as --ignorecase --ignoremark
+$ rak foo --im
+
+=end code
+
+You can use the C<--list-custom-options> to see what options you have saved
+before.
+
 =head1 SUPPORTED OPTIONS
 
 All options are optional.  Any unexpected options, will cause an exception
@@ -925,6 +1043,30 @@ Indicate whether the patterns found should be fed into an editor for
 inspection and/or changes.  Defaults to C<False>.  Optionally takes the
 name of the editor to be used.
 
+=head2 --extensions=spec
+
+Indicate the extensions of the filenames that should be inspected.
+By default, no limitation on filename extensions will be done.
+
+Extensions can be specified as a comma-separated list, or one of
+the predefined groups, indicated by C<#name>.
+
+=begin code :lang<bash>
+
+# inspect files with extensions used by Raku
+$ rak foo --extensions=#raku
+
+# inspect files with Markdown content
+$ rak foo --extensions=md,markdown
+
+# inspect files without extension
+$ rak foo --extensions=
+
+=end code
+
+Predefined groups are C<#raku>, C<#perl>, C<#c>, C<#c++>, C<#yaml>, <#ruby>
+C<#python>, C<#markdown> and C<#text>.
+
 =head2 --file-separator-null
 
 Indicate to separate filenames by null bytes rather than newlines if the
@@ -936,11 +1078,21 @@ Indicate the path of the file to read filenames from instead of the
 expansion of paths from any positional arguments.  "-" can be specified
 to read filenames from STDIN.
 
+=head2 --files-with-matches
+
+If specified with a true value, will only produce the filenames of the
+files in which the pattern was found.  Defaults to C<False>.
+
 =head2 --find
 
 If specified with a true value, will B<not> look at the contents of the
 selected paths, but instead consider the selected paths as lines in a
 virtual file.
+
+=head2 --follow-symlinks
+
+Indicate whether symbolic links to directories should be followed.  Defaults
+to C<False>.
 
 =head2 --group-matches
 
@@ -1025,10 +1177,10 @@ $ rak '{ $_ with .<auth> }' --json-per-line
 
 =end code
 
-=head2 --files-with-matches
+=head2 --known-extensions
 
-If specified with a true value, will only produce the filenames of the
-files in which the pattern was found.  Defaults to C<False>.
+Indicate that only files with known extensions (occuring in any of the
+C<#groups>) should be searched.
 
 =head2 --list-custom-options
 
@@ -1042,6 +1194,19 @@ im: --ignorecase --ignoremark
 
 If specified with a true value and as the only option, will list all
 additional options previously saved with C<--save>.
+
+=head2 --list-expanded-options
+
+=begin code :lang<bash>
+
+$ rak --im --list-expanded-options
+--ignorecase --ignoremark
+
+=end code
+
+If specified with a true value, will show all actual options being
+activated after having been recursively expanded, and then exit.
+Intended as a debugging aid if you have many custom options defined.
 
 =head2 --modify-files
 
@@ -1091,6 +1256,34 @@ the line in which the pattern was found.  Defaults to C<False>.
 
 Indicate the path of the file in which the result of the search should
 be placed.  Defaults to C<STDOUT>.
+
+=head2 --pager
+
+Indicate the name (and arguments) of a pager program to be used to page
+through the generated output.  Defaults to the C<RAK_PAGER> environment
+variable.  If that isn't specified either, then no pager program will be
+run.
+
+=begin code :lang<bash>
+
+$ RAK_PAGER='more -r' rak foo
+
+$ rak foo --pager='less -r'
+
+=end code
+
+=head2 --passthru
+
+Indicate whether B<all> lines from source should be shown, even if they
+do B<not> match the pattern.  Highlighting will still be performed, if
+so (implicitely) specified.
+
+=begin code :lang<bash>
+
+# Watch a log file, and highlight a certain IP address.
+$ tail -f ~/access.log | rak --passthru 123.45.67.89
+
+=end code
 
 =head2 --paths-from=filename
 
@@ -1175,6 +1368,12 @@ Indicate whether line numbers should be shown.  Defaults to C<True> if
 C<--human> is (implicitly) set to C<True> and <-h> is B<not> set to C<True>,
 else defaults to C<False>.
 
+=head2 --smartcase
+
+An intelligent version of C<--ignorecase>.  If the pattern does B<not>
+contain any uppercase characters, it will act as if C<--ignorecase> was
+specified.  Otherwise it is ignored.
+
 =head2 --summary-if-larger-than=N
 
 Indicate the maximum size a line may have before it will be summarized.
@@ -1190,11 +1389,6 @@ look for the pattern at the beginning of a line, with C<ends-with>
 will look for the pattern at the end of a line, with C<contains> will
 look for the pattern at any position in a line.
 
-=head2 --follow-symlinks
-
-Indicate whether symbolic links to directories should be followed.  Defaults
-to C<False>.
-
 =head2 --trim
 
 Indicate whether lines that have the pattern, should have any whitespace
@@ -1206,20 +1400,11 @@ context for lines was specified, else defaults to C<False>.
 If the only argument, shows the name and version of the script, and the
 system it is running on.
 
-=head1 CREATING YOUR OWN OPTIONS
+=head2 --vimgrep
 
-You can use the C<--save> option to save a set of options and than later
-access them with the given name:
-
-=begin code :lang<bash>
-
-$ rak --ignorecase --ignoremark --save=im
-Saved option '--im' as: --ignorecase --ignoremark
-
-# same as --ignorecase --ignoremark
-$ rak foo --im
-
-=end code
+If specified with a true value, will output search results in the format
+"filename:linenumber:column:line".  This allows integration with the
+C<:grep> action in vim-like editors.
 
 =head1 AUTHOR
 

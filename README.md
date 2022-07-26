@@ -46,6 +46,21 @@ Optional. Either indicates the path of the directory (and its sub-directories), 
 
 By default, all files will be searched in the directories. This can be changed with the `--file` option
 
+CREATING YOUR OWN OPTIONS
+=========================
+
+App::Rak provides **many** options. If you are happy with a set of options for a certain workflow, You can use the `--save` option to save that set of options and than later access them with the given name:
+
+```bash
+$ rak --ignorecase --ignoremark --save=im
+Saved option '--im' as: --ignorecase --ignoremark
+
+# same as --ignorecase --ignoremark
+$ rak foo --im
+```
+
+You can use the `--list-custom-options` to see what options you have saved before.
+
 SUPPORTED OPTIONS
 =================
 
@@ -91,6 +106,26 @@ Indicate to **not** actually make any changes to any content modification if spe
 
 Indicate whether the patterns found should be fed into an editor for inspection and/or changes. Defaults to `False`. Optionally takes the name of the editor to be used.
 
+--extensions=spec
+-----------------
+
+Indicate the extensions of the filenames that should be inspected. By default, no limitation on filename extensions will be done.
+
+Extensions can be specified as a comma-separated list, or one of the predefined groups, indicated by `#name`.
+
+```bash
+# inspect files with extensions used by Raku
+$ rak foo --extensions=#raku
+
+# inspect files with Markdown content
+$ rak foo --extensions=md,markdown
+
+# inspect files without extension
+$ rak foo --extensions=
+```
+
+Predefined groups are `#raku`, `#perl`, `#c`, `#c++`, `#yaml`, <#ruby> `#python`, `#markdown` and `#text`.
+
 --file-separator-null
 ---------------------
 
@@ -101,10 +136,20 @@ Indicate to separate filenames by null bytes rather than newlines if the `--file
 
 Indicate the path of the file to read filenames from instead of the expansion of paths from any positional arguments. "-" can be specified to read filenames from STDIN.
 
+--files-with-matches
+--------------------
+
+If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
+
 --find
 ------
 
 If specified with a true value, will **not** look at the contents of the selected paths, but instead consider the selected paths as lines in a virtual file.
+
+--follow-symlinks
+-----------------
+
+Indicate whether symbolic links to directories should be followed. Defaults to `False`.
 
 --group-matches
 ---------------
@@ -180,10 +225,10 @@ Only makes sense if the needle is a `Callable`. If specified with a `True` value
 $ rak '{ $_ with .<auth> }' --json-per-line
 ```
 
---files-with-matches
---------------------
+--known-extensions
+------------------
 
-If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
+Indicate that only files with known extensions (occuring in any of the `#groups`) should be searched.
 
 --list-custom-options
 ---------------------
@@ -195,6 +240,16 @@ im: --ignorecase --ignoremark
 ```
 
 If specified with a true value and as the only option, will list all additional options previously saved with `--save`.
+
+--list-expanded-options
+-----------------------
+
+```bash
+$ rak --im --list-expanded-options
+--ignorecase --ignoremark
+```
+
+If specified with a true value, will show all actual options being activated after having been recursively expanded, and then exit. Intended as a debugging aid if you have many custom options defined.
 
 --modify-files
 --------------
@@ -237,6 +292,27 @@ Indicate whether only the matched pattern should be produced, rather than the li
 ----------------------
 
 Indicate the path of the file in which the result of the search should be placed. Defaults to `STDOUT`.
+
+--pager
+-------
+
+Indicate the name (and arguments) of a pager program to be used to page through the generated output. Defaults to the `RAK_PAGER` environment variable. If that isn't specified either, then no pager program will be run.
+
+```bash
+$ RAK_PAGER='more -r' rak foo
+
+$ rak foo --pager='less -r'
+```
+
+--passthru
+----------
+
+Indicate whether **all** lines from source should be shown, even if they do **not** match the pattern. Highlighting will still be performed, if so (implicitely) specified.
+
+```bash
+# Watch a log file, and highlight a certain IP address.
+$ tail -f ~/access.log | rak --passthru 123.45.67.89
+```
 
 --paths-from=filename
 ---------------------
@@ -306,6 +382,11 @@ Indicate whether filenames should be shown. Defaults to `True` if `--human` is (
 
 Indicate whether line numbers should be shown. Defaults to `True` if `--human` is (implicitly) set to `True` and <-h> is **not** set to `True`, else defaults to `False`.
 
+--smartcase
+-----------
+
+An intelligent version of `--ignorecase`. If the pattern does **not** contain any uppercase characters, it will act as if `--ignorecase` was specified. Otherwise it is ignored.
+
 --summary-if-larger-than=N
 --------------------------
 
@@ -314,11 +395,6 @@ Indicate the maximum size a line may have before it will be summarized. Defaults
   * --type[=words|starts-with|ends-with|contains]
 
 Only makes sense if the pattern is a string. With `words` specified, will look for pattern as a word in a line, with `starts-with` will look for the pattern at the beginning of a line, with `ends-with` will look for the pattern at the end of a line, with `contains` will look for the pattern at any position in a line.
-
---follow-symlinks
------------------
-
-Indicate whether symbolic links to directories should be followed. Defaults to `False`.
 
 --trim
 ------
@@ -330,18 +406,10 @@ Indicate whether lines that have the pattern, should have any whitespace at the 
 
 If the only argument, shows the name and version of the script, and the system it is running on.
 
-CREATING YOUR OWN OPTIONS
-=========================
+--vimgrep
+---------
 
-You can use the `--save` option to save a set of options and than later access them with the given name:
-
-```bash
-$ rak --ignorecase --ignoremark --save=im
-Saved option '--im' as: --ignorecase --ignoremark
-
-# same as --ignorecase --ignoremark
-$ rak foo --im
-```
+If specified with a true value, will output search results in the format "filename:linenumber:column:line". This allows integration with the `:grep` action in vim-like editors.
 
 AUTHOR
 ======

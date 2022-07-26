@@ -2,6 +2,21 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.28  2022-07-26T14:14:02+02:00
+    - Add --smartcase option like --ignorecase without uppercase
+    - Add --vimgrep option for integration into the :grep feature of vim
+    - Made "Creating your own options" documentation more prominent
+
+0.0.27  2022-07-25T22:12:00+02:00
+    - Add --known-extensions to allow only known extensions
+    - Add --passthru option to allow only highlighting
+    - Add --pager option to page through output
+    - Add support for #python, #ruby, #markdown, #text extensions
+
+0.0.26  2022-07-24T23:53:03+02:00
+    - Add --list-expanded-options option for debugging
+    - Add --extensions option to specify extensions to look for
+
 0.0.25  2022-07-24T17:53:12+02:00
     - Add --paths-from option to read paths from a file
     - Add --files-from option to read filenames from a file
