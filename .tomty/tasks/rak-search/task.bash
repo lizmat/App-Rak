@@ -10,7 +10,10 @@ echo "====="
 cat file.txt
 echo "====="
 
+which rak
+rak --version
+
 echo "<<<"
-rak foo --/highlight --human 2>&1
+rak foo --/highlight --human
 echo ">>>"
 
