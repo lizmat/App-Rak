@@ -1,6 +1,7 @@
 main:
-  init:
+  init: |
       zef install --/test Tomty 2>&1
+
   build:
     pre: |
       #set -x
