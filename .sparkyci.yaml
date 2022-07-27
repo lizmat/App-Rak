@@ -1,8 +1,9 @@
 main:
+  init:
+      zef install --/test Tomty 2>&1
   build:
     pre: |
-      set -x
+      #set -x
       export SP6_LOG_NO_TIMESTAMPS=1
       zef install . --/test 2>&1
-      zef install --/test Tomty 2>&1
       tomty  --all --verbose 2>&1
