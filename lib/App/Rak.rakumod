@@ -764,7 +764,7 @@ my sub vimgrep($needle, @paths, %_ --> Nil) {
         my $path := .key.relative;
         .value.map({
             $path
-              ~ ':' ~ (.key + 1)
+              ~ ':' ~ .key
               ~ ':' ~ columns(.value, $needle, :$ignorecase, :$ignoremark).head
               ~ ':' ~ .value
         }).Slip

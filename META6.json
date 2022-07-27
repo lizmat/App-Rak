@@ -26,7 +26,7 @@
     "help.txt",
     "help/code.txt",
     "help/content.txt",
-    "help/edit.txt",
+    "help/editor.txt",
     "help/examples.txt",
     "help/general.txt",
     "help/haystack.txt",
@@ -49,5 +49,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.0.28"
+  "version": "0.0.29"
 }

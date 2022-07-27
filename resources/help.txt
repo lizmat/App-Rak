@@ -64,8 +64,9 @@ Resource usage:
  --batch=N   max number of files to process in a thread (default: 64)
  --degree=N  max number of threads to use for processing (default: cores - 1)
 
-Edit options:
+Editor options:
  --edit[=editor]  Go edit the result in an editor, (default EDITOR or vim)
+ --vimgrep        Produce output in :vimgrep format
 
 Option management:
  --save=name              Translate --name to all other options specified,

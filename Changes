@@ -2,6 +2,9 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.29  2022-07-28T00:19:30+02:00
+    - Fix off-by-one in line number in --vimgrep output, Damian++
+
 0.0.28  2022-07-26T14:14:02+02:00
     - Add --smartcase option like --ignorecase without uppercase
     - Add --vimgrep option for integration into the :grep feature of vim
