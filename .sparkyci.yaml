@@ -1,8 +1,8 @@
-main:
-  init:
-    script: |
-      zef install --/test Tomty 2>&1
+init:
+  script: |
+    zef install --/test Tomty 2>&1
 
+main:
   build:
     pre: |
       #set -x
