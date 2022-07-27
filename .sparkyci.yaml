@@ -1,5 +1,6 @@
 main:
-  init: |
+  init:
+    script: |
       zef install --/test Tomty 2>&1
 
   build:
