@@ -8,4 +8,7 @@ main:
       #set -x
       export SP6_LOG_NO_TIMESTAMPS=1
       zef install . --/test 2>&1
-      tomty  --all --verbose 2>&1
+      rak foo --/highlight --human
+      echo OKKKKKK
+      rak foo
+      #tomty  --all --verbose 2>&1
