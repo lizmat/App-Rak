@@ -2,7 +2,12 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.31  2022-07-28T23:46:56+02:00
+    - Bump dependency on Git::Blame::File to get latest fixes
+    - Add -blame-per-line option to filter on `git blame` objects
+
 0.0.30  2022-07-28T14:02:10+02:00
+    - Add dependency on Git::Blame::File
     - Add --show-blame option to show `git blame` output if possible
 
 0.0.29  2022-07-28T00:19:30+02:00

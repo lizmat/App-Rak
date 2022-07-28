@@ -81,6 +81,17 @@ Indicate whether backups should be made of files that are being modified. If spe
 
 Indicate the number of lines that should be shown **before** any line that matches. Defaults to **0**. Will be overridden by a `--context` argument.
 
+--blame-per-line
+----------------
+
+Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each line from the selected files will be provided as [`Git::Blame::Line`](https://raku.land/zef:lizmat/Git::Blame::File#accessors-on-gitblameline) objects if `git blame` can be performed on the a selected file. If that is not possible, then the selected file will be ignored.
+
+If <git blame> information can be obtained, then the associated `Git::Blame::Line` object will be presented to the pattern `Callable`. If the Callable returns a true value, then the short representation of the `git blame` information will be shown. If the returned value is a string, then that string will be shown.
+
+```bash
+$ rak '{ .author eq "Scooby Doo" }' --blame-per-line
+```
+
 --break[=string]
 ----------------
 

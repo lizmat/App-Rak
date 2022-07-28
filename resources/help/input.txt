@@ -1,4 +1,5 @@
 Input selection:
- --find           Interprete selected paths as the lines to inspect
- --json-per-file  Call Raku code with parsed JSON if file contains JSON
- --json-per-line  Call Raku code with parsed JSON if line contains JSON
+ --find            Interprete selected paths as the lines to inspect
+ --json-per-file   Call Raku code with parsed JSON if file contains JSON
+ --json-per-line   Call Raku code with parsed JSON if line contains JSON
+ --blame-per-line  Call Raku code with Git::Blame::Line objects if possible

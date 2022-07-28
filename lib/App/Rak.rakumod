@@ -3,7 +3,7 @@ use highlighter:ver<0.0.12>:auth<zef:lizmat>;
 use Files::Containing:ver<0.0.13>:auth<zef:lizmat>;
 use as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
-use Git::Blame::File:ver<0.0.1>:auth<zef:lizmat>;
+use Git::Blame::File:ver<0.0.2>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
 
 # Defaults for highlighting on terminals
@@ -398,13 +398,15 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
                 ?? &produce-json-per-file
                 !! $is-simple-Callable && (%n<json-per-line>:delete)
                   ?? &produce-json-per-line
-                  !! (%n<count-only>:delete)
-                    ?? &count-only
-                    !! (%n<files-with-matches>:delete)
-                      ?? &files-only
-                      !! (%n<vimgrep>:delete)
-                        ?? &vimgrep
-                        !! &want-lines
+                  !! $is-simple-Callable && (%n<blame-per-line>:delete)
+                    ?? &produce-blame-per-line
+                    !! (%n<count-only>:delete)
+                      ?? &count-only
+                      !! (%n<files-with-matches>:delete)
+                        ?? &files-only
+                        !! (%n<vimgrep>:delete)
+                          ?? &vimgrep
+                          !! &want-lines
             )($needle, $seq.sort(*.fc), %n);
         }
     }
@@ -595,6 +597,24 @@ my sub produce-json-per-line(&needle, @paths, %_ --> Nil) {
     }
 }
 
+# Produce Git::Blame::Line per line to check
+my sub produce-blame-per-line(&needle, @paths, %_ --> Nil) {
+    my $batch         := %_<batch>:delete;
+    my $degree        := %_<degree>:delete;
+    my $show-filename := %_<show-filename>:delete // True;
+    meh-if-unexpected(%_);
+
+    say $_ for @paths.&hyperize($batch, $degree).map: -> $filename {
+        if try Git::Blame::File.new($filename).lines -> @lines {
+            @lines.map(-> $blamer {
+                if needle($blamer) -> \result {
+                    result =:= True ?? $blamer.Str !! result
+                }
+            }).Slip
+        }
+    }
+}
+
 # Only count matches
 my sub count-only($needle, @paths, %_ --> Nil) {
     my $files-with-matches := %_<files-with-matches>:delete;
@@ -720,7 +740,7 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
         say $filename if $show-header;
 
         if @blames {
-            say show-line(@blames[.key].Str)
+            say show-line(@blames[.key - 1].Str)
               for add-before-after($io, @matches, $before, $after);
         }
         elsif $before-or-after {
@@ -1021,6 +1041,26 @@ If specified without extension, the extension C<.bak> will be used.
 
 Indicate the number of lines that should be shown B<before> any line that
 matches.  Defaults to B<0>.  Will be overridden by a C<--context> argument.
+
+=head2 --blame-per-line
+
+Only makes sense if the pattern is a C<Callable>.  If specified with a
+C<True> value, indicates that each line from the selected files will be
+provided as L<C<Git::Blame::Line>|https://raku.land/zef:lizmat/Git::Blame::File#accessors-on-gitblameline>
+objects if C<git blame> can be performed on the a selected file.  If that
+is not possible, then the selected file will be ignored.
+
+If <git blame> information can be obtained, then the associated
+C<Git::Blame::Line> object will be presented to the pattern C<Callable>.
+If the Callable returns a true value, then the short representation of
+the C<git blame> information will be shown.  If the returned value is a
+string, then that string will be shown.
+
+=begin code :lang<bash>
+
+$ rak '{ .author eq "Scooby Doo" }' --blame-per-line
+
+=end code
 
 =head2 --break[=string]
 
