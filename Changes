@@ -2,6 +2,9 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.30  2022-07-28T14:02:10+02:00
+    - Add --show-blame option to show `git blame` output if possible
+
 0.0.29  2022-07-28T00:19:30+02:00
     - Fix off-by-one in line number in --vimgrep output, Damian++
 

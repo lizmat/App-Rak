@@ -372,6 +372,11 @@ One option can be marked as requiring a value to be specified (with "!") or have
 
 To remove a saved set of named arguments, use `--save` as the only named argument.
 
+--show-blame
+------------
+
+Indicate whether to show `git blame` information for matching lines if possible, instead of just the line. Defaults to `False`.
+
 --show-filename
 ---------------
 

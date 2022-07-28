@@ -3,6 +3,7 @@ use highlighter:ver<0.0.12>:auth<zef:lizmat>;
 use Files::Containing:ver<0.0.13>:auth<zef:lizmat>;
 use as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
+use Git::Blame::File:ver<0.0.1>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
 
 # Defaults for highlighting on terminals
@@ -643,6 +644,7 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
     my Bool() $group-matches;
     my Bool() $show-filename;
     my Bool() $show-line-number;
+    my Bool() $show-blame;
     my Bool() $only;
     my Int()  $summary-if-larger-than;
 
@@ -650,14 +652,15 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
     if $human {
         $highlight = !is-simple-Callable($needle);
         $break = $group-matches = $show-filename = $show-line-number = True;
-        $only = False;
+        $only = $show-blame = False;
         $trim = !($before || $after || is-simple-Callable($needle));
         $summary-if-larger-than = 160;
     }
 
-    $highlight = $_ with %_<highlight>:delete;
-    $trim      = $_ with %_<trim>:delete;
-    $only      = $_ with %_<only-matching>:delete;
+    $highlight  = $_ with %_<highlight>:delete;
+    $trim       = $_ with %_<trim>:delete;
+    $only       = $_ with %_<only-matching>:delete;
+    $show-blame = $_ with %_<show-blame>:delete;
     $before = $after = 0 if $only;
     $summary-if-larger-than = $_ with %_<summary-if-larger-than>:delete;
 
@@ -668,7 +671,7 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
         $pre  = $only ?? " " !! BON  without $pre;
         $post = $only ?? ""  !! BOFF without $post;
 
-        &show-line = $trim
+        &show-line = $trim && !$show-blame
           ?? -> $line {
                  highlighter $line.trim, $needle<>, $pre, $post,
                  :$ignorecase, :$ignoremark, :$only,
@@ -710,9 +713,17 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
         say $break if $break && $nr-files++;
 
         my str $filename = $io.relative;
+        my @blames;
+        if $show-blame && Git::Blame::File($io) -> $blamer {
+            @blames := $blamer.lines;
+        }
         say $filename if $show-header;
 
-        if $before-or-after {
+        if @blames {
+            say show-line(@blames[.key].Str)
+              for add-before-after($io, @matches, $before, $after);
+        }
+        elsif $before-or-after {
             my @selected := add-before-after($io, @matches, $before, $after);
             my $format := '%' ~ (@selected.tail.key.chars) ~ 'd';
             if $show-line-number {
@@ -1356,6 +1367,11 @@ or have a default value (with "[default-value]").
 
 To remove a saved set of named arguments, use C<--save> as the only
 named argument.
+
+=head2 --show-blame
+
+Indicate whether to show C<git blame> information for matching lines
+if possible, instead of just the line.  Defaults to C<False>.
 
 =head2 --show-filename
 

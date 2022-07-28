@@ -43,6 +43,7 @@ Listing modifiers:
  --human                     Force defaults as if a human is watching
  --break[=string]            String to show between different files
  --group-matches             Show filename only once on a separate line
+ --show-blame                Show git blame information if possible
  --show-filename             Show the filename in which match occurred
  --show-line-number          Show the line number in which match occurred
  --only-matching             Only produce the actual matches
