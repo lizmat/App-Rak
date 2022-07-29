@@ -27,7 +27,7 @@ App::Rak provides a CLI called `rak` that allows you to look for a needle in (a 
 
 To a large extent, the arguments are the same as with the `grep` utility provided on most Unixes.
 
-Note: this is still very much in alpha development phase. Comments and suggestions are more than welcome!
+Note: this is still very much in alpha development phase. Comments, suggestions and bug reports are more than welcome!
 
 POSITIONAL ARGUMENTS
 ====================
@@ -314,6 +314,11 @@ $ RAK_PAGER='more -r' rak foo
 
 $ rak foo --pager='less -r'
 ```
+
+--paragraph-context
+-------------------
+
+Indicate all lines that are part of the same paragraph **around** any line that matches. Defaults to `False`.
 
 --passthru
 ----------

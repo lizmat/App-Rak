@@ -119,29 +119,64 @@ my sub add-before-after($io, @initially-selected, int $before, int $after) {
     my int $last-linenr = @lines.end;
 
     my int8 @seen;
-    my @selected;
+    my $selected := IterationBuffer.CREATE;
     for @initially-selected {
         my int $linenr = .key;
         if $before {
             for max($linenr - $before, 1) ..^ $linenr -> int $_ {
-                @selected.push:
+                $selected.push:
                   Pair.new($_, @lines.AT-POS($_) but delimiter('-'))
                   unless @seen.AT-POS($_)++;
             }
         }
 
-        @selected.push: Pair.new(.key, .value but delimiter(':'))
+        $selected.push: Pair.new(.key, .value but delimiter(':'))
           unless @seen.AT-POS($linenr)++;
 
         if $after {
             for $linenr ^.. min($linenr + $after, $last-linenr ) -> int $_ {
-                @selected.push:
+                $selected.push:
                   Pair.new($_, @lines.AT-POS($_) but delimiter('-'))
                   unless @seen.AT-POS($_)++;
             }
         }
     }
 
+    $selected.List
+}
+# Add any lines until any paragraph boundary
+my sub add-paragraph($io, @initially-selected) {
+    my str @lines = $io.lines(:enc<utf8-c8>);
+    @lines.unshift: "";   # make 1-base indexing natural
+    my int $last-linenr = @lines.end;
+
+    my int8 @seen;
+    my @selected = @initially-selected.map: {
+        my int $linenr = .key;
+        my int $pos = $linenr;
+        my $selected := IterationBuffer.CREATE;
+        while --$pos
+          && !@seen.AT-POS($pos)
+          && @lines.AT-POS($pos) -> $line {
+            $selected.unshift: Pair.new($pos, $line but delimiter('-'));
+        }
+
+        $selected.push: Pair.new(.key, .value but delimiter(':'))
+          unless @seen.AT-POS($linenr)++;
+
+        if $linenr < $last-linenr {
+            $pos = $linenr;
+            while ++$pos < $last-linenr
+              && !@seen.AT-POS($pos)
+              && @lines.AT-POS($pos) -> $line {
+                $selected.push:
+                  Pair.new($pos, $line but delimiter('-'));
+            }
+            $selected.push:
+              Pair.new($pos, @lines.AT-POS($pos) but delimiter('-'));
+        }
+        $selected.Slip
+    }
     @selected
 }
 
@@ -652,11 +687,23 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
       |named-args %_, :invert-match, :max-count, :type, :batch, :degree,
     ;
 
-    my UInt() $before = $_ with %_<before-context>:delete;
-    my UInt() $after  = $_ with %_<after-context>:delete;
-    $before = $after  = $_ with %_<context>:delete;
+    my Bool() $paragraph;
+    my UInt() $before;
+    my UInt() $after;
+
+    if %_<paragraph-context>:delete {
+        $paragraph = True;
+    }
+    elsif %_<context>:delete -> $context {
+        $before = $after = $context;
+    }
+    else {
+        $before = $_ with %_<before-context>:delete;
+        $after  = $_ with %_<after-context>:delete;
+    }
     $before = 0 without $before;
     $after  = 0 without $after;
+    my $with-context = $paragraph || $before || $after;
 
     my Bool() $highlight;
     my Bool() $trim;
@@ -673,7 +720,7 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
         $highlight = !is-simple-Callable($needle);
         $break = $group-matches = $show-filename = $show-line-number = True;
         $only = $show-blame = False;
-        $trim = !($before || $after || is-simple-Callable($needle));
+        $trim = !($with-context || is-simple-Callable($needle));
         $summary-if-larger-than = 160;
     }
 
@@ -694,13 +741,13 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
         &show-line = $trim && !$show-blame
           ?? -> $line {
                  highlighter $line.trim, $needle<>, $pre, $post,
-                 :$ignorecase, :$ignoremark, :$only,
-                 :$summary-if-larger-than
+                   :$ignorecase, :$ignoremark, :$only,
+                   :$summary-if-larger-than
              }
           !! -> $line {
                  highlighter $line, $needle<>, $pre, $post,
-                 :$ignorecase, :$ignoremark, :$only,
-                 :$summary-if-larger-than
+                   :$ignorecase, :$ignoremark, :$only,
+                   :$summary-if-larger-than
              }
         ;
     }
@@ -723,7 +770,6 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
         $break = "" but True
           if Bool.ACCEPTS($break) || ($break.defined && !$break);
     }
-    my $before-or-after := $before || $after;
 
     my $show-header = $show-filename && $group-matches;
     $show-filename  = False if $show-header;
@@ -743,8 +789,10 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
             say show-line(@blames[.key - 1].Str)
               for add-before-after($io, @matches, $before, $after);
         }
-        elsif $before-or-after {
-            my @selected := add-before-after($io, @matches, $before, $after);
+        elsif $with-context {
+            my @selected := $paragraph
+              ?? add-paragraph($io, @matches)
+              !! add-before-after($io, @matches, $before, $after);
             my $format := '%' ~ (@selected.tail.key.chars) ~ 'd';
             if $show-line-number {
                 for @selected {
@@ -976,8 +1024,8 @@ in (a selection of files) from a given directory recursively.
 To a large extent, the arguments are the same as with the C<grep> utility
 provided on most Unixes.
 
-Note: this is still very much in alpha development phase.  Comments and
-suggestions are more than welcome!
+Note: this is still very much in alpha development phase.  Comments,
+suggestions and bug reports are more than welcome!
 
 =head1 POSITIONAL ARGUMENTS
 
@@ -1322,6 +1370,11 @@ $ RAK_PAGER='more -r' rak foo
 $ rak foo --pager='less -r'
 
 =end code
+
+=head2 --paragraph-context
+
+Indicate all lines that are part of the same paragraph B<around> any line
+that matches.  Defaults to C<False>.
 
 =head2 --passthru
 
