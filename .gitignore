@@ -1,3 +1,5 @@
 .precomp/
 /App-Rack-*
 /releases/
+.tom/
+.cache

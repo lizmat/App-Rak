@@ -1,0 +1,11 @@
+begin:
+note: positive case
+<<<
+bar/file.txt
+regexp: ^^ \s* '1:foo' \s* $$
+>>>
+---
+note: negative case
+<<<
+>>>
+end:
