@@ -18,11 +18,11 @@ my constant %exts =
   '#c'        => <c h hdl>,
   '#c++'      => <cpp cxx hpp hxx>,
   '#markdown' => <md markdown>,
-  '#perl'     => ('', <pl pm t>).flat,
+  '#perl'     => ('', <pl pm t>).flat.List,
   '#python'   => <py>,
-  '#raku'     => ('', <raku rakumod rakutest nqp t pm6 pl6>).flat,
+  '#raku'     => ('', <raku rakumod rakutest nqp t pm6 pl6 t6>).flat.List,
   '#ruby'     => <rb>,
-  '#text'     => ('', <txt>).flat,
+  '#text'     => ('', <txt>).flat.List,
   '#yaml'     => <yaml yml>,
 ;
 
@@ -151,12 +151,12 @@ my sub add-paragraph($io, @initially-selected) {
     my int $last-linenr = @lines.end;
 
     my int8 @seen;
-    my @selected = @initially-selected.map: {
+    my @selected is List = @initially-selected.map: {
         my int $linenr = .key;
         my int $pos = $linenr;
         my $selected := IterationBuffer.CREATE;
         while --$pos
-          && !@seen.AT-POS($pos)
+          && !(@seen.AT-POS($pos)++)
           && @lines.AT-POS($pos) -> $line {
             $selected.unshift: Pair.new($pos, $line but delimiter('-'));
         }
@@ -167,13 +167,14 @@ my sub add-paragraph($io, @initially-selected) {
         if $linenr < $last-linenr {
             $pos = $linenr;
             while ++$pos < $last-linenr
-              && !@seen.AT-POS($pos)
+              && !(@seen.AT-POS($pos)++)
               && @lines.AT-POS($pos) -> $line {
                 $selected.push:
                   Pair.new($pos, $line but delimiter('-'));
             }
             $selected.push:
-              Pair.new($pos, @lines.AT-POS($pos) but delimiter('-'));
+              Pair.new($pos, @lines.AT-POS($pos) but delimiter('-'))
+              unless @seen.AT-POS($pos)++;
         }
         $selected.Slip
     }
@@ -1530,7 +1531,8 @@ deal to me!
 
 Copyright 2022 Elizabeth Mattijsen
 
-This library is free software; you can redistribute it and/or modify it under the Artistic License 2.0.
+This library is free software; you can redistribute it and/or modify it under
+the Artistic License 2.0.
 
 =end pod
 

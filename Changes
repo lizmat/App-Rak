@@ -2,8 +2,14 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.33  2022-07-29T21:33:26+02:00
+    - Fix issue with multiple matches inside the same paragraph with
+      --paragraph-context
+    - Fix issue with #raku, #text and #perl extension groups
+
 0.0.32  2022-07-29T17:23:05+02:00
-    - Add "paragraph-context" option to show paragraph around match
+    - Add "paragraph-context" option to show paragraph around match,
+      Eric de Hont++ for the suggestion
 
 0.0.31  2022-07-28T23:46:56+02:00
     - Bump dependency on Git::Blame::File to get latest fixes
