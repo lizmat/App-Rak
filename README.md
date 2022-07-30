@@ -3,7 +3,7 @@
 NAME
 ====
 
-App::Rak - a CLI for searching strings in files and more
+App::Rak - 21st century grep / find / ack / ag / rg on steroids
 
 SYNOPSIS
 ========
@@ -18,14 +18,14 @@ $ rak '/ << foo >> /'    # look for "foo" as word in current directory
 $ raku foo --files-only  # look for "foo", only produce filenames
 
 $ raku foo --before=2 --after=2  # also produce 2 lines before and after
+
+$ raku '{.contains("foo") && .contains("bar")}'  # lines with foo AND bar
 ```
 
 DESCRIPTION
 ===========
 
-App::Rak provides a CLI called `rak` that allows you to look for a needle in (a selection of files) from a given directory recursively.
-
-To a large extent, the arguments are the same as with the `grep` utility provided on most Unixes.
+App::Rak provides a CLI called `rak` that allows you to look for a pattern in (a selection of files) from one or more directories recursively. It has been modelled after utilities such as `grep`, `ack`, `ag` and `rg`, with a little bit of `find` mixed in, and `-n` and `-p` parameters of many programming languages.
 
 Note: this is still very much in alpha development phase. Comments, suggestions and bug reports are more than welcome!
 
@@ -45,6 +45,25 @@ path(s)
 Optional. Either indicates the path of the directory (and its sub-directories), or the file that will be searched. By default, all directories that do not start with a period, will be recursed into (but this can be changed with the `--dir` option).
 
 By default, all files will be searched in the directories. This can be changed with the `--file` option
+
+ON CALLABLES AS PATTERN
+=======================
+
+The Raku Programming Language has a number of unique features that can be used with patterns that are so-called `Callable`s. One of them is the use of so-called [phasers](https://docs.raku.org/language/phasers) (pieces of code that will be executed automatically when a certain condition has been met.
+
+`App::Rak` currently supports the [loop phasers](https://docs.raku.org/language/phasers#FIRST):
+
+  * FIRST - code to run when searching starts
+
+  * NEXT - code to run when searching a file is done
+
+  * LAST - code to run when searching is done
+
+```bash
+rak '{ FIRST state $seen = 0; NEXT $seen++; LAST say "$seen files"; .contains("pattern")}'
+```
+
+Any other phasers that do not require special attention by `App::Rak` are also supported in any code specified.
 
 CREATING YOUR OWN OPTIONS
 =========================
@@ -221,7 +240,7 @@ Indicate that search results should be presented in a human readable manner. Thi
 --json-per-file
 ---------------
 
-Only makes sense if the needle is a `Callable`. If specified with a `True` value, indicates that each selected file will be interpreted as JSON, and if valid, will then be given to the needle for introspection. If the Callable returns a true value, the filename will be shown. If the returned value is a string, that string will also be mentioned. For example:
+Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each selected file will be interpreted as JSON, and if valid, will then be given to the pattern for introspection. If the Callable returns a true value, the filename will be shown. If the returned value is a string, that string will also be mentioned. For example:
 
 ```bash
 $ rak '{ $_ with .<auth> }' --json-per-file
@@ -230,7 +249,7 @@ $ rak '{ $_ with .<auth> }' --json-per-file
 --json-per-line
 ---------------
 
-Only makes sense if the needle is a `Callable`. If specified with a `True` value, indicates that each line from the selected files will be interpreted as JSON, and if valid, will then be given to the needle for introspection. If the Callable returns a true value, the filename and line number will be shown. If the returned value is a string, that string will also be mentioned. For example:
+Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each line from the selected files will be interpreted as JSON, and if valid, will then be given to the pattern for introspection. If the Callable returns a true value, the filename and line number will be shown. If the returned value is a string, that string will also be mentioned. For example:
 
 ```bash
 $ rak '{ $_ with .<auth> }' --json-per-line
@@ -386,7 +405,7 @@ Any options can be accessed as if it is a standard option. Please note that no v
 
 One option can be marked as requiring a value to be specified (with "!") or have a default value (with "[default-value]").
 
-To remove a saved set of named arguments, use `--save` as the only named argument.
+To remove a saved set of options, use `--save` as the only option.
 
 --show-blame
 ------------

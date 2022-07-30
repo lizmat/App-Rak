@@ -20,7 +20,8 @@ my constant %exts =
   '#markdown' => <md markdown>,
   '#perl'     => ('', <pl pm t>).flat.List,
   '#python'   => <py>,
-  '#raku'     => ('', <raku rakumod rakutest nqp t pm6 pl6 t6>).flat.List,
+  '#raku'     => ('', <raku rakumod rakutest rakudoc nqp t pm6 pl6 pod6 t6>
+                 ).flat.List,
   '#ruby'     => <rb>,
   '#text'     => ('', <txt>).flat.List,
   '#yaml'     => <yaml yml>,
@@ -32,6 +33,9 @@ my constant @known-extensions = %exts.values.flat.unique.sort;
 # Place to keep tagged configurations
 my $config-file := $*HOME.add('.rak-config.json');
 
+# Add "s" if number is not 1, for error messages
+my sub s($elems) { $elems == 1 ?? "" !! "s" }
+
 # Sane way of quitting
 my sub meh($message) { exit note $message }
 
@@ -41,9 +45,7 @@ my sub meh-if-unexpected(%_) {
 }
 
 # Is a needle a simple Callable?
-my sub is-simple-Callable($needle) {
-    Callable.ACCEPTS($needle) && !Regex.ACCEPTS($needle)
-}
+my $is-simple-Callable;
 
 # Return string before marker, or string if no marker
 my sub before(Str:D $string, Str:D $marker) {
@@ -332,19 +334,6 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
         exit;
     }
 
-    my $needle = %n<pattern>:delete // @specs.shift;
-    meh "Must at least specify a pattern" without $needle;
-
-    # Pre-process non literal string needles
-    $needle = codify($needle, %n);
-    my $is-simple-Callable := is-simple-Callable($needle);
-
-    # Handle --smartcase
-    %n<ignorecase> = !$needle.contains(/ <:upper> /)
-      if Str.ACCEPTS($needle)
-      && (%n<ignorecase>:!exists)
-      && (%n<smartcase>:delete);
-
     # Set up output file if needed
     temp $*OUT;
     with %n<output-file>:delete -> $path {
@@ -357,6 +346,20 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
           ?? meh("Must specify a specific pager to use: --pager=foo")
           !! ($*OUT = (run pager.words, :in).in);
     }
+
+    # Start looking at actual actionable options
+    my $needle = %n<pattern>:delete // @specs.shift;
+    meh "Must at least specify a pattern" without $needle;
+
+    # Pre-process non literal string needles
+    $needle = codify($needle, %n);
+    $is-simple-Callable := Callable.ACCEPTS($needle) && !Regex.ACCEPTS($needle);
+
+    # Handle --smartcase
+    %n<ignorecase> = !$needle.contains(/ <:upper> /)
+      if Str.ACCEPTS($needle)
+      && (%n<ignorecase>:!exists)
+      && (%n<smartcase>:delete);
 
     # Reading from STDIN
     my $root := @specs.head;
@@ -373,9 +376,20 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
               !! &stdin
           !! &stdin
         )($needle, %n);
+
+        # Done
+        $*OUT.close;  # in case we're running a pager
+        exit;
     }
 
-    # Not reading from STDIN
+    # Not reading from STDIN, files are pre-specified
+    my $seq := do if %n<files-from>:delete -> $from {
+        meh "Cannot specify --files-from with path specification: @specs[]"
+          if @specs;
+        $from eq "-" ?? $*IN.lines !! $from.IO.lines
+    }
+
+    # Need to figure out which files to check
     else {
         my %additional = named-args %n, :follow-symlinks, :file :dir;
         if %additional<file>:exists {
@@ -398,12 +412,8 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
             %additional<file> := codify-extensions @known-extensions;
         }
 
-        my $seq := do if %n<files-from>:delete -> $from {
-            meh "Cannot specify --files-from with path specification: @specs[]"
-              if @specs;
-            $seq := $from eq "-" ?? $*IN.lines !! $from.IO.lines
-        }
-        elsif %n<paths-from>:delete -> $from {
+        # Paths are pre-specified
+        if %n<paths-from>:delete -> $from {
             meh "Cannot specify --paths-from with path specification: @specs[]"
               if @specs;
 
@@ -411,6 +421,8 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
               $from eq "-" ?? $*IN.lines !! $from.IO.lines
             ).&hyperize(1,%n<degree>).map: { paths($_, |%additional).Slip }
         }
+
+        # Paths from parameters
         else {
             @specs.unshift(".") unless @specs;
             @specs == 1
@@ -419,31 +431,54 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
                      paths($_, |%additional).Slip
                  }
         }
+    }
 
-        if %n<edit>:delete -> $editor {
-            go-edit-files($editor, $needle, $seq.sort(*.fc), %n);
+    # Want to go edit
+    if %n<edit>:delete -> $editor {
+        go-edit-files($editor, $needle, $seq.sort(*.fc), %n);
+    }
+    
+    # Just match on filenames
+    elsif %n<find>:delete {
+        %n<show-line-number> //= False;
+        stdin($needle, %n, $seq);
+    }
+
+    # Need sorted filename list
+    else {
+        # Embedded in vim
+        my &handle := do if %n<vimgrep>:delete {
+            vimgrep($needle, %n, $seq);
         }
-        elsif %n<find>:delete {
-            %n<show-line-number> //= False;
-            stdin($needle, %n, $seq);
-        }
-        else {
-            ($is-simple-Callable && (%n<modify-files>:delete)
+
+        # Code to run as a needle
+        elsif $is-simple-Callable {
+            %n<modify-files>:delete
               ?? &modify-files
-              !! $is-simple-Callable && (%n<json-per-file>:delete)
+              !! (%n<json-per-file>:delete)
                 ?? &produce-json-per-file
-                !! $is-simple-Callable && (%n<json-per-line>:delete)
+                !! (%n<json-per-line>:delete)
                   ?? &produce-json-per-line
-                  !! $is-simple-Callable && (%n<blame-per-line>:delete)
+                  !! (%n<blame-per-line>:delete)
                     ?? &produce-blame-per-line
                     !! (%n<count-only>:delete)
                       ?? &count-only
                       !! (%n<files-with-matches>:delete)
                         ?? &files-only
-                        !! (%n<vimgrep>:delete)
-                          ?? &vimgrep
-                          !! &want-lines
-            )($needle, $seq.sort(*.fc), %n);
+                        !! &want-lines  # XXX
+        }
+
+        # Needle is either string or regex
+        else {
+            %n<count-only>:delete
+              ?? &count-only
+              !! (%n<files-with-matches>:delete)
+                ?? &files-only
+                !! &want-lines
+        }
+        handle($needle, $seq.sort(*.fc), %n);
+        if $is-simple-Callable {
+            $_() with $needle.callable_for_phaser('LAST');
         }
     }
 
@@ -474,10 +509,8 @@ my sub go-edit-files($editor, $needle, @paths, %_ --> Nil) {
       :editor(Bool.ACCEPTS($editor) ?? Any !! $editor)
 }
 
-my sub s($elems) { $elems == 1 ?? "" !! "s" }
-
-# Replace contents of files
-my sub modify-files($needle, @paths, %_ --> Nil) {
+# Replace contents of files using the given Callable
+my sub modify-files(&needle, @paths, %_ --> Nil) {
     my $batch   := %_<batch>:delete;
     my $degree  := %_<degree>:delete;
     my $dryrun  := %_<dryrun>:delete;
@@ -486,13 +519,14 @@ my sub modify-files($needle, @paths, %_ --> Nil) {
     my $backup = %_<backup>:delete;
     $backup = ".bak" if $backup<> =:= True;
     $backup = ".$backup" if $backup && !$backup.starts-with('.');
-
     meh-if-unexpected(%_);
 
     my @files-changed;
     my int $nr-changed;
     my int $nr-removed;
 
+    $_() with &needle.callable_for_phaser('FIRST');
+    my $NEXT := &needle.callable_for_phaser('NEXT');
     @paths.&hyperize($batch, $degree).map: -> $path {
         my str @lines;
         my int $lines-changed;
@@ -500,7 +534,7 @@ my sub modify-files($needle, @paths, %_ --> Nil) {
 
         my $io := $path.IO;
         for $io.slurp.lines(:!chomp) {
-            my $result := $needle($_);
+            my $result := needle($_);
             if $result =:= True || $result =:= Empty {
                 @lines.push: $_;
             }
@@ -529,6 +563,7 @@ my sub modify-files($needle, @paths, %_ --> Nil) {
             $nr-changed += $lines-changed;
             $nr-removed += $lines-removed;
         }
+        $NEXT() if $NEXT;
     }
 
     my $nr-files = @files-changed.elems;
@@ -563,7 +598,9 @@ my sub produce-json-per-file(&needle, @paths, %_ --> Nil) {
     my $show-filename := %_<show-filename>:delete // True;
     meh-if-unexpected(%_);
 
-    say $_ for @paths.&hyperize($batch, $degree).map: {
+    $_() with &needle.callable_for_phaser('FIRST');
+    my $NEXT := &needle.callable_for_phaser('NEXT');
+    for @paths.&hyperize($batch, $degree).map: {
         my $io := .IO;
 
         if try from-json $io.slurp -> $json {
@@ -576,6 +613,9 @@ my sub produce-json-per-file(&needle, @paths, %_ --> Nil) {
                     !! result
             }
         }
+    } {
+        say $_;
+        $NEXT() if $NEXT;
     }
 }
 
@@ -585,11 +625,13 @@ my sub produce-json-per-line(&needle, @paths, %_ --> Nil) {
     my $degree        := %_<degree>:delete;
     my $show-filename := %_<show-filename>:delete // True;
 
+    $_() with &needle.callable_for_phaser('FIRST');
+    my $NEXT := &needle.callable_for_phaser('NEXT');
     if %_<count-only>:delete {
         meh-if-unexpected(%_);
         my int $total;
 
-        say $_ for @paths.&hyperize($batch, $degree).map: {
+        for @paths.&hyperize($batch, $degree).map: {
             my $io := .IO;
             my int $found;
 
@@ -601,6 +643,9 @@ my sub produce-json-per-line(&needle, @paths, %_ --> Nil) {
 
             $total += $found;
             "$io.relative(): $found" if $show-filename;
+        } {
+            say $_;
+            $NEXT() if $NEXT;
         }
         say $total;
     }
@@ -609,7 +654,7 @@ my sub produce-json-per-line(&needle, @paths, %_ --> Nil) {
         my $show-line-number := %_<show-line-number>:delete // True;
         meh-if-unexpected(%_);
 
-        say $_ for @paths.&hyperize($batch, $degree).map: {
+        for @paths.&hyperize($batch, $degree).map: {
             my $io := .IO;
             my int $line-number;
 
@@ -629,6 +674,9 @@ my sub produce-json-per-line(&needle, @paths, %_ --> Nil) {
                     }
                 }
             }).Slip
+        } {
+            say $_;
+            $NEXT() if $NEXT;
         }
     }
 }
@@ -640,7 +688,9 @@ my sub produce-blame-per-line(&needle, @paths, %_ --> Nil) {
     my $show-filename := %_<show-filename>:delete // True;
     meh-if-unexpected(%_);
 
-    say $_ for @paths.&hyperize($batch, $degree).map: -> $filename {
+    $_() with &needle.callable_for_phaser('FIRST');
+    my $NEXT := &needle.callable_for_phaser('NEXT');
+    for @paths.&hyperize($batch, $degree).map: -> $filename {
         if try Git::Blame::File.new($filename).lines -> @lines {
             @lines.map(-> $blamer {
                 if needle($blamer) -> \result {
@@ -648,6 +698,9 @@ my sub produce-blame-per-line(&needle, @paths, %_ --> Nil) {
                 }
             }).Slip
         }
+    } {
+        say $_;
+        $NEXT() if $NEXT;
     }
 }
 
@@ -660,10 +713,15 @@ my sub count-only($needle, @paths, %_ --> Nil) {
 
     my int $files;
     my int $matches;
+    my $NEXT := do if $is-simple-Callable {
+        $_() with $needle.callable_for_phaser('FIRST');
+        $needle.callable_for_phaser('NEXT')
+    }
     for files-containing $needle, @paths, :count-only, |%additional {
         ++$files;
         $matches += .value;
         say .key.relative ~ ': ' ~ .value if $files-with-matches;
+        $NEXT() if $NEXT;
     }
     say "$matches matches in $files files";
 }
@@ -675,8 +733,18 @@ my sub files-only($needle, @paths, %_ --> Nil) {
       :ignorecase, :ignoremark, :invert-match, :type, :batch, :degree;
     meh-if-unexpected(%_);
 
-    print .relative ~ $nl
-      for files-containing $needle, @paths, :files-only, |%additional;
+    if $is-simple-Callable {
+        $_() with $needle.callable_for_phaser('FIRST');
+        my $NEXT := $needle.callable_for_phaser('NEXT');
+        for files-containing $needle, @paths, :files-only, |%additional {
+            print .relative ~ $nl;
+            $NEXT() if $NEXT;
+        }
+    }
+    else {
+        print .relative ~ $nl
+          for files-containing $needle, @paths, :files-only, |%additional;
+    }
 }
 
 # Show lines with highlighting and context
@@ -693,7 +761,7 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
     my UInt() $after;
 
     if %_<paragraph-context>:delete {
-        $paragraph = True;
+        $paragraph := True;
     }
     elsif %_<context>:delete -> $context {
         $before = $after = $context;
@@ -718,19 +786,21 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
 
     my $human := %_<human>:delete // $isa-tty;
     if $human {
-        $highlight = !is-simple-Callable($needle);
+        $highlight = !$is-simple-Callable;
         $break = $group-matches = $show-filename = $show-line-number = True;
-        $only = $show-blame = False;
-        $trim = !($with-context || is-simple-Callable($needle));
+        $only  = $show-blame = False;
+        $trim  = !$with-context;
         $summary-if-larger-than = 160;
     }
 
-    $highlight  = $_ with %_<highlight>:delete;
-    $trim       = $_ with %_<trim>:delete;
-    $only       = $_ with %_<only-matching>:delete;
-    $show-blame = $_ with %_<show-blame>:delete;
+    unless $is-simple-Callable {
+        $highlight := $_ with %_<highlight>:delete;
+        $only      := $_ with %_<only-matching>:delete;
+    }
+    $trim       := $_ with %_<trim>:delete;
+    $show-blame := $_ with %_<show-blame>:delete;
     $before = $after = 0 if $only;
-    $summary-if-larger-than = $_ with %_<summary-if-larger-than>:delete;
+    $summary-if-larger-than := $_ with %_<summary-if-larger-than>:delete;
 
     my &show-line;
     if $highlight {
@@ -776,6 +846,10 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
     $show-filename  = False if $show-header;
     my int $nr-files;
 
+    my $NEXT := do if $is-simple-Callable {
+        $_() with $needle.callable_for_phaser('FIRST');
+        $needle.callable_for_phaser('NEXT')
+    }
     for $seq -> (:key($io), :value(@matches)) {
         say $break if $break && $nr-files++;
 
@@ -828,6 +902,7 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
                 say show-line(.value) for @matches;
             }
         }
+        $NEXT() if $NEXT;
     }
 }
 
@@ -904,10 +979,10 @@ my sub stdin($needle, %_, $source = stdin-source --> Nil) {
 
     my $human := %_<human>:delete // $isa-tty;
     if $human {
-        $highlight = !is-simple-Callable($needle);
+        $highlight = !$is-simple-Callable;
         $show-line-number = !%_<passthru>;
         $only = False;
-        $trim = !($before || $after || is-simple-Callable($needle));
+        $trim = !($before || $after || $is-simple-Callable);
         $summary-if-larger-than = 160;
     }
 
@@ -994,546 +1069,5 @@ my sub stdin($needle, %_, $source = stdin-source --> Nil) {
         }
     }
 }
-
-=begin pod
-
-=head1 NAME
-
-App::Rak - a CLI for searching strings in files and more
-
-=head1 SYNOPSIS
-
-=begin code :lang<bash>
-
-$ rak foo      # look for "foo" in current directory recursively
-
-$ rak foo bar  # look for "foo" in directory "bar" recursively
-
-$ rak '/ << foo >> /'    # look for "foo" as word in current directory
-
-$ raku foo --files-only  # look for "foo", only produce filenames
-
-$ raku foo --before=2 --after=2  # also produce 2 lines before and after
-
-=end code
-
-=head1 DESCRIPTION
-
-App::Rak provides a CLI called C<rak> that allows you to look for a needle
-in (a selection of files) from a given directory recursively.
-
-To a large extent, the arguments are the same as with the C<grep> utility
-provided on most Unixes.
-
-Note: this is still very much in alpha development phase.  Comments,
-suggestions and bug reports are more than welcome!
-
-=head1 POSITIONAL ARGUMENTS
-
-=head2 pattern
-
-The pattern to search for.  This can either be a string, or a
-L<Raku regular expression|https://docs.raku.org/language/regexes>
-(indicated by a string starting and ending with C</>), a
-C<Callable> (indicated by a string starting with C<{> and ending with C<}>),
-or a a result of L<C<Whatever> currying|https://docs.raku.org/type/Whatever>
-(indicated by a string starting with C<*.>).
-
-Can also be specified with the C<--pattern> option, in which case B<all>
-the positional arguments are considered to be a path specification.
-
-=head2 path(s)
-
-Optional.  Either indicates the path of the directory (and its
-sub-directories), or the file that will be searched.  By default, all
-directories that do not start with a period, will be recursed into (but
-this can be changed with the C<--dir> option).
-
-By default, all files will be searched in the directories.  This can be
-changed with the C<--file> option
-
-=head1 CREATING YOUR OWN OPTIONS
-
-App::Rak provides B<many> options.  If you are happy with a set of options
-for a certain workflow, You can use the C<--save> option to save that set
-of options and than later access them with the given name:
-
-=begin code :lang<bash>
-
-$ rak --ignorecase --ignoremark --save=im
-Saved option '--im' as: --ignorecase --ignoremark
-
-# same as --ignorecase --ignoremark
-$ rak foo --im
-
-=end code
-
-You can use the C<--list-custom-options> to see what options you have saved
-before.
-
-=head1 SUPPORTED OPTIONS
-
-All options are optional.  Any unexpected options, will cause an exception
-to be thrown with the unexpected options listed.
-
-=head2 --after-context=N
-
-Indicate the number of lines that should be shown B<after> any line that
-matches.  Defaults to B<0>.  Will be overridden by a C<--context> argument.
-
-=head2 --backup[=extension]
-
-Indicate whether backups should be made of files that are being modified.
-If specified without extension, the extension C<.bak> will be used.
-
-=head2 --before-context=N
-
-Indicate the number of lines that should be shown B<before> any line that
-matches.  Defaults to B<0>.  Will be overridden by a C<--context> argument.
-
-=head2 --blame-per-line
-
-Only makes sense if the pattern is a C<Callable>.  If specified with a
-C<True> value, indicates that each line from the selected files will be
-provided as L<C<Git::Blame::Line>|https://raku.land/zef:lizmat/Git::Blame::File#accessors-on-gitblameline>
-objects if C<git blame> can be performed on the a selected file.  If that
-is not possible, then the selected file will be ignored.
-
-If <git blame> information can be obtained, then the associated
-C<Git::Blame::Line> object will be presented to the pattern C<Callable>.
-If the Callable returns a true value, then the short representation of
-the C<git blame> information will be shown.  If the returned value is a
-string, then that string will be shown.
-
-=begin code :lang<bash>
-
-$ rak '{ .author eq "Scooby Doo" }' --blame-per-line
-
-=end code
-
-=head2 --break[=string]
-
-Indicate whether there should be a visible division between matches of
-different files.  Can also be specified as a string to be used as the
-divider.  Defaults to C<True> (using an empty line as a divider) if
-C<--human> is (implicitly) set to C<True>, else defaults to C<False>.
-
-=head2 --context=N
-
-Indicate the number of lines that should be shown B<around> any line that
-matches.  Defaults to B<0>.  Overrides any a C<--after-context> or
-C<--before-context> arguments.
-
-=head2 --count-only
-
-Indicate whether just the number of lines with matches should be calculated.
-When specified with a C<True> value, will show a "N matches in M files"
-by default, and if the C<:files-with-matches> option is also specified with
-a C<True> value, will also list the file names with their respective counts.
-
-=head2 --dryrun
-
-Indicate to B<not> actually make any changes to any content modification
-if specified with a C<True> value.  Only makes sense in with the
-C<--modify-files> option.
-
-=head2 --edit[=editor]
-
-Indicate whether the patterns found should be fed into an editor for
-inspection and/or changes.  Defaults to C<False>.  Optionally takes the
-name of the editor to be used.
-
-=head2 --extensions=spec
-
-Indicate the extensions of the filenames that should be inspected.
-By default, no limitation on filename extensions will be done.
-
-Extensions can be specified as a comma-separated list, or one of
-the predefined groups, indicated by C<#name>.
-
-=begin code :lang<bash>
-
-# inspect files with extensions used by Raku
-$ rak foo --extensions=#raku
-
-# inspect files with Markdown content
-$ rak foo --extensions=md,markdown
-
-# inspect files without extension
-$ rak foo --extensions=
-
-=end code
-
-Predefined groups are C<#raku>, C<#perl>, C<#c>, C<#c++>, C<#yaml>, <#ruby>
-C<#python>, C<#markdown> and C<#text>.
-
-=head2 --file-separator-null
-
-Indicate to separate filenames by null bytes rather than newlines if the
-C<--files-with-matches> option is specified with a C<True> value.
-
-=head2 --files-from=filename
-
-Indicate the path of the file to read filenames from instead of the
-expansion of paths from any positional arguments.  "-" can be specified
-to read filenames from STDIN.
-
-=head2 --files-with-matches
-
-If specified with a true value, will only produce the filenames of the
-files in which the pattern was found.  Defaults to C<False>.
-
-=head2 --find
-
-If specified with a true value, will B<not> look at the contents of the
-selected paths, but instead consider the selected paths as lines in a
-virtual file.
-
-=head2 --follow-symlinks
-
-Indicate whether symbolic links to directories should be followed.  Defaults
-to C<False>.
-
-=head2 --group-matches
-
-Indicate whether matches of a file should be grouped together by mentioning
-the filename only once (instead of on every line).  Defaults to C<True> if
-C<--human> is (implicitly) set to C<True>, else defaults to C<False>.
-
-=head2 --highlight
-
-Indicate whether the pattern should be highlighted in the line in which
-it was found.  Defaults to C<True> if C<--human> is (implicitly) set to
-C<True>, else defaults to C<False>.
-
-=head2 --help [area-of-interest]
-
-Show argument documentation, possibly extended by giving the area of
-interest, which are:
-
-=item pattern
-=item string
-=item code
-=item input
-=item haystack
-=item result
-=item listing
-=item resource
-=item edit
-=item option
-=item general
-=item philosophy
-=item examples
-
-=head2 --highlight--after[=string]
-
-Indicate the string that should be used at the end of the pattern found in
-a line.  Only makes sense if C<--highlight> is (implicitly) set to C<True>.
-Defaults to the empty string if C<--only-matching> is specified with a
-C<True> value, or to the terminal code to end B<bold> otherwise.
-
-=head2 --highlight--before[=string]
-
-Indicate the string that should be used at the end of the pattern found in
-a line.  Only makes sense if C<--highlight> is (implicitly) set to C<True>.
-Defaults to a space if C<--only-matching> is specified with a C<True> value,
-or to the terminal code to start B<bold> otherwise.
-
-=head2 --human
-
-Indicate that search results should be presented in a human readable
-manner.  This means: filenames shown on a separate line, line numbers
-shown, and highlighting performed.  Defaults to C<True> if C<STDOUT> is
-a TTY (aka, someone is actually watching the search results), otherwise
-defaults to C<False>.
-
-=head2 --json-per-file
-
-Only makes sense if the needle is a C<Callable>.  If specified with a
-C<True> value, indicates that each selected file will be interpreted
-as JSON, and if valid, will then be given to the needle for introspection.
-If the Callable returns a true value, the filename will be shown.  If
-the returned value is a string, that string will also be mentioned.
-For example:
-
-=begin code :lang<bash>
-
-$ rak '{ $_ with .<auth> }' --json-per-file
-
-=end code
-
-=head2 --json-per-line
-
-Only makes sense if the needle is a C<Callable>.  If specified with a
-C<True> value, indicates that each line from the selected files will be
-interpreted as JSON, and if valid, will then be given to the needle for
-introspection.  If the Callable returns a true value, the filename and
-line number will be shown.  If the returned value is a string, that
-string will also be mentioned.  For example:
-
-=begin code :lang<bash>
-
-$ rak '{ $_ with .<auth> }' --json-per-line
-
-=end code
-
-=head2 --known-extensions
-
-Indicate that only files with known extensions (occuring in any of the
-C<#groups>) should be searched.
-
-=head2 --list-custom-options
-
-=begin code :lang<bash>
-
-$ rak --list-custom-options
-fs: --'follow-symlinks'
-im: --ignorecase --ignoremark
-
-=end code
-
-If specified with a true value and as the only option, will list all
-additional options previously saved with C<--save>.
-
-=head2 --list-expanded-options
-
-=begin code :lang<bash>
-
-$ rak --im --list-expanded-options
---ignorecase --ignoremark
-
-=end code
-
-If specified with a true value, will show all actual options being
-activated after having been recursively expanded, and then exit.
-Intended as a debugging aid if you have many custom options defined.
-
-=head2 --modify-files
-
-Only makes sense if the specified pattern is a C<Callable>.  Indicates
-whether the output of the pattern should be applied to the file in which
-it was found.  Defaults to C<False>.
-
-The C<Callable> will be called for each line, giving the line (B<including>
-its line ending).  It is then up to the C<Callable> to return:
-
-=head3 False
-
-Remove this line from the file.  NOTE: this means the exact C<False> value.
-
-=head3 True
-
-Keep this line unchanged the file.  NOTE: this means the exact C<True> value.
-
-=head3 Empty
-
-Keep this line unchanged the file.  NOTE: this means the exact C<Empty> value.
-This is typically returned as the result of a failed condition.  For example,
-only change the string "foo" into "bar" if the line starts with "#":
-
-=begin code :lang<bash>
-
-$ rak '{ .subst("foo","bar") if .starts-with("#") }' --modify-files
-
-=end code
-
-=head3 any other value
-
-Inserts this value in the file instead of the given line.  The value can
-either be a string, or a list of strings.
-
-=head2 --module=foo
-
-Indicate the Raku module that should be loaded.  Only makes sense if the
-pattern is executable code.
-
-=head2 --only-matching
-
-Indicate whether only the matched pattern should be produced, rather than
-the line in which the pattern was found.  Defaults to C<False>.
-
-=head2 --output-file=filename
-
-Indicate the path of the file in which the result of the search should
-be placed.  Defaults to C<STDOUT>.
-
-=head2 --pager
-
-Indicate the name (and arguments) of a pager program to be used to page
-through the generated output.  Defaults to the C<RAK_PAGER> environment
-variable.  If that isn't specified either, then no pager program will be
-run.
-
-=begin code :lang<bash>
-
-$ RAK_PAGER='more -r' rak foo
-
-$ rak foo --pager='less -r'
-
-=end code
-
-=head2 --paragraph-context
-
-Indicate all lines that are part of the same paragraph B<around> any line
-that matches.  Defaults to C<False>.
-
-=head2 --passthru
-
-Indicate whether B<all> lines from source should be shown, even if they
-do B<not> match the pattern.  Highlighting will still be performed, if
-so (implicitely) specified.
-
-=begin code :lang<bash>
-
-# Watch a log file, and highlight a certain IP address.
-$ tail -f ~/access.log | rak --passthru 123.45.67.89
-
-=end code
-
-=head2 --paths-from=filename
-
-Indicate the path of the file to read path specifications from instead of
-from any positional arguments.  "-" can be specified to read path
-specifications from STDIN.
-
-=head2 --pattern=foo
-
-Alternative way to specify the pattern to search for.  If (implicitly)
-specified, will assume the first positional parameter specified is
-actually a path specification, rather than a pattern.  This allows
-the pattern to be searched for to be saved with C<--save>.
-
-=head2 --repository=dir
-
-Indicate the directory that should be searched for Raku module loading.
-Only makes sense if the pattern is executable code.
-
-Note that you can create a familiar shortcut for the most common arguments of
-the C<--repository> option:
-
-=begin code :lang<bash>
-
-$ rak --repository=. --save=I.
-Saved option '--I.' as: --repository='.'
-
-$ rak --repository=lib --save=Ilib
-Saved option '--Ilib' as: --repository=lib
-
-=end code
-
-=head2 --save=shortcut-name
-
-Save all options with the given name in the configuration file
-(C<~/.rak-config.json>), and exit with a message that these options have
-been saved with the given name.
-
-This feature can used to both create shortcuts for specific (long) options,
-or just as a convenient way to combine often used options.
-
-=begin code :lang<bash>
-
-$ rak --ignorecase --ignoremark --save=im
-Saved option '--im' as: --ignorecase --ignoremark
-
-# same as --ignorecase --ignoremark
-$ rak foo --im
-
-$ rak --follow-symlinks --save=fs
-Saved option '--fs' as: --follow-symlinks
-
-$ rak --break='[---]' --save=B
-Saved option '--B' as: --break='[---]'
-
-$ rak --pattern=! --save=P
-Saved option '--P' as: --pattern='!'
-
-$ rak --save=foo
-Removed configuration for 'foo'
-
-=end code
-
-Any options can be accessed as if it is a standard option.  Please note
-that no validity checking on the options is being performed at the moment
-of saving, as validity may depend on other options having been specified.
-
-One option can be marked as requiring a value to be specified (with "!")
-or have a default value (with "[default-value]").
-
-To remove a saved set of named arguments, use C<--save> as the only
-named argument.
-
-=head2 --show-blame
-
-Indicate whether to show C<git blame> information for matching lines
-if possible, instead of just the line.  Defaults to C<False>.
-
-=head2 --show-filename
-
-Indicate whether filenames should be shown.  Defaults to C<True> if
-C<--human> is (implicitly) set to C<True>, else defaults to C<False>.
-
-=head2 --show-line-number
-
-Indicate whether line numbers should be shown.  Defaults to C<True> if
-C<--human> is (implicitly) set to C<True> and <-h> is B<not> set to C<True>,
-else defaults to C<False>.
-
-=head2 --smartcase
-
-An intelligent version of C<--ignorecase>.  If the pattern does B<not>
-contain any uppercase characters, it will act as if C<--ignorecase> was
-specified.  Otherwise it is ignored.
-
-=head2 --summary-if-larger-than=N
-
-Indicate the maximum size a line may have before it will be summarized.
-Defaults to C<160> if C<STDOUT> is a TTY (aka, someone is actually watching
-the search results), otherwise defaults to C<Inf> effectively (indicating
-no summarization will ever occur).
-
-=item --type[=words|starts-with|ends-with|contains]
-
-Only makes sense if the pattern is a string.  With C<words> specified,
-will look for pattern as a word in a line, with C<starts-with> will
-look for the pattern at the beginning of a line, with C<ends-with>
-will look for the pattern at the end of a line, with C<contains> will
-look for the pattern at any position in a line.
-
-=head2 --trim
-
-Indicate whether lines that have the pattern, should have any whitespace
-at the start and/or end of the line removed.  Defaults to C<True> if no
-context for lines was specified, else defaults to C<False>.
-
-=head2 --version
-
-If the only argument, shows the name and version of the script, and the
-system it is running on.
-
-=head2 --vimgrep
-
-If specified with a true value, will output search results in the format
-"filename:linenumber:column:line".  This allows integration with the
-C<:grep> action in vim-like editors.
-
-=head1 AUTHOR
-
-Elizabeth Mattijsen <liz@raku.rocks>
-
-Source can be located at: https://github.com/lizmat/App-Rak .
-Comments and Pull Requests are welcome.
-
-If you like this module, or what I’m doing more generally, committing to a
-L<small sponsorship|https://github.com/sponsors/lizmat/>  would mean a great
-deal to me!
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright 2022 Elizabeth Mattijsen
-
-This library is free software; you can redistribute it and/or modify it under
-the Artistic License 2.0.
-
-=end pod
 
 # vim: expandtab shiftwidth=4

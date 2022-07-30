@@ -16,7 +16,7 @@
     "Git::Blame::File:ver<0.0.2>:auth<zef:lizmat>",
     "JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>"
   ],
-  "description": "a CLI for searching strings in files and more",
+  "description": "21st century grep / find / ack / ag / rg on steroids",
   "license": "Artistic-2.0",
   "name": "App::Rak",
   "perl": "6.d",
@@ -46,9 +46,11 @@
     "SEARCH",
     "TEXT",
     "EDITOR",
-    "FIND"
+    "FIND",
+    "JSON",
+    "BLAME"
   ],
   "test-depends": [
   ],
-  "version": "0.0.33"
+  "version": "0.0.34"
 }
