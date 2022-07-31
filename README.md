@@ -39,6 +39,8 @@ The pattern to search for. This can either be a string, or a [Raku regular expre
 
 Can also be specified with the `--pattern` option, in which case **all** the positional arguments are considered to be a path specification.
 
+If the pattern is a `Callable`, then the dynamic variable `$*IO` will contain the `IO::Path` object of the file being processed. Note that pattern `Callable`s will be called in a thread **unsafe** manner.
+
 path(s)
 -------
 
@@ -59,8 +61,10 @@ The Raku Programming Language has a number of unique features that can be used w
 
   * LAST - code to run when searching is done
 
+These phasers will be called in a thread-safe manner.
+
 ```bash
-rak '{ FIRST state $seen = 0; NEXT $seen++; LAST say "$seen files"; .contains("pattern")}'
+$ rak '{ FIRST state $seen = 0; NEXT $seen++; LAST say "$seen files"; .contains("pattern")}'
 ```
 
 Any other phasers that do not require special attention by `App::Rak` are also supported in any code specified.
@@ -103,7 +107,7 @@ Indicate the number of lines that should be shown **before** any line that match
 --blame-per-line
 ----------------
 
-Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each line from the selected files will be provided as [`Git::Blame::Line`](https://raku.land/zef:lizmat/Git::Blame::File#accessors-on-gitblameline) objects if `git blame` can be performed on the a selected file. If that is not possible, then the selected file will be ignored.
+Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each line from the selected files will be provided as [`Git::Blame::Line`](https://raku.land/zef:lizmat/Git::Blame::File#accessors-on-gitblameline) objects if `git blame` can be performed on the a selected file. If that is not possible, then the selected file will be ignored.
 
 If <git blame> information can be obtained, then the associated `Git::Blame::Line` object will be presented to the pattern `Callable`. If the Callable returns a true value, then the short representation of the `git blame` information will be shown. If the returned value is a string, then that string will be shown.
 
@@ -124,12 +128,12 @@ Indicate the number of lines that should be shown **around** any line that match
 --count-only
 ------------
 
-Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:files-with-matches` option is also specified with a `True` value, will also list the file names with their respective counts.
+Flag. Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:files-with-matches` option is also specified with a `True` value, will also list the file names with their respective counts.
 
 --dryrun
 --------
 
-Indicate to **not** actually make any changes to any content modification if specified with a `True` value. Only makes sense in with the `--modify-files` option.
+Flag. Indicate to **not** actually make any changes to any content modification if specified with a `True` value. Only makes sense together with the `--modify-files` option.
 
 --edit[=editor]
 ---------------
@@ -159,7 +163,7 @@ Predefined groups are `#raku`, `#perl`, `#c`, `#c++`, `#yaml`, <#ruby> `#python`
 --file-separator-null
 ---------------------
 
-Indicate to separate filenames by null bytes rather than newlines if the `--files-with-matches` option is specified with a `True` value.
+Flag. Indicate to separate filenames by null bytes rather than newlines if the `--files-with-matches` option is specified with a `True` value.
 
 --files-from=filename
 ---------------------
@@ -169,27 +173,27 @@ Indicate the path of the file to read filenames from instead of the expansion of
 --files-with-matches
 --------------------
 
-If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
+Flag. If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
 
 --find
 ------
 
-If specified with a true value, will **not** look at the contents of the selected paths, but instead consider the selected paths as lines in a virtual file.
+Flag. If specified with a true value, will **not** look at the contents of the selected paths, but instead consider the selected paths as lines in a virtual file.
 
 --follow-symlinks
 -----------------
 
-Indicate whether symbolic links to directories should be followed. Defaults to `False`.
+Flag. Indicate whether symbolic links to directories should be followed. Defaults to `False`.
 
 --group-matches
 ---------------
 
-Indicate whether matches of a file should be grouped together by mentioning the filename only once (instead of on every line). Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
+Flag. Indicate whether matches of a file should be grouped together by mentioning the filename only once (instead of on every line). Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
 
 --highlight
 -----------
 
-Indicate whether the pattern should be highlighted in the line in which it was found. Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
+Flag. Indicate whether the pattern should be highlighted in the line in which it was found. Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
 
 --help [area-of-interest]
 -------------------------
@@ -235,12 +239,12 @@ Indicate the string that should be used at the end of the pattern found in a lin
 --human
 -------
 
-Indicate that search results should be presented in a human readable manner. This means: filenames shown on a separate line, line numbers shown, and highlighting performed. Defaults to `True` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `False`.
+Flag. Indicate that search results should be presented in a human readable manner. This means: filenames shown on a separate line, line numbers shown, and highlighting performed. Defaults to `True` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `False`.
 
 --json-per-file
 ---------------
 
-Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each selected file will be interpreted as JSON, and if valid, will then be given to the pattern for introspection. If the Callable returns a true value, the filename will be shown. If the returned value is a string, that string will also be mentioned. For example:
+Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each selected file will be interpreted as JSON, and if valid, will then be given to the pattern for introspection. If the Callable returns a true value, the filename will be shown. If the returned value is a string, that string will also be mentioned. For example:
 
 ```bash
 $ rak '{ $_ with .<auth> }' --json-per-file
@@ -249,7 +253,7 @@ $ rak '{ $_ with .<auth> }' --json-per-file
 --json-per-line
 ---------------
 
-Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each line from the selected files will be interpreted as JSON, and if valid, will then be given to the pattern for introspection. If the Callable returns a true value, the filename and line number will be shown. If the returned value is a string, that string will also be mentioned. For example:
+Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each line from the selected files will be interpreted as JSON, and if valid, will then be given to the pattern for introspection. If the Callable returns a true value, the filename and line number will be shown. If the returned value is a string, that string will also be mentioned. For example:
 
 ```bash
 $ rak '{ $_ with .<auth> }' --json-per-line
@@ -258,7 +262,7 @@ $ rak '{ $_ with .<auth> }' --json-per-line
 --known-extensions
 ------------------
 
-Indicate that only files with known extensions (occuring in any of the `#groups`) should be searched.
+Flag. Indicate that only files with known extensions (occuring in any of the `#groups`) should be searched.
 
 --list-custom-options
 ---------------------
@@ -269,7 +273,7 @@ fs: --'follow-symlinks'
 im: --ignorecase --ignoremark
 ```
 
-If specified with a true value and as the only option, will list all additional options previously saved with `--save`.
+Flag. If specified with a true value and as the only option, will list all additional options previously saved with `--save`.
 
 --list-expanded-options
 -----------------------
@@ -284,7 +288,7 @@ If specified with a true value, will show all actual options being activated aft
 --modify-files
 --------------
 
-Only makes sense if the specified pattern is a `Callable`. Indicates whether the output of the pattern should be applied to the file in which it was found. Defaults to `False`.
+Flag. Only makes sense if the specified pattern is a `Callable`. Indicates whether the output of the pattern should be applied to the file in which it was found. Defaults to `False`.
 
 The `Callable` will be called for each line, giving the line (**including** its line ending). It is then up to the `Callable` to return:
 
@@ -316,7 +320,7 @@ Indicate the Raku module that should be loaded. Only makes sense if the pattern 
 --only-matching
 ---------------
 
-Indicate whether only the matched pattern should be produced, rather than the line in which the pattern was found. Defaults to `False`.
+Flag. Indicate whether only the matched pattern should be produced, rather than the line in which the pattern was found. Defaults to `False`.
 
 --output-file=filename
 ----------------------
@@ -337,12 +341,12 @@ $ rak foo --pager='less -r'
 --paragraph-context
 -------------------
 
-Indicate all lines that are part of the same paragraph **around** any line that matches. Defaults to `False`.
+Flag. Indicate all lines that are part of the same paragraph **around** any line that matches. Defaults to `False`.
 
 --passthru
 ----------
 
-Indicate whether **all** lines from source should be shown, even if they do **not** match the pattern. Highlighting will still be performed, if so (implicitely) specified.
+Flag. Indicate whether **all** lines from source should be shown, even if they do **not** match the pattern. Highlighting will still be performed, if so (implicitely) specified.
 
 ```bash
 # Watch a log file, and highlight a certain IP address.
@@ -410,22 +414,22 @@ To remove a saved set of options, use `--save` as the only option.
 --show-blame
 ------------
 
-Indicate whether to show `git blame` information for matching lines if possible, instead of just the line. Defaults to `False`.
+Flag. Indicate whether to show `git blame` information for matching lines if possible, instead of just the line. Defaults to `False`.
 
 --show-filename
 ---------------
 
-Indicate whether filenames should be shown. Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
+Flag. Indicate whether filenames should be shown. Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
 
 --show-line-number
 ------------------
 
-Indicate whether line numbers should be shown. Defaults to `True` if `--human` is (implicitly) set to `True` and <-h> is **not** set to `True`, else defaults to `False`.
+Flag. Indicate whether line numbers should be shown. Defaults to `True` if `--human` is (implicitly) set to `True` and <-h> is **not** set to `True`, else defaults to `False`.
 
 --smartcase
 -----------
 
-An intelligent version of `--ignorecase`. If the pattern does **not** contain any uppercase characters, it will act as if `--ignorecase` was specified. Otherwise it is ignored.
+Flag. An intelligent version of `--ignorecase`. If the pattern does **not** contain any uppercase characters, it will act as if `--ignorecase` was specified. Otherwise it is ignored.
 
 --summary-if-larger-than=N
 --------------------------
@@ -439,17 +443,17 @@ Only makes sense if the pattern is a string. With `words` specified, will look f
 --trim
 ------
 
-Indicate whether lines that have the pattern, should have any whitespace at the start and/or end of the line removed. Defaults to `True` if no context for lines was specified, else defaults to `False`.
+Flag. Indicate whether lines that have the pattern, should have any whitespace at the start and/or end of the line removed. Defaults to `True` if no context for lines was specified, else defaults to `False`.
 
 --version
 ---------
 
-If the only argument, shows the name and version of the script, and the system it is running on.
+Flag. If the only argument, shows the name and version of the script, and the system it is running on.
 
 --vimgrep
 ---------
 
-If specified with a true value, will output search results in the format "filename:linenumber:column:line". This allows integration with the `:grep` action in vim-like editors.
+Flag. If specified with a true value, will output search results in the format "filename:linenumber:column:line". This allows integration with the `:grep` action in vim-like editors.
 
 AUTHOR
 ======

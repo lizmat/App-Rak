@@ -13,10 +13,10 @@ as patterns to search, which is now possible.
 I also always get confused with the myriad of options that you
 can specify with programs such as "grep", "ack" or "ag".  And
 "rak" is no different in that sense.  But each option only has
-a single "long" spelling (exceptions are -v / --version and
--h / --help), so that should reduce the cognitive load a bit
-(although maybe not the typing part).  Fortunately, you can
-create your *own* shortcuts of often used options with --save!
+a single "long" spelling, so that should reduce the cognitive
+load a bit (although maybe not the typing part).  Fortunately,
+you can create your *own* shortcuts of often used options with
+--save!
 
 The name "rak" developed from "rack", as in: Raku version of
 "ack".  I decided to drop the "c" to make it more Raku like.

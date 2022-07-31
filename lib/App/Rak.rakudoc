@@ -47,6 +47,10 @@ or a a result of L<C<Whatever> currying|https://docs.raku.org/type/Whatever>
 Can also be specified with the C<--pattern> option, in which case B<all>
 the positional arguments are considered to be a path specification.
 
+If the pattern is a C<Callable>, then the dynamic variable C<$*IO> will
+contain the C<IO::Path> object of the file being processed.  Note that
+pattern C<Callable>s will be called in a thread B<unsafe> manner.
+
 =head2 path(s)
 
 Optional.  Either indicates the path of the directory (and its
@@ -72,9 +76,11 @@ L<loop phasers|https://docs.raku.org/language/phasers#FIRST>:
 =item NEXT - code to run when searching a file is done
 =item LAST - code to run when searching is done
 
+These phasers will be called in a thread-safe manner.
+
 =begin code :lang<bash>
 
-rak '{ FIRST state $seen = 0; NEXT $seen++; LAST say "$seen files"; .contains("pattern")}'
+$ rak '{ FIRST state $seen = 0; NEXT $seen++; LAST say "$seen files"; .contains("pattern")}'
 
 =end code
 
@@ -122,7 +128,7 @@ matches.  Defaults to B<0>.  Will be overridden by a C<--context> argument.
 
 =head2 --blame-per-line
 
-Only makes sense if the pattern is a C<Callable>.  If specified with a
+Flag.  Only makes sense if the pattern is a C<Callable>.  If specified with a
 C<True> value, indicates that each line from the selected files will be
 provided as L<C<Git::Blame::Line>|https://raku.land/zef:lizmat/Git::Blame::File#accessors-on-gitblameline>
 objects if C<git blame> can be performed on the a selected file.  If that
@@ -155,16 +161,17 @@ C<--before-context> arguments.
 
 =head2 --count-only
 
-Indicate whether just the number of lines with matches should be calculated.
-When specified with a C<True> value, will show a "N matches in M files"
-by default, and if the C<:files-with-matches> option is also specified with
-a C<True> value, will also list the file names with their respective counts.
+Flag.  Indicate whether just the number of lines with matches should be
+calculated.  When specified with a C<True> value, will show a "N matches
+in M files" by default, and if the C<:files-with-matches> option is also
+specified with a C<True> value, will also list the file names with their
+respective counts.
 
 =head2 --dryrun
 
-Indicate to B<not> actually make any changes to any content modification
-if specified with a C<True> value.  Only makes sense in with the
-C<--modify-files> option.
+Flag.  Indicate to B<not> actually make any changes to any content
+modification if specified with a C<True> value.  Only makes sense together
+with the C<--modify-files> option.
 
 =head2 --edit[=editor]
 
@@ -198,8 +205,8 @@ C<#python>, C<#markdown> and C<#text>.
 
 =head2 --file-separator-null
 
-Indicate to separate filenames by null bytes rather than newlines if the
-C<--files-with-matches> option is specified with a C<True> value.
+Flag.  Indicate to separate filenames by null bytes rather than newlines
+if the C<--files-with-matches> option is specified with a C<True> value.
 
 =head2 --files-from=filename
 
@@ -209,31 +216,32 @@ to read filenames from STDIN.
 
 =head2 --files-with-matches
 
-If specified with a true value, will only produce the filenames of the
-files in which the pattern was found.  Defaults to C<False>.
+Flag.  If specified with a true value, will only produce the filenames of
+the files in which the pattern was found.  Defaults to C<False>.
 
 =head2 --find
 
-If specified with a true value, will B<not> look at the contents of the
-selected paths, but instead consider the selected paths as lines in a
+Flag.  If specified with a true value, will B<not> look at the contents of
+the selected paths, but instead consider the selected paths as lines in a
 virtual file.
 
 =head2 --follow-symlinks
 
-Indicate whether symbolic links to directories should be followed.  Defaults
-to C<False>.
+Flag.  Indicate whether symbolic links to directories should be followed.
+Defaults to C<False>.
 
 =head2 --group-matches
 
-Indicate whether matches of a file should be grouped together by mentioning
-the filename only once (instead of on every line).  Defaults to C<True> if
-C<--human> is (implicitly) set to C<True>, else defaults to C<False>.
+Flag.  Indicate whether matches of a file should be grouped together by
+mentioning the filename only once (instead of on every line).  Defaults
+to C<True> if C<--human> is (implicitly) set to C<True>, else defaults
+to C<False>.
 
 =head2 --highlight
 
-Indicate whether the pattern should be highlighted in the line in which
-it was found.  Defaults to C<True> if C<--human> is (implicitly) set to
-C<True>, else defaults to C<False>.
+Flag.  Indicate whether the pattern should be highlighted in the line in
+which it was found.  Defaults to C<True> if C<--human> is (implicitly) set
+to C<True>, else defaults to C<False>.
 
 =head2 --help [area-of-interest]
 
@@ -270,7 +278,7 @@ or to the terminal code to start B<bold> otherwise.
 
 =head2 --human
 
-Indicate that search results should be presented in a human readable
+Flag.  Indicate that search results should be presented in a human readable
 manner.  This means: filenames shown on a separate line, line numbers
 shown, and highlighting performed.  Defaults to C<True> if C<STDOUT> is
 a TTY (aka, someone is actually watching the search results), otherwise
@@ -278,8 +286,8 @@ defaults to C<False>.
 
 =head2 --json-per-file
 
-Only makes sense if the pattern is a C<Callable>.  If specified with a
-C<True> value, indicates that each selected file will be interpreted
+Flag.  Only makes sense if the pattern is a C<Callable>.  If specified with
+a C<True> value, indicates that each selected file will be interpreted
 as JSON, and if valid, will then be given to the pattern for introspection.
 If the Callable returns a true value, the filename will be shown.  If
 the returned value is a string, that string will also be mentioned.
@@ -293,8 +301,8 @@ $ rak '{ $_ with .<auth> }' --json-per-file
 
 =head2 --json-per-line
 
-Only makes sense if the pattern is a C<Callable>.  If specified with a
-C<True> value, indicates that each line from the selected files will be
+Flag.  Only makes sense if the pattern is a C<Callable>.  If specified with
+a C<True> value, indicates that each line from the selected files will be
 interpreted as JSON, and if valid, will then be given to the pattern for
 introspection.  If the Callable returns a true value, the filename and
 line number will be shown.  If the returned value is a string, that
@@ -308,8 +316,8 @@ $ rak '{ $_ with .<auth> }' --json-per-line
 
 =head2 --known-extensions
 
-Indicate that only files with known extensions (occuring in any of the
-C<#groups>) should be searched.
+Flag.  Indicate that only files with known extensions (occuring in any of
+the C<#groups>) should be searched.
 
 =head2 --list-custom-options
 
@@ -321,7 +329,7 @@ im: --ignorecase --ignoremark
 
 =end code
 
-If specified with a true value and as the only option, will list all
+Flag.  If specified with a true value and as the only option, will list all
 additional options previously saved with C<--save>.
 
 =head2 --list-expanded-options
@@ -339,9 +347,9 @@ Intended as a debugging aid if you have many custom options defined.
 
 =head2 --modify-files
 
-Only makes sense if the specified pattern is a C<Callable>.  Indicates
-whether the output of the pattern should be applied to the file in which
-it was found.  Defaults to C<False>.
+Flag.  Only makes sense if the specified pattern is a C<Callable>.
+Indicates whether the output of the pattern should be applied to the file
+in which it was found.  Defaults to C<False>.
 
 The C<Callable> will be called for each line, giving the line (B<including>
 its line ending).  It is then up to the C<Callable> to return:
@@ -378,8 +386,8 @@ pattern is executable code.
 
 =head2 --only-matching
 
-Indicate whether only the matched pattern should be produced, rather than
-the line in which the pattern was found.  Defaults to C<False>.
+Flag.  Indicate whether only the matched pattern should be produced, rather
+than the line in which the pattern was found.  Defaults to C<False>.
 
 =head2 --output-file=filename
 
@@ -403,13 +411,13 @@ $ rak foo --pager='less -r'
 
 =head2 --paragraph-context
 
-Indicate all lines that are part of the same paragraph B<around> any line
-that matches.  Defaults to C<False>.
+Flag.  Indicate all lines that are part of the same paragraph B<around>
+any line that matches.  Defaults to C<False>.
 
 =head2 --passthru
 
-Indicate whether B<all> lines from source should be shown, even if they
-do B<not> match the pattern.  Highlighting will still be performed, if
+Flag.  Indicate whether B<all> lines from source should be shown, even if
+they do B<not> match the pattern.  Highlighting will still be performed, if
 so (implicitely) specified.
 
 =begin code :lang<bash>
@@ -492,25 +500,25 @@ To remove a saved set of options, use C<--save> as the only option.
 
 =head2 --show-blame
 
-Indicate whether to show C<git blame> information for matching lines
+Flag.  Indicate whether to show C<git blame> information for matching lines
 if possible, instead of just the line.  Defaults to C<False>.
 
 =head2 --show-filename
 
-Indicate whether filenames should be shown.  Defaults to C<True> if
+Flag.  Indicate whether filenames should be shown.  Defaults to C<True> if
 C<--human> is (implicitly) set to C<True>, else defaults to C<False>.
 
 =head2 --show-line-number
 
-Indicate whether line numbers should be shown.  Defaults to C<True> if
+Flag.  Indicate whether line numbers should be shown.  Defaults to C<True> if
 C<--human> is (implicitly) set to C<True> and <-h> is B<not> set to C<True>,
 else defaults to C<False>.
 
 =head2 --smartcase
 
-An intelligent version of C<--ignorecase>.  If the pattern does B<not>
-contain any uppercase characters, it will act as if C<--ignorecase> was
-specified.  Otherwise it is ignored.
+Flag.  An intelligent version of C<--ignorecase>.  If the pattern does
+B<not> contain any uppercase characters, it will act as if C<--ignorecase>
+was specified.  Otherwise it is ignored.
 
 =head2 --summary-if-larger-than=N
 
@@ -529,19 +537,19 @@ look for the pattern at any position in a line.
 
 =head2 --trim
 
-Indicate whether lines that have the pattern, should have any whitespace
-at the start and/or end of the line removed.  Defaults to C<True> if no
-context for lines was specified, else defaults to C<False>.
+Flag.  Indicate whether lines that have the pattern, should have any
+whitespace at the start and/or end of the line removed.  Defaults to
+C<True> if no context for lines was specified, else defaults to C<False>.
 
 =head2 --version
 
-If the only argument, shows the name and version of the script, and the
-system it is running on.
+Flag.  If the only argument, shows the name and version of the script, and
+the system it is running on.
 
 =head2 --vimgrep
 
-If specified with a true value, will output search results in the format
-"filename:linenumber:column:line".  This allows integration with the
+Flag.  If specified with a true value, will output search results in the
+format "filename:linenumber:column:line".  This allows integration with the
 C<:grep> action in vim-like editors.
 
 =head1 AUTHOR

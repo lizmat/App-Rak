@@ -2,6 +2,12 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.35  2022-07-31T22:21:23+02:00
+    - Bump dependency on Files::Containing to get $*IO support and
+      support for running FIRST / NEXT / LAST phasers
+    - Add support for $*IO in Callable needles
+    - Fix various small bugs
+
 0.0.34  2022-07-30T12:35:53+02:00
     - Split off documentation into separate .rakudoc file
     - Added .rakudoc and .pod6 to the raku extensions list

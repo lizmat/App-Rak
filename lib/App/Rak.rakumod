@@ -1,6 +1,6 @@
 # The modules that we need here, with their full identities
 use highlighter:ver<0.0.12>:auth<zef:lizmat>;
-use Files::Containing:ver<0.0.13>:auth<zef:lizmat>;
+use Files::Containing:ver<0.0.15>:auth<zef:lizmat>;
 use as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use Git::Blame::File:ver<0.0.2>:auth<zef:lizmat>;
@@ -206,6 +206,18 @@ my sub codify($needle, %_?) {
           !! $needle
 }
 
+# Check the given Callable for the named phaser, and run it if there is one
+my sub run-phaser(&code, str $name) {
+    if Block.ACCEPTS(&code) && &code.callable_for_phaser($name) -> &phaser {
+        phaser();
+    }
+}
+
+# Return the NEXT phaser for the given Callable if any
+my sub next-phaser(&code) {
+    Block.ACCEPTS(&code) && &code.callable_for_phaser('NEXT')
+}
+
 # Change list of conditions into a Callable for :file
 my sub codify-extensions(@extensions) {
     -> $_ { extension($_) (elem) @extensions }
@@ -241,6 +253,9 @@ my proto sub MAIN(|) is export {*}
 # Make sure we can do --help and --version
 use CLI::Version:ver<0.0.4>:auth<zef:lizmat>  $?DISTRIBUTION, &MAIN, 'long';
 use CLI::Help:ver<0.0.3>:auth<zef:lizmat> %?RESOURCES, &MAIN, &HELP, 'long';
+
+# Subroutine to actually output results
+my &sayer;
 
 # Main handler
 my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
@@ -341,15 +356,24 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     }
 
     # Set up pager if necessary
+    my $pager;
     if %n<pager>:delete // %*ENV<RAK_PAGER> -> \pager {
         pager =:= True
           ?? meh("Must specify a specific pager to use: --pager=foo")
           !! ($*OUT = (run pager.words, :in).in);
+        $pager = True;
     }
 
     # Start looking at actual actionable options
     my $needle = %n<pattern>:delete // @specs.shift;
     meh "Must at least specify a pattern" without $needle;
+
+    if %n<say>:delete -> $say {
+        &sayer = Callable.ACCEPTS($say) ?? $say !! codify($say);
+    }
+    else {
+        &sayer = &say;
+    }
 
     # Pre-process non literal string needles
     $needle = codify($needle, %n);
@@ -378,7 +402,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
         )($needle, %n);
 
         # Done
-        $*OUT.close;  # in case we're running a pager
+        $*OUT.close if $pager;
         exit;
     }
 
@@ -465,7 +489,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
                       ?? &count-only
                       !! (%n<files-with-matches>:delete)
                         ?? &files-only
-                        !! &want-lines  # XXX
+                        !! &want-lines;
         }
 
         # Needle is either string or regex
@@ -477,13 +501,9 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
                 !! &want-lines
         }
         handle($needle, $seq.sort(*.fc), %n);
-        if $is-simple-Callable {
-            $_() with $needle.callable_for_phaser('LAST');
-        }
     }
 
-    # In case we're running a pager
-    $*OUT.close;
+    $*OUT.close if $pager;
 }
 
 # Edit / Inspect some files
@@ -525,15 +545,16 @@ my sub modify-files(&needle, @paths, %_ --> Nil) {
     my int $nr-changed;
     my int $nr-removed;
 
-    $_() with &needle.callable_for_phaser('FIRST');
-    my $NEXT := &needle.callable_for_phaser('NEXT');
+    run-phaser(&needle, 'FIRST');
+    my $NEXT := next-phaser(&needle);
     @paths.&hyperize($batch, $degree).map: -> $path {
         my str @lines;
         my int $lines-changed;
         my int $lines-removed;
 
         my $io := $path.IO;
-        for $io.slurp.lines(:!chomp) {
+        for $io.slurp.lines(:!chomp) {  # MUST slurp to prevent race condition
+            my $*IO := $io;
             my $result := needle($_);
             if $result =:= True || $result =:= Empty {
                 @lines.push: $_;
@@ -565,6 +586,7 @@ my sub modify-files(&needle, @paths, %_ --> Nil) {
         }
         $NEXT() if $NEXT;
     }
+    run-phaser(&needle, 'LAST');
 
     my $nr-files = @files-changed.elems;
     my $fb = "Processed @paths.elems() file&s(@paths.elems)";
@@ -588,7 +610,7 @@ my sub modify-files(&needle, @paths, %_ --> Nil) {
         $fb ~= "\n*** no changes where made because of --dryrun ***";
     }
 
-    say $fb;
+    sayer $fb;
 }
 
 # Produce JSON per file to check
@@ -598,12 +620,13 @@ my sub produce-json-per-file(&needle, @paths, %_ --> Nil) {
     my $show-filename := %_<show-filename>:delete // True;
     meh-if-unexpected(%_);
 
-    $_() with &needle.callable_for_phaser('FIRST');
-    my $NEXT := &needle.callable_for_phaser('NEXT');
+    run-phaser(&needle, 'FIRSTT');
+    my $NEXT := next-phaser(&needle);
     for @paths.&hyperize($batch, $degree).map: {
         my $io := .IO;
 
         if try from-json $io.slurp -> $json {
+            my $*IO := $io;
             if needle($json) -> \result {
                 my $filename := $io.relative;
                 result =:= True
@@ -614,9 +637,10 @@ my sub produce-json-per-file(&needle, @paths, %_ --> Nil) {
             }
         }
     } {
-        say $_;
+        sayer $_;
         $NEXT() if $NEXT;
     }
+    run-phaser(&needle, 'LAST');
 }
 
 # Produce JSON per line to check
@@ -625,8 +649,8 @@ my sub produce-json-per-line(&needle, @paths, %_ --> Nil) {
     my $degree        := %_<degree>:delete;
     my $show-filename := %_<show-filename>:delete // True;
 
-    $_() with &needle.callable_for_phaser('FIRST');
-    my $NEXT := &needle.callable_for_phaser('NEXT');
+    run-phaser(&needle, 'FIRST');
+    my $NEXT := next-phaser(&needle);
     if %_<count-only>:delete {
         meh-if-unexpected(%_);
         my int $total;
@@ -637,6 +661,7 @@ my sub produce-json-per-line(&needle, @paths, %_ --> Nil) {
 
             for $io.lines -> $line {
                 if try from-json $line -> $json {
+                    my $*IO := $io;
                     ++$found if needle($json);
                 }
             }
@@ -644,10 +669,10 @@ my sub produce-json-per-line(&needle, @paths, %_ --> Nil) {
             $total += $found;
             "$io.relative(): $found" if $show-filename;
         } {
-            say $_;
+            sayer $_;
             $NEXT() if $NEXT;
         }
-        say $total;
+        sayer $total;
     }
 
     else {
@@ -661,6 +686,7 @@ my sub produce-json-per-line(&needle, @paths, %_ --> Nil) {
             $io.lines.map(-> $line {
                 ++$line-number;
                 if try from-json $line -> $json {
+                    my $*IO := $io;
                     if needle($json) -> \result {
                         my $filename := $io.relative;
                         my $mess     := result =:= True ?? '' !! ': ' ~ result;
@@ -670,15 +696,16 @@ my sub produce-json-per-line(&needle, @paths, %_ --> Nil) {
                             !! "$filename$mess"
                           !! $show-line-number
                             ?? "$line-number$mess"
-                            !! $mess
+                            !! $mess.substr(2)
                     }
                 }
-            }).Slip
-        } {
-            say $_;
+            }).List
+        } -> @finds {
+            sayer $_ for @finds;
             $NEXT() if $NEXT;
         }
     }
+    run-phaser(&needle, 'LAST');
 }
 
 # Produce Git::Blame::Line per line to check
@@ -688,20 +715,22 @@ my sub produce-blame-per-line(&needle, @paths, %_ --> Nil) {
     my $show-filename := %_<show-filename>:delete // True;
     meh-if-unexpected(%_);
 
-    $_() with &needle.callable_for_phaser('FIRST');
-    my $NEXT := &needle.callable_for_phaser('NEXT');
+    run-phaser(&needle, 'FIRST');
+    my $NEXT := next-phaser(&needle);
     for @paths.&hyperize($batch, $degree).map: -> $filename {
         if try Git::Blame::File.new($filename).lines -> @lines {
+            my $*IO := $filename.IO;
             @lines.map(-> $blamer {
                 if needle($blamer) -> \result {
                     result =:= True ?? $blamer.Str !! result
                 }
-            }).Slip
+            }).List
         }
-    } {
-        say $_;
+    } -> @finds {
+        sayer $_;
         $NEXT() if $NEXT;
     }
+    run-phaser(&needle, 'LAST');
 }
 
 # Only count matches
@@ -713,17 +742,18 @@ my sub count-only($needle, @paths, %_ --> Nil) {
 
     my int $files;
     my int $matches;
-    my $NEXT := do if $is-simple-Callable {
+    my $NEXT := do if $is-simple-Callable && Block.ACCEPTS($needle) {
         $_() with $needle.callable_for_phaser('FIRST');
         $needle.callable_for_phaser('NEXT')
     }
     for files-containing $needle, @paths, :count-only, |%additional {
         ++$files;
         $matches += .value;
-        say .key.relative ~ ': ' ~ .value if $files-with-matches;
+        sayer .key.relative ~ ': ' ~ .value if $files-with-matches;
         $NEXT() if $NEXT;
     }
-    say "$matches matches in $files files";
+    run-phaser($needle, 'LAST');
+    sayer "$matches matches in $files files";
 }
 
 # Only show filenames
@@ -733,18 +763,8 @@ my sub files-only($needle, @paths, %_ --> Nil) {
       :ignorecase, :ignoremark, :invert-match, :type, :batch, :degree;
     meh-if-unexpected(%_);
 
-    if $is-simple-Callable {
-        $_() with $needle.callable_for_phaser('FIRST');
-        my $NEXT := $needle.callable_for_phaser('NEXT');
-        for files-containing $needle, @paths, :files-only, |%additional {
-            print .relative ~ $nl;
-            $NEXT() if $NEXT;
-        }
-    }
-    else {
-        print .relative ~ $nl
-          for files-containing $needle, @paths, :files-only, |%additional;
-    }
+    print .relative ~ $nl
+      for files-containing $needle, @paths, :files-only, |%additional;
 }
 
 # Show lines with highlighting and context
@@ -846,22 +866,18 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
     $show-filename  = False if $show-header;
     my int $nr-files;
 
-    my $NEXT := do if $is-simple-Callable {
-        $_() with $needle.callable_for_phaser('FIRST');
-        $needle.callable_for_phaser('NEXT')
-    }
     for $seq -> (:key($io), :value(@matches)) {
-        say $break if $break && $nr-files++;
+        sayer $break if $break && $nr-files++;
 
         my str $filename = $io.relative;
         my @blames;
         if $show-blame && Git::Blame::File($io) -> $blamer {
             @blames := $blamer.lines;
         }
-        say $filename if $show-header;
+        sayer $filename if $show-header;
 
         if @blames {
-            say show-line(@blames[.key - 1].Str)
+            sayer show-line(@blames[.key - 1].Str)
               for add-before-after($io, @matches, $before, $after);
         }
         elsif $with-context {
@@ -872,37 +888,36 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
             if $show-line-number {
                 for @selected {
                     my str $delimiter = .value.delimiter;
-                    say ($show-filename ?? $filename ~ $delimiter !! '')
+                    sayer ($show-filename ?? $filename ~ $delimiter !! '')
                       ~ sprintf($format, .key)
                       ~ $delimiter
                       ~ show-line(.value);
                 }
             }
             elsif $show-filename {
-                say $filename ~ .value.delimiter ~ show-line(.value)
+                sayer $filename ~ .value.delimiter ~ show-line(.value)
                   for @selected;
             }
             else {
-                say show-line(.value) for @selected;
+                sayer show-line(.value) for @selected;
             }
         }
         else {
             if $show-line-number {
                 my $format := '%' ~ (@matches.tail.key.chars) ~ 'd:';
                 for @matches {
-                    say ($show-filename ?? $filename ~ ':' !! '')
+                    sayer ($show-filename ?? $filename ~ ':' !! '')
                       ~ sprintf($format, .key)
                       ~ show-line(.value);
                 }
             }
             elsif $show-filename {
-                say $filename ~ ':' ~ show-line(.value) for @matches;
+                sayer $filename ~ ':' ~ show-line(.value) for @matches;
             }
             else {
-                say show-line(.value) for @matches;
+                sayer show-line(.value) for @matches;
             }
         }
-        $NEXT() if $NEXT;
     }
 }
 
@@ -913,7 +928,7 @@ my sub vimgrep($needle, @paths, %_ --> Nil) {
     my %additional := named-args %_, :max-count, :type, :batch, :degree;
     meh-if-unexpected(%_);
 
-    say $_ for files-containing(
+    sayer $_ for files-containing(
       $needle, @paths, :$ignorecase, :$ignoremark, :offset(1), |%additional
     ).map: {
         my $path := .key.relative;
@@ -932,8 +947,9 @@ my sub stdin-json-per-file(&needle, %_ --> Nil) {
 
     human-on-stdin if $*IN.t;
     if try from-json $*IN.slurp(:enc<utf8-c8>) -> $json {
+        my $*IO := $*IN;
         if needle($json) -> \result {
-            say result;
+            sayer result;
         }
     }
 }
@@ -946,6 +962,7 @@ my sub stdin-json-per-line(&needle, %_ --> Nil) {
 
     my int $line-number;
     my int $matches;
+    my $*IO := $*IN;
     for stdin-source() -> $line {
         ++$line-number;
         if try from-json $line -> $json {
@@ -953,14 +970,14 @@ my sub stdin-json-per-line(&needle, %_ --> Nil) {
                 $count-only
                   ?? ++$matches
                   !! result =:= True
-                    ?? say($line-number)
+                    ?? sayer($line-number)
                     !! $show-line-number
-                      ?? say($line-number ~ ': ' ~ result)
-                      !! say(result)
+                      ?? sayer($line-number ~ ': ' ~ result)
+                      !! sayer(result)
             }
         }
     }
-    say $matches if $count-only;
+    sayer $matches if $count-only;
 }
 
 # Handle general searching on STDIN
@@ -1047,16 +1064,17 @@ my sub stdin($needle, %_, $source = stdin-source --> Nil) {
     my int $line-number;
     my int $todo-after;
     my str @before;
+    my $*IO := $*IN;
     for $source<> -> $line {
         ++$line-number;
         if matcher($line) -> \result {
-            say @before.shift while @before;
+            sayer @before.shift while @before;
             my $text := result =:= True ?? show-line($line) !! result;
-            say $show-line-number ?? ($line-number ~ ':' ~ $text) !! $text;
+            sayer $show-line-number ?? ($line-number ~ ':' ~ $text) !! $text;
             $todo-after = $after;
         }
         elsif $todo-after {
-            say $show-line-number
+            sayer $show-line-number
               ?? $line-number ~ ':' ~ $line
               !! $line;
             --$todo-after;
