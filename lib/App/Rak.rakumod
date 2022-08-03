@@ -1,6 +1,6 @@
 # The modules that we need here, with their full identities
 use highlighter:ver<0.0.12>:auth<zef:lizmat>;
-use Files::Containing:ver<0.0.15>:auth<zef:lizmat>;
+use Files::Containing:ver<0.0.16>:auth<zef:lizmat>;
 use as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use Git::Blame::File:ver<0.0.2>:auth<zef:lizmat>;
@@ -25,6 +25,7 @@ my constant %exts =
   '#ruby'     => <rb>,
   '#text'     => ('', <txt>).flat.List,
   '#yaml'     => <yaml yml>,
+  "#config"   => <ini>,
 ;
 
 # Known extensions
@@ -245,13 +246,13 @@ my sub HELP($text, @keys, :$verbose) {
 }
 
 # Allow --no-foo as an alternative to --/foo
-$_ = .subst(/^ '--' no '-' /, '--/') for @*ARGS;
+$_ .= subst(/^ '--' no '-' /, '--/') for @*ARGS;
 
 # Entry point for CLI processing
 my proto sub MAIN(|) is export {*}
 
 # Make sure we can do --help and --version
-use CLI::Version:ver<0.0.4>:auth<zef:lizmat>  $?DISTRIBUTION, &MAIN, 'long';
+use CLI::Version:ver<0.0.5>:auth<zef:lizmat>  $?DISTRIBUTION, &MAIN, 'long';
 use CLI::Help:ver<0.0.3>:auth<zef:lizmat> %?RESOURCES, &MAIN, &HELP, 'long';
 
 # Subroutine to actually output results
@@ -432,7 +433,8 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
                 %additional<file> := codify-extensions($extensions.split(','));
             }
         }
-        elsif %n<known-extensions>:delete {
+        elsif %n<known-extensions>:delete
+          || ($isa-tty && (%n<human>:!exists || %n<human>)) {
             %additional<file> := codify-extensions @known-extensions;
         }
 

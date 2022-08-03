@@ -317,7 +317,8 @@ $ rak '{ $_ with .<auth> }' --json-per-line
 =head2 --known-extensions
 
 Flag.  Indicate that only files with known extensions (occuring in any of
-the C<#groups>) should be searched.
+the C<#groups>) should be searched.  Defaults to C<True> if a human is
+watching.
 
 =head2 --list-custom-options
 

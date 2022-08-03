@@ -262,7 +262,7 @@ $ rak '{ $_ with .<auth> }' --json-per-line
 --known-extensions
 ------------------
 
-Flag. Indicate that only files with known extensions (occuring in any of the `#groups`) should be searched.
+Flag. Indicate that only files with known extensions (occuring in any of the `#groups`) should be searched. Defaults to `True` if a human is watching.
 
 --list-custom-options
 ---------------------

@@ -2,6 +2,12 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.36  2022-08-03T22:54:58+02:00
+    - Bump dependency on CLI::Version
+    - Bump dependency on Files::Containing to fix searching with Callable
+    - Add .ini extension in the #config group
+    - Make --known-extensions default for human users
+
 0.0.35  2022-07-31T22:21:23+02:00
     - Bump dependency on Files::Containing to get $*IO support and
       support for running FIRST / NEXT / LAST phasers
