@@ -2,6 +2,9 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.37  2022-08-04T00:18:12+02:00
+    - Bump dependency on Git::Blame::File to get Failure fix
+
 0.0.36  2022-08-03T22:54:58+02:00
     - Bump dependency on CLI::Version
     - Bump dependency on Files::Containing to fix searching with Callable
