@@ -249,17 +249,15 @@ my sub HELP($text, @keys, :$verbose) {
 $_ .= subst(/^ '--' no '-' /, '--/') for @*ARGS;
 
 # Entry point for CLI processing
-my proto sub MAIN(|) is export {*}
-
-# Make sure we can do --help and --version
-use CLI::Version:ver<0.0.5>:auth<zef:lizmat>  $?DISTRIBUTION, &MAIN, 'long';
-use CLI::Help:ver<0.0.3>:auth<zef:lizmat> %?RESOURCES, &MAIN, &HELP, 'long';
+my proto sub rak(|) {*}
+use CLI::Version:ver<0.0.6>:auth<zef:lizmat>  $?DISTRIBUTION, &rak, 'long';
+use CLI::Help:ver<0.0.3>:auth<zef:lizmat> %?RESOURCES, &rak, &HELP, 'long';
 
 # Subroutine to actually output results
 my &sayer;
 
 # Main handler
-my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
+my multi sub rak(*@specs, *%n) {  # *%_ causes compilation issues
     my %config := $config-file.e ?? from-json($config-file.slurp) !! { }
 
     # Saving config
@@ -999,8 +997,7 @@ my sub stdin($needle, %_, $source = stdin-source --> Nil) {
     my $human := %_<human>:delete // $isa-tty;
     if $human {
         $highlight = !$is-simple-Callable;
-        $show-line-number = !%_<passthru>;
-        $only = False;
+        $show-line-number = $only = False;
         $trim = !($before || $after || $is-simple-Callable);
         $summary-if-larger-than = 160;
     }
@@ -1089,5 +1086,7 @@ my sub stdin($needle, %_, $source = stdin-source --> Nil) {
         }
     }
 }
+
+sub EXPORT($name = '&rak') { Map.new: ($name => &rak) }
 
 # vim: expandtab shiftwidth=4

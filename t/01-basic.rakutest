@@ -1,10 +1,8 @@
 use Test;
-
-{
-    use App::Rak;
-}
+use App::Rak;
 
 plan 1;
-pass "still alive";
+
+ok MY::<&rak>, 'did rak get exported';
 
 # vim: expandtab shiftwidth=4

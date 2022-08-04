@@ -7,7 +7,7 @@
   ],
   "depends": [
     "CLI::Help:ver<0.0.3>:auth<zef:lizmat>",
-    "CLI::Version:ver<0.0.5>:auth<zef:lizmat>",
+    "CLI::Version:ver<0.0.6>:auth<zef:lizmat>",
     "META::constants:ver<0.0.2>:auth<zef:lizmat>",
     "highlighter:ver<0.0.12>:auth<zef:lizmat>",
     "Files::Containing:ver<0.0.16>:auth<zef:lizmat>",
@@ -52,5 +52,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.0.37"
+  "version": "0.0.38"
 }

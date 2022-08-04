@@ -553,6 +553,25 @@ Flag.  If specified with a true value, will output search results in the
 format "filename:linenumber:column:line".  This allows integration with the
 C<:grep> action in vim-like editors.
 
+=head1 IN APPLICATION USAGE
+
+You can also load the C<App::Rak> module as a module in your own application.
+It will then export a C<rak> subroutine with the same arguments as the
+C<rak> command line interface.
+
+This is still a bit experimental.
+
+Currently calling this subroutine will return C<Nil>.  That may change in
+the future.
+
+=begin code :lang<raku>
+
+use App::Rak;
+
+rak 'foo';  # look for "foo" in all files with known extensions from "."
+
+=end code
+
 =head1 AUTHOR
 
 Elizabeth Mattijsen <liz@raku.rocks>

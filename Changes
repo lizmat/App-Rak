@@ -2,6 +2,10 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.38  2022-08-04T15:28:49+02:00
+    - Bump dependency on CLI::Version to get more leniency
+    - Export "rak" subroutine by default, adapt bin/rak accordingly
+
 0.0.37  2022-08-04T00:18:12+02:00
     - Bump dependency on Git::Blame::File to get Failure fix
 

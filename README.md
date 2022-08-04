@@ -455,6 +455,21 @@ Flag. If the only argument, shows the name and version of the script, and the sy
 
 Flag. If specified with a true value, will output search results in the format "filename:linenumber:column:line". This allows integration with the `:grep` action in vim-like editors.
 
+IN APPLICATION USAGE
+====================
+
+You can also load the `App::Rak` module as a module in your own application. It will then export a `rak` subroutine with the same arguments as the `rak` command line interface.
+
+This is still a bit experimental.
+
+Currently calling this subroutine will return `Nil`. That may change in the future.
+
+```raku
+use App::Rak;
+
+rak 'foo';  # look for "foo" in all files with known extensions from "."
+```
+
 AUTHOR
 ======
 
