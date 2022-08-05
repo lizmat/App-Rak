@@ -3,7 +3,7 @@ use highlighter:ver<0.0.12>:auth<zef:lizmat>;
 use Files::Containing:ver<0.0.16>:auth<zef:lizmat>;
 use as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
-use Git::Blame::File:ver<0.0.3>:auth<zef:lizmat>;
+use Git::Blame::File:ver<0.0.4>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
 
 # Defaults for highlighting on terminals
@@ -38,10 +38,15 @@ my $config-file := $*HOME.add('.rak-config.json');
 my sub s($elems) { $elems == 1 ?? "" !! "s" }
 
 # Sane way of quitting
-my sub meh($message) { exit note $message }
+my sub meh($message) is hidden-from-backtrace {
+    $*REAL-MEH
+      ?? exit note $message
+      !! die $message
+}
 
 # Quit if unexpected named arguments hash
 my sub meh-if-unexpected(%_) {
+    %_{$_}:delete if %_{$_}<> =:= False for %_.keys;
     meh "Unexpected option{"s" if %_.elems != 1}: &as-cli-arguments(%_)" if %_;
 }
 

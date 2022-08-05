@@ -1,4 +1,5 @@
 my %*SUB-MAIN-OPTS = :named-anywhere;
+my $*REAL-MEH = 1;
 
 use App::Rak '&MAIN';
 

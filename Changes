@@ -2,6 +2,11 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.39  2022-08-05T10:54:49+02:00
+    - Bump dependency on Git::Blame::File because then it will install
+    - Unexpected Boolean options that are False are now acceptable
+    - Die instead of exit if called as "rak"
+
 0.0.38  2022-08-04T15:28:49+02:00
     - Bump dependency on CLI::Version to get more leniency
     - Export "rak" subroutine by default, adapt bin/rak accordingly
