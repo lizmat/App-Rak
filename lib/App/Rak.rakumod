@@ -4,6 +4,7 @@ use Files::Containing:ver<0.0.16>:auth<zef:lizmat>;
 use as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use Git::Blame::File:ver<0.0.4>:auth<zef:lizmat>;
+use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
 
 # Defaults for highlighting on terminals
@@ -54,24 +55,19 @@ my sub meh-if-unexpected(%_) {
 my $is-simple-Callable;
 
 # Return string before marker, or string if no marker
-my sub before(Str:D $string, Str:D $marker) {
-    with $string.index($marker) {
-        $string.substr(0,$_)
-    }
-    else {
-        $string
-    }
+my sub before-or-string(str $string, str $marker) {
+    before($string, $marker) // $string
 }
 
 # Return named variables in order of specification on the command line
 my sub original-nameds() {
     @*ARGS.map: {
         .starts-with('--/')
-          ?? before(.substr(3), '=')
+          ?? before-or-string(.substr(3), '=')
           !! .starts-with('--' | '-/')
-            ?? before(.substr(2), '=')
+            ?? before-or-string(.substr(2), '=')
             !! .starts-with('-') && $_ ne '-'
-              ?? before(.substr(1), '=')
+              ?? before-or-string(.substr(1), '=')
               !! Empty
     }
 }
@@ -203,13 +199,15 @@ my sub prelude(%_) {
 
 # Pre-process non literal string needles, return Callable if possible
 my sub codify($needle, %_?) {
-    $needle.starts-with('/') && $needle.ends-with('/')
-      ?? $needle.EVAL
-      !! $needle.starts-with('{') && $needle.ends-with('}')
-        ?? (prelude(%_) ~ 'my $ = -> $_ ' ~ $needle).EVAL
-        !! $needle.starts-with('*.')
-          ?? (prelude(%_) ~ $needle).EVAL
-          !! $needle
+    Callable.ACCEPTS($needle)
+      ?? $needle
+      !! $needle.starts-with('/') && $needle.ends-with('/')
+        ?? $needle.EVAL
+        !! $needle.starts-with('{') && $needle.ends-with('}')
+          ?? (prelude(%_) ~ 'my $ = -> $_ ' ~ $needle).EVAL
+          !! $needle.starts-with('*.')
+            ?? (prelude(%_) ~ $needle).EVAL
+            !! $needle
 }
 
 # Check the given Callable for the named phaser, and run it if there is one
@@ -226,7 +224,7 @@ my sub next-phaser(&code) {
 
 # Change list of conditions into a Callable for :file
 my sub codify-extensions(@extensions) {
-    -> $_ { extension($_) (elem) @extensions }
+    -> $_ { !is-sha1($_) && extension($_) (elem) @extensions }
 }
 
 # Set up the --help handler

@@ -14,6 +14,7 @@
     "as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>",
     "Edit::Files:ver<0.0.4>:auth<zef:lizmat>",
     "Git::Blame::File:ver<0.0.4>:auth<zef:lizmat>",
+    "String::Utils:ver<0.0.8>:auth<zef:lizmat>",
     "JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>"
   ],
   "description": "21st century grep / find / ack / ag / rg on steroids",
@@ -52,5 +53,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.0.39"
+  "version": "0.0.40"
 }

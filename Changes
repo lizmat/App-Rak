@@ -2,6 +2,11 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.40  2022-08-05T17:12:19+02:00
+    - Add dependency on String::Utils, for "is-sha1" and "before"
+    - Skip filenames that are SHA1's (aka precompiled source) by default
+    - Make sure you can call "rak" with a Callable as a needle
+
 0.0.39  2022-08-05T10:54:49+02:00
     - Bump dependency on Git::Blame::File because then it will install
     - Unexpected Boolean options that are False are now acceptable
