@@ -52,8 +52,11 @@ my sub meh-if-unexpected(%_) {
     meh "Unexpected option{"s" if %_.elems != 1}: &as-cli-arguments(%_)" if %_;
 }
 
-# Is a needle a simple Callable?
+# Is a pattern a simple Callable?
 my $is-simple-Callable;
+
+# Can the pattern have phasers
+my $can-have-phasers;
 
 # Return string before marker, or string if no marker
 my sub before-or-string(str $string, str $marker) {
@@ -428,6 +431,7 @@ my multi sub rak(*@specs, *%n) {  # *%_ causes compilation issues
     # Pre-process non literal string needles
     $needle = codify($needle, %n);
     $is-simple-Callable := Callable.ACCEPTS($needle) && !Regex.ACCEPTS($needle);
+    $can-have-phasers   := $is-simple-Callable && Block.ACCEPTS($needle);
 
     # Handle --smartcase
     %n<ignorecase> = !$needle.contains(/ <:upper> /)
@@ -498,13 +502,15 @@ my multi sub rak(*@specs, *%n) {  # *%_ causes compilation issues
         }
 
         # Paths from parameters
+        elsif @specs {
+            @specs.&hyperize(1,%n<degree>).map: {
+                .IO.f ?? $_ !! paths($_, |%additional).Slip
+            }
+        }
+
+        # no path, assume current dir
         else {
-            @specs.unshift(".") unless @specs;
-            @specs == 1
-              ?? paths(@specs.head, |%additional)
-              !! @specs.&hyperize(1,%n<degree>).map: {
-                     paths($_, |%additional).Slip
-                 }
+            paths ".", |%additional
         }
     }
 
@@ -790,24 +796,24 @@ my sub produce-blame-per-line(&code, @paths, %_ --> Nil) {
 
 # Only count matches
 my sub count-only($needle, @paths, %_ --> Nil) {
-    my $files-with-matches := %_<files-with-matches>:delete;
+    my $verbose    := %_<verbose>:delete;
     my %additional := named-args %_,
       :ignorecase, :ignoremark, :invert-match, :type, :batch, :degree;
     meh-if-unexpected(%_);
 
     my int $files;
     my int $matches;
-    my $NEXT := do if $is-simple-Callable && Block.ACCEPTS($needle) {
+    my $NEXT := do if $can-have-phasers {
         $_() with $needle.callable_for_phaser('FIRST');
         $needle.callable_for_phaser('NEXT')
     }
     for files-containing $needle, @paths, :count-only, |%additional {
         ++$files;
         $matches += .value;
-        sayer .key.relative ~ ': ' ~ .value if $files-with-matches;
+        sayer .key.relative ~ ': ' ~ .value if $verbose;
         $NEXT() if $NEXT;
     }
-    run-phaser($needle, 'LAST');
+    run-phaser($needle, 'LAST') if $can-have-phasers;
     sayer "$matches matches in $files files";
 }
 

@@ -14,11 +14,11 @@ $ rak foo bar  # look for "foo" in directory "bar" recursively
 
 $ rak '/ << foo >> /'    # look for "foo" as word in current directory
 
-$ raku foo --files-only  # look for "foo", only produce filenames
+$ rak foo --files-only  # look for "foo", only produce filenames
 
-$ raku foo --before=2 --after=2  # also produce 2 lines before and after
+$ rak foo --before=2 --after=2  # also produce 2 lines before and after
 
-$ raku '{.contains("foo") && .contains("bar")}'  # lines with foo AND bar
+$ rak '{.contains("foo") && .contains("bar")}'  # lines with foo AND bar
 
 =end code
 
