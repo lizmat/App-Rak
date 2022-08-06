@@ -206,12 +206,19 @@ my sub codify($needle, %_?) {
     Callable.ACCEPTS($needle)
       ?? $needle
       !! $needle.starts-with('/') && $needle.ends-with('/')
-        ?? $needle.EVAL
+        ?? regexify($needle, %_)
         !! $needle.starts-with('{') && $needle.ends-with('}')
           ?? (prelude(%_) ~ 'my $ = -> $_ ' ~ $needle).EVAL
           !! $needle.starts-with('*.')
             ?? (prelude(%_) ~ $needle).EVAL
             !! $needle
+}
+
+# Pre-process literal strings looking like a regex
+my sub regexify($needle, %_) {
+    my $i := %_<ignorecase>:delete ?? ':i' !! '';
+    my $m := %_<ignoremark>:delete ?? ':m' !! '';
+    "/$i$m$needle.substr(1)".EVAL
 }
 
 # Check the given Callable for the named phaser, and run it if there is one

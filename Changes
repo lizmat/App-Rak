@@ -2,6 +2,10 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.43  2022-08-06T23:59:18+02:00
+    - Make --ignorecase, --ignoremark, --smartcase also work on
+      regular expressions (by inserting :i / :m into the regex)
+
 0.0.42  2022-08-06T16:36:52+02:00
     - Fix issue with --count-only
     - Use --verbose instead of --files-with-matches with --count-only
