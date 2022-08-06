@@ -1,3 +1,5 @@
 Code pattern helpers:
- --repository=lib  First look for any modules to load in the "lib" directory
- --module=foo      Load module "foo" before compiling Raku code pattern
+ --repository=lib      First look for any modules to load in the "lib" directory
+ --module=foo          Load module "foo" before compiling Raku code pattern
+ --quietly             Disable warnings when executing pattern (default: False)
+ --silently[=out,err]  Capture output when executing pattern (default: False)

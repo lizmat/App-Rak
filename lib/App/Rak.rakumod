@@ -5,6 +5,7 @@ use as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use Git::Blame::File:ver<0.0.4>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
+use Trap:ver<0.0.1>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
 
 # Defaults for highlighting on terminals
@@ -227,6 +228,53 @@ my sub codify-extensions(@extensions) {
     -> $_ { !is-sha1($_) && extension($_) (elem) @extensions }
 }
 
+# Return a properly pre-processed needle for various options
+my sub preprocess-code-needle(&code, %_) {
+    my $silently := (%_<silently>:delete)<>;
+    if %_<quietly>:delete {
+        # the existence of a CONTROL block appears to disallow use of ternaries
+        # 2202.07
+        if $silently {
+            if $silently =:= True || $silently eq 'out,err' | 'err,out' {
+                -> $_ {
+                    CONTROL { .resume }
+                    Trap(my $*OUT, my $*ERR);
+                    code($_)
+                }
+            }
+            elsif $silently eq 'out' {
+                -> $_ {
+                    CONTROL { .resume }
+                    Trap(my $*OUT);
+                    code($_)
+                }
+            }
+            elsif $silently eq 'err' {
+                -> $_ {
+                    CONTROL { .resume }
+                    Trap(my $*ERR);
+                    code($_)
+                }
+            }
+            else {
+                meh "Unexpected value for --silently: $silently"
+            }
+        }
+    }
+    elsif $silently {  # and not quietly
+        $silently =:= True || $silently eq 'out,err' | 'err,out'
+            ?? -> $_ { Trap(my $*OUT, my $*ERR); code($_) }
+            !! $silently eq 'out'
+              ?? -> $_ { Trap(my $*OUT); code($_) }
+              !! $silently eq 'err'
+                ?? -> $_ { Trap(my $*ERR); code($_) }
+                !! meh "Unexpected value for --silently: $silently"
+    }
+    else {
+        &code
+    }
+}
+
 # Set up the --help handler
 use META::constants:ver<0.0.2>:auth<zef:lizmat> $?DISTRIBUTION;
 my sub HELP($text, @keys, :$verbose) {
@@ -280,7 +328,7 @@ my multi sub rak(*@specs, *%n) {  # *%_ causes compilation issues
         }
         $config-file.spurt: to-json %config, :!pretty, :sorted-keys;
         say %n
-          ?? "Saved option '--$option' as: " ~ as-cli-arguments(%n)
+          ?? "Saved '&as-cli-arguments(%n)' as: -$option"
           !! "Removed option '--$option'";
         exit;
     }
@@ -617,14 +665,16 @@ my sub modify-files(&needle, @paths, %_ --> Nil) {
 }
 
 # Produce JSON per file to check
-my sub produce-json-per-file(&needle, @paths, %_ --> Nil) {
+my sub produce-json-per-file(&code, @paths, %_ --> Nil) {
+    my &needle        := preprocess-code-needle(&code, %_);
     my $batch         := %_<batch>:delete;
     my $degree        := %_<degree>:delete;
     my $show-filename := %_<show-filename>:delete // True;
     meh-if-unexpected(%_);
 
-    run-phaser(&needle, 'FIRSTT');
-    my $NEXT := next-phaser(&needle);
+    run-phaser(&code, 'FIRST');
+    my $NEXT := next-phaser(&code);
+
     for @paths.&hyperize($batch, $degree).map: {
         my $io := .IO;
 
@@ -643,11 +693,12 @@ my sub produce-json-per-file(&needle, @paths, %_ --> Nil) {
         sayer $_;
         $NEXT() if $NEXT;
     }
-    run-phaser(&needle, 'LAST');
+    run-phaser(&code, 'LAST');
 }
 
 # Produce JSON per line to check
-my sub produce-json-per-line(&needle, @paths, %_ --> Nil) {
+my sub produce-json-per-line(&code, @paths, %_ --> Nil) {
+    my &needle        := preprocess-code-needle(&code, %_);
     my $batch         := %_<batch>:delete;
     my $degree        := %_<degree>:delete;
     my $show-filename := %_<show-filename>:delete // True;
@@ -712,7 +763,8 @@ my sub produce-json-per-line(&needle, @paths, %_ --> Nil) {
 }
 
 # Produce Git::Blame::Line per line to check
-my sub produce-blame-per-line(&needle, @paths, %_ --> Nil) {
+my sub produce-blame-per-line(&code, @paths, %_ --> Nil) {
+    my &needle        := preprocess-code-needle(&code, %_);
     my $batch         := %_<batch>:delete;
     my $degree        := %_<degree>:delete;
     my $show-filename := %_<show-filename>:delete // True;
@@ -945,7 +997,8 @@ my sub vimgrep($needle, @paths, %_ --> Nil) {
 }
 
 # Read from STDIN, assume JSON per line
-my sub stdin-json-per-file(&needle, %_ --> Nil) {
+my sub stdin-json-per-file(&code, %_ --> Nil) {
+    my &needle := preprocess-code-needle(&code, %_);
     meh-if-unexpected(%_);
 
     human-on-stdin if $*IN.t;
@@ -958,7 +1011,8 @@ my sub stdin-json-per-file(&needle, %_ --> Nil) {
 }
 
 # Read from STDIN, assume JSON per line
-my sub stdin-json-per-line(&needle, %_ --> Nil) {
+my sub stdin-json-per-line(&code, %_ --> Nil) {
+    my &needle           := preprocess-code-needle(&code, %_);
     my $count-only       := %_<count-only>:delete;
     my $show-line-number := %_<show-line-number>:delete;
     meh-if-unexpected(%_);

@@ -363,6 +363,11 @@ Indicate the path of the file to read path specifications from instead of from a
 
 Alternative way to specify the pattern to search for. If (implicitly) specified, will assume the first positional parameter specified is actually a path specification, rather than a pattern. This allows the pattern to be searched for to be saved with `--save`.
 
+--quietly
+---------
+
+Flag. Only makes sense if the pattern is a `Callable`. If specified with a true value, will catch all **warnings** that are emitted when executing the pattern's `Callable`. Defaults to False.
+
 --repository=dir
 ----------------
 
@@ -425,6 +430,19 @@ Flag. Indicate whether filenames should be shown. Defaults to `True` if `--human
 ------------------
 
 Flag. Indicate whether line numbers should be shown. Defaults to `True` if `--human` is (implicitly) set to `True` and <-h> is **not** set to `True`, else defaults to `False`.
+
+--silently[=out,err]
+====================
+
+Flag and option. Only applicable if the pattern is a `Callable`. Indicates whether any output from the `Callable` pattern should be caught. Defaults to `False`. If specified as a flag, will catch both STDOUT as well as STDERR output from the pattern's execution. When specified as an option, will accept:
+
+  * out - only capture STDOUT
+
+  * err - only capture STDERR
+
+  * out,err - capture both STDIN as well as STDERR
+
+  * err,out - capture both STDIN as well as STDERR
 
 --smartcase
 -----------

@@ -2,6 +2,13 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.41  2022-08-06T14:22:07+02:00
+    - Add --quietly to stop warnings in Callable needle execution.  For
+      now only in those options that require code needles
+    - Add dependency on Trap for --silently support
+    - Add --silently to stop any output in Callable needle execution.  For
+      now only in those options that require code needles
+
 0.0.40  2022-08-05T17:12:19+02:00
     - Add dependency on String::Utils, for "is-sha1" and "before"
     - Skip filenames that are SHA1's (aka precompiled source) by default

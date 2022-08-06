@@ -441,6 +441,12 @@ specified, will assume the first positional parameter specified is
 actually a path specification, rather than a pattern.  This allows
 the pattern to be searched for to be saved with C<--save>.
 
+=head2 --quietly
+
+Flag.  Only makes sense if the pattern is a C<Callable>.  If specified
+with a true value, will catch all B<warnings> that are emitted when executing
+the pattern's C<Callable>.  Defaults to False.
+
 =head2 --repository=dir
 
 Indicate the directory that should be searched for Raku module loading.
@@ -514,6 +520,19 @@ C<--human> is (implicitly) set to C<True>, else defaults to C<False>.
 Flag.  Indicate whether line numbers should be shown.  Defaults to C<True> if
 C<--human> is (implicitly) set to C<True> and <-h> is B<not> set to C<True>,
 else defaults to C<False>.
+
+=head1 --silently[=out,err]
+
+Flag and option.  Only applicable if the pattern is a C<Callable>.  Indicates
+whether any output from the C<Callable> pattern should be caught.  Defaults
+to C<False>.  If specified as a flag, will catch both STDOUT as well as
+STDERR output from the pattern's execution.  When specified as an option,
+will accept:
+
+=item out - only capture STDOUT
+=item err - only capture STDERR
+=item out,err - capture both STDIN as well as STDERR
+=item err,out - capture both STDIN as well as STDERR
 
 =head2 --smartcase
 

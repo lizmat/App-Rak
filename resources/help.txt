@@ -21,8 +21,10 @@ Input selection:
  --blame-per-line  Call Raku code with Git::Blame::Line objects if possible
 
 Code pattern helpers:
- --repository=lib  First look for any modules to load in the "lib" directory
- --module=foo      Load module "foo" before compiling Raku code pattern
+ --repository=lib      First look for any modules to load in the "lib" directory
+ --module=foo          Load module "foo" before compiling Raku code pattern
+ --quietly             Disable warnings when executing pattern (default: False)
+ --silently[=out,err]  Capture output when executing pattern (default: False)
 
 Haystack specification:
  path1 path2 ...     All other arguments are paths (default: current dir)
