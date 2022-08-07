@@ -2,6 +2,14 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.45  2022-08-07T23:09:01+02:00
+    - Make "jsonl" default extension with --json-per-line
+    - Bump dependency on Git::Blame::File to get shortened sha support
+    - Add --unique option to only show unique produced lines
+    - Add --list-known-extensions option as an informational aid
+    - Fleshed out the help/input section a bit
+    - Bumped dependency on CLI::Version to be more lenient with error checking
+
 0.0.44  2022-08-07T13:50:07+02:00
     - Fix issue with just --quietly
     - Make "json" default extension with --json-per-file

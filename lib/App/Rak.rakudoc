@@ -342,9 +342,31 @@ $ rak --im --list-expanded-options
 
 =end code
 
-If specified with a true value, will show all actual options being
+Flag.  If specified with a true value, will show all actual options being
 activated after having been recursively expanded, and then exit.
 Intended as a debugging aid if you have many custom options defined.
+
+=head2 --list-known-extensions
+
+=begin code :lang<bash>
+
+$ rak --list-known-extensions
+       #c: c h hdl
+     #c++: cpp cxx hpp hxx
+  #config: ini
+#markdown: md markdown
+    #perl: (none) pl pm t
+  #python: py
+    #raku: (none) raku rakumod rakutest rakudoc nqp t pm6 pl6 pod6 t6
+    #ruby: rb
+    #text: (none) txt
+    #yaml: yaml yml
+
+=end code
+
+Flag.  If specified with a true value, will show all known extension
+groups and the extensions they represent.  Intended as an informational
+aid.
 
 =head2 --modify-files
 
@@ -560,6 +582,11 @@ look for the pattern at any position in a line.
 Flag.  Indicate whether lines that have the pattern, should have any
 whitespace at the start and/or end of the line removed.  Defaults to
 C<True> if no context for lines was specified, else defaults to C<False>.
+
+=head2 --unique
+
+Flag.  If specified with a true value, will only produce unique lines of
+output.  Default is C<False>.
 
 =head2 --version
 

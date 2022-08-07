@@ -3,7 +3,7 @@ use highlighter:ver<0.0.12>:auth<zef:lizmat>;
 use Files::Containing:ver<0.0.16>:auth<zef:lizmat>;
 use as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
-use Git::Blame::File:ver<0.0.4>:auth<zef:lizmat>;
+use Git::Blame::File:ver<0.0.5>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
 use Trap:ver<0.0.1>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
@@ -321,7 +321,7 @@ $_ .= subst(/^ '--' no '-' /, '--/') for @*ARGS;
 
 # Entry point for CLI processing
 my proto sub rak(|) {*}
-use CLI::Version:ver<0.0.6>:auth<zef:lizmat>  $?DISTRIBUTION, &rak, 'long';
+use CLI::Version:ver<0.0.7>:auth<zef:lizmat>  $?DISTRIBUTION, &rak, 'long';
 use CLI::Help:ver<0.0.4>:auth<zef:lizmat> %?RESOURCES, &rak, &HELP, 'long';
 
 # Subroutine to actually output results
@@ -361,6 +361,11 @@ my multi sub rak(*@specs, *%n) {  # *%_ causes compilation issues
         for %config.sort(*.key.fc) -> (:$key, :value(%args)) {
             say sprintf($format,$key) ~ as-cli-arguments(%args);
         }
+        exit;
+    }
+    elsif %n<list-known-extensions>:delete {
+        say sprintf('%9s: %s', .key, .value.map({$_ || '(none)'}).Str)
+          for %exts.sort(*.key);
         exit;
     }
 
@@ -445,6 +450,13 @@ my multi sub rak(*@specs, *%n) {  # *%_ causes compilation issues
         &sayer = &say;
     }
 
+    # Activate any uniquefier
+    if %n<unique>:delete {
+        my &old-sayer := &sayer<>;
+        my %seen;
+        &sayer = -> $_ { old-sayer($_) unless %seen{$_}++ }
+    }
+
     # Pre-process non literal string needles
     $needle = codify($needle, %n);
     $is-simple-Callable := Callable.ACCEPTS($needle) && !Regex.ACCEPTS($needle);
@@ -508,6 +520,9 @@ my multi sub rak(*@specs, *%n) {  # *%_ causes compilation issues
         }
         elsif %n<json-per-file> {
             %additional<file> := codify-extensions ("json",);
+        }
+        elsif %n<json-per-line> {
+            %additional<file> := codify-extensions ("jsonl",);
         }
         elsif $isa-tty && (%n<human>:!exists || %n<human>) {
             %additional<file> := codify-extensions @known-extensions;
@@ -798,7 +813,7 @@ my sub produce-json-per-line(&code, @paths, %_ --> Nil) {
 # Produce Git::Blame::Line per line to check
 my sub produce-blame-per-line(&code, @paths, %_ --> Nil) {
     my &needle        := preprocess-code-needle(&code, %_);
-    my $batch         := %_<batch>:delete;
+    my $batch         := %_<batch>:delete // 1;
     my $degree        := %_<degree>:delete;
     my $show-filename := %_<show-filename>:delete // True;
     meh-if-unexpected(%_);
@@ -806,17 +821,23 @@ my sub produce-blame-per-line(&code, @paths, %_ --> Nil) {
     run-phaser(&needle, 'FIRST');
     my $NEXT := next-phaser(&needle);
     for @paths.&hyperize($batch, $degree).map: -> $filename {
-        if try Git::Blame::File.new($filename).lines -> @lines {
-            my $*IO := $filename.IO;
-            @lines.map(-> $blamer {
+        if try Git::Blame::File.new($filename) -> $blamer {
+            my $io := my $*IO := $filename.IO;
+            my $finds := $blamer.lines.map(-> $_ {
                 CONTROL { drop-location-from-warning($_) }
-                if needle($blamer) -> \result {
-                    result =:= True ?? $blamer.Str !! result
+                if needle($_) -> \result {
+                    result =:= True ?? .Str !! result
                 }
-            }).List
+            }).List;
+            $finds.elems ?? ($io.relative, $finds) !! Empty
         }
-    } -> @finds {
-        sayer $_;
+    } -> ($filename, @finds) {
+        if $show-filename {
+            sayer "$filename: $_" for @finds;
+        }
+        else {
+            sayer $_ for @finds;
+        }
         $NEXT() if $NEXT;
     }
     run-phaser(&needle, 'LAST');

@@ -1,5 +1,44 @@
 Input selection:
- --find            Interprete selected paths as the lines to inspect
- --json-per-file   Call Raku code with parsed JSON if file contains JSON
- --json-per-line   Call Raku code with parsed JSON if line contains JSON
- --blame-per-line  Call Raku code with Git::Blame::Line objects if possible
+
+--find
+
+The absolute path of a file will be used for matching, and is passed to
+the pattern if the pattern is a Callable.
+
+--json-per-file
+
+Attempt to parse the whole file as JSON.  If successful, pass this to the
+pattern Callable.  Only files with the .json extension will be tried, unless
+overridden by any explicit extension specification.
+
+--json-per-line
+
+Attempt to parse each line in the file as JSON.  If successful, pass this to
+the pattern Callable.  Only files with the .jsonl extension will be tried,
+unless overridden by any explicit extension specification.
+
+--blame-per-line
+
+Attempt to obtain "git blame" information of the file as a Git::Blame::File
+object.  If successful, pass each line as a Git::Blame::Line to the pattern
+Callable.  Any file with a known extension will be tried, unless overridden
+by any explicit extension specification.
+
+These methods can be called on the object passed to the pattern Callable:
+- author                the name of the author
+- author-mail           the email address of the author
+- author-time           a DateTime object for the authoring
+- commit                the associated Git::Blame::Commit object
+- committer             the name of the committer
+- committer-mail        the email address of the committer
+- committer-time        a DateTime object for the committing
+- filename              the current filename
+- line                  the actual line currently
+- line-number           the current line-number
+- original-line-number  line number when this line was created
+- previous-sha1         the full SHA1 of the previous commit
+- previous-sha          the shortened SHA1 of the previous commit
+- previous-filename     the filename in the previous commit
+- sha1                  full SHA1 of the commit to which this line belongs
+- sha                   shortened SHA1 of the commit to which this line belongs
+- summary               the first line of the commit message of this line

@@ -42,6 +42,7 @@ Result modifiers:
  --count-only           Only return count of matches
  --files-with-matches   Only return filenames with matches
  --file-separator-null  Separate filenames with null bytes
+ --unique               Only return unique lines
 
 Listing modifiers:
  --human                     Force defaults as if a human is watching
@@ -85,8 +86,9 @@ General options:
                pattern | string | code | haystack | result | listing
                content | resource | edit | option | general | philosophy
                examples
- --version   Show version information
- --verbose   Be more verbose, if applicable
+ --list-known-extensions  Show all known extensions and their groups
+ --version                Show version information
+ --verbose                Be more verbose, if applicable
 
 Option format:
  --foo      Option "foo" is True

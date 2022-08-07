@@ -283,7 +283,26 @@ $ rak --im --list-expanded-options
 --ignorecase --ignoremark
 ```
 
-If specified with a true value, will show all actual options being activated after having been recursively expanded, and then exit. Intended as a debugging aid if you have many custom options defined.
+Flag. If specified with a true value, will show all actual options being activated after having been recursively expanded, and then exit. Intended as a debugging aid if you have many custom options defined.
+
+--list-known-extensions
+-----------------------
+
+```bash
+$ rak --list-known-extensions
+       #c: c h hdl
+     #c++: cpp cxx hpp hxx
+  #config: ini
+#markdown: md markdown
+    #perl: (none) pl pm t
+  #python: py
+    #raku: (none) raku rakumod rakutest rakudoc nqp t pm6 pl6 pod6 t6
+    #ruby: rb
+    #text: (none) txt
+    #yaml: yaml yml
+```
+
+Flag. If specified with a true value, will show all known extension groups and the extensions they represent. Intended as an informational aid.
 
 --modify-files
 --------------
@@ -463,6 +482,11 @@ Only makes sense if the pattern is a string. With `words` specified, will look f
 
 Flag. Indicate whether lines that have the pattern, should have any whitespace at the start and/or end of the line removed. Defaults to `True` if no context for lines was specified, else defaults to `False`.
 
+--unique
+--------
+
+Flag. If specified with a true value, will only produce unique lines of output. Default is `False`.
+
 --version
 ---------
 
@@ -503,4 +527,3 @@ COPYRIGHT AND LICENSE
 Copyright 2022 Elizabeth Mattijsen
 
 This library is free software; you can redistribute it and/or modify it under the Artistic License 2.0.
-

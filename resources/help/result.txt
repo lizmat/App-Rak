@@ -6,3 +6,4 @@ Result modifiers:
  --count-only           Only return count of matches
  --files-with-matches   Only return filenames with matches
  --file-separator-null  Separate filenames with null bytes
+ --unique               Only return unique lines
