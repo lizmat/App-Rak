@@ -6,7 +6,7 @@
   "build-depends": [
   ],
   "depends": [
-    "CLI::Help:ver<0.0.3>:auth<zef:lizmat>",
+    "CLI::Help:ver<0.0.4>:auth<zef:lizmat>",
     "CLI::Version:ver<0.0.6>:auth<zef:lizmat>",
     "META::constants:ver<0.0.2>:auth<zef:lizmat>",
     "highlighter:ver<0.0.12>:auth<zef:lizmat>",
@@ -54,5 +54,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.0.43"
+  "version": "0.0.44"
 }

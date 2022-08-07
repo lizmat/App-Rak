@@ -49,7 +49,8 @@ my sub meh($message) is hidden-from-backtrace {
 # Quit if unexpected named arguments hash
 my sub meh-if-unexpected(%_) {
     %_{$_}:delete if %_{$_}<> =:= False for %_.keys;
-    meh "Unexpected option{"s" if %_.elems != 1}: &as-cli-arguments(%_)" if %_;
+    meh "Unexpected option{"s" if %_.elems != 1}: &as-cli-arguments(%_)\nUse --help for an overview of available options"
+      if %_;
 }
 
 # Is a pattern a simple Callable?
@@ -79,7 +80,7 @@ my sub original-nameds() {
 # Return extension of filename, if any
 my sub extension(str $filename) {
     with rindex($filename, '.') {
-        substr($filename, $_ + 1)
+        lc substr($filename, $_ + 1)
     }
     else {
         ""
@@ -210,7 +211,7 @@ my sub codify($needle, %_?) {
         !! $needle.starts-with('{') && $needle.ends-with('}')
           ?? (prelude(%_) ~ 'my $ = -> $_ ' ~ $needle).EVAL
           !! $needle.starts-with('*.')
-            ?? (prelude(%_) ~ $needle).EVAL
+            ?? (prelude(%_) ~ 'my $ := ' ~ $needle).EVAL
             !! $needle
 }
 
@@ -233,13 +234,19 @@ my sub next-phaser(&code) {
     Block.ACCEPTS(&code) && &code.callable_for_phaser('NEXT')
 }
 
+# Drop the "location" of the warning, as it serves no useful purpose here
+my sub drop-location-from-warning($warning) {
+    note $warning.gist.lines.grep(!*.starts-with('  in block')).join("\n");
+    $warning.resume;
+}
+
 # Change list of conditions into a Callable for :file
 my sub codify-extensions(@extensions) {
     -> $_ { !is-sha1($_) && extension($_) (elem) @extensions }
 }
 
 # Return a properly pre-processed needle for various options
-my sub preprocess-code-needle(&code, %_) {
+my sub preprocess-code-needle(&code, %_ --> Callable:D) {
     my $silently := (%_<silently>:delete)<>;
     if %_<quietly>:delete {
         # the existence of a CONTROL block appears to disallow use of ternaries
@@ -269,6 +276,9 @@ my sub preprocess-code-needle(&code, %_) {
             else {
                 meh "Unexpected value for --silently: $silently"
             }
+        }
+        else {
+            -> $_ { CONTROL { .resume }; code($_) }
         }
     }
     elsif $silently {  # and not quietly
@@ -312,7 +322,7 @@ $_ .= subst(/^ '--' no '-' /, '--/') for @*ARGS;
 # Entry point for CLI processing
 my proto sub rak(|) {*}
 use CLI::Version:ver<0.0.6>:auth<zef:lizmat>  $?DISTRIBUTION, &rak, 'long';
-use CLI::Help:ver<0.0.3>:auth<zef:lizmat> %?RESOURCES, &rak, &HELP, 'long';
+use CLI::Help:ver<0.0.4>:auth<zef:lizmat> %?RESOURCES, &rak, &HELP, 'long';
 
 # Subroutine to actually output results
 my &sayer;
@@ -493,8 +503,13 @@ my multi sub rak(*@specs, *%n) {  # *%_ causes compilation issues
                 %additional<file> := codify-extensions($extensions.split(','));
             }
         }
-        elsif %n<known-extensions>:delete
-          || ($isa-tty && (%n<human>:!exists || %n<human>)) {
+        elsif %n<known-extensions>:delete {
+            %additional<file> := codify-extensions @known-extensions;
+        }
+        elsif %n<json-per-file> {
+            %additional<file> := codify-extensions ("json",);
+        }
+        elsif $isa-tty && (%n<human>:!exists || %n<human>) {
             %additional<file> := codify-extensions @known-extensions;
         }
 
@@ -689,8 +704,9 @@ my sub produce-json-per-file(&code, @paths, %_ --> Nil) {
     my $NEXT := next-phaser(&code);
 
     for @paths.&hyperize($batch, $degree).map: {
-        my $io := .IO;
+        CONTROL { drop-location-from-warning($_) }
 
+        my $io := .IO;
         if try from-json $io.slurp -> $json {
             my $*IO := $io;
             if needle($json) -> \result {
@@ -728,6 +744,8 @@ my sub produce-json-per-line(&code, @paths, %_ --> Nil) {
 
             for $io.lines -> $line {
                 if try from-json $line -> $json {
+                    CONTROL { drop-location-from-warning($_) }
+
                     my $*IO := $io;
                     ++$found if needle($json);
                 }
@@ -753,6 +771,8 @@ my sub produce-json-per-line(&code, @paths, %_ --> Nil) {
             $io.lines.map(-> $line {
                 ++$line-number;
                 if try from-json $line -> $json {
+                    CONTROL { drop-location-from-warning($_) }
+
                     my $*IO := $io;
                     if needle($json) -> \result {
                         my $filename := $io.relative;
@@ -789,6 +809,7 @@ my sub produce-blame-per-line(&code, @paths, %_ --> Nil) {
         if try Git::Blame::File.new($filename).lines -> @lines {
             my $*IO := $filename.IO;
             @lines.map(-> $blamer {
+                CONTROL { drop-location-from-warning($_) }
                 if needle($blamer) -> \result {
                     result =:= True ?? $blamer.Str !! result
                 }
