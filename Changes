@@ -2,6 +2,10 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.46  2022-08-09T12:04:24+02:00
+    - Allow for ~ to indicate home directory with specifications in
+      --paths-from and --files-from.  SmokeMachine++ for the suggestion
+
 0.0.45  2022-08-07T23:09:01+02:00
     - Make "jsonl" default extension with --json-per-line
     - Bump dependency on Git::Blame::File to get shortened sha support

@@ -222,6 +222,13 @@ my sub regexify($needle, %_) {
     "/$i$m$needle.substr(1)".EVAL
 }
 
+# Return a Seq with ~ paths substituted for actual home directory paths
+my sub homify($from) {
+    my $home := $*HOME.absolute ~ '/';
+    ($from eq "-" ?? $*IN.lines !! $from.IO.lines).map:
+      *.subst(/^ '~' '/'? /, $home)
+}
+
 # Check the given Callable for the named phaser, and run it if there is one
 my sub run-phaser(&code, str $name) {
     if Block.ACCEPTS(&code) && &code.callable_for_phaser($name) -> &phaser {
@@ -493,7 +500,7 @@ my multi sub rak(*@specs, *%n) {  # *%_ causes compilation issues
     my $seq := do if %n<files-from>:delete -> $from {
         meh "Cannot specify --files-from with path specification: @specs[]"
           if @specs;
-        $from eq "-" ?? $*IN.lines !! $from.IO.lines
+        homify $from
     }
 
     # Need to figure out which files to check
@@ -533,15 +540,17 @@ my multi sub rak(*@specs, *%n) {  # *%_ causes compilation issues
             meh "Cannot specify --paths-from with path specification: @specs[]"
               if @specs;
 
-            ( 
-              $from eq "-" ?? $*IN.lines !! $from.IO.lines
-            ).&hyperize(1,%n<degree>).map: { paths($_, |%additional).Slip }
+            homify($from).&hyperize(1,%n<degree>).map: {
+                paths($_, |%additional).Slip
+            }
         }
 
         # Paths from parameters
         elsif @specs {
             @specs.&hyperize(1,%n<degree>).map: {
-                .IO.f ?? $_ !! paths($_, |%additional).Slip
+                .IO.f
+                  ?? $_
+                  !! paths($_, |%additional).Slip  # assume shell will handle ~
             }
         }
 
