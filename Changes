@@ -2,6 +2,9 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.47  2022-08-09T12:59:56+02:00
+    - Make sure you can specify a ~/file with --files-from and --paths-from
+
 0.0.46  2022-08-09T12:04:24+02:00
     - Allow for ~ to indicate home directory with specifications in
       --paths-from and --files-from.  SmokeMachine++ for the suggestion

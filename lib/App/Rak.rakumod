@@ -225,7 +225,10 @@ my sub regexify($needle, %_) {
 # Return a Seq with ~ paths substituted for actual home directory paths
 my sub homify($from) {
     my $home := $*HOME.absolute ~ '/';
-    ($from eq "-" ?? $*IN.lines !! $from.IO.lines).map:
+    ($from eq "-"
+      ?? $*IN.lines
+      !! $from.subst(/^ '~' '/'? /, $home).IO.lines
+    ).map:
       *.subst(/^ '~' '/'? /, $home)
 }
 
