@@ -1,6 +1,13 @@
-my %*SUB-MAIN-OPTS = :named-anywhere;
-my $*REAL-MEH = 1;
+my %*SUB-MAIN-OPTS =
+  :named-anywhere, :bundling, :allow-no, :numeric-suffix-as-value;
 
-use App::Rak '&MAIN';
+for @*ARGS {
+    # Allow --no-foo as an alternative to --/foo, aka :allow-no
+    $_ = .subst(/^ '--' no '-' /, '--/');
+    # Allow -j2 as an alternative to --j=2, aka :numeric-suffix-as-value
+    $_ = "-$_.substr(0,2)=$/" if .match: /^ '-' <.alpha> <( \d+ $/;
+}
+
+use App::Rak;
 
 # vim: expandtab shiftwidth=4

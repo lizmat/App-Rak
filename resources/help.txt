@@ -29,16 +29,18 @@ Code pattern helpers:
 Haystack specification:
  path1 path2 ...     All other arguments are paths (default: current dir)
  --extensions        Extensions as group (e.g. #raku) or comma separated
+ --files-from=file   Read files to inspect from given file
  --known-extensions  Only search files with known extensions
  --paths-from=file   Read path specifications from given file
- --follow-symlinks   Follow symlinked directories? (default: don't)
- --files-from=file   Read files to inspect from given file
+ --recurse-symlinked-dir  Recurse intoi symlinked directories? (default: don't)
+ --recurse-unmatched-dir  Recurse into directories not matching (default: don't)
 
 Result modifiers:
  --before-context=N     List N lines before any line with a match
  --after-context=N      List N lines after any line with a match
  --context=N            List N lines around any line with a match
  --paragraph-context    List all lines in the same paragraph around a match
+ --passthru-context     List all lines (default: only matching pattern)
  --count-only           Only return count of matches
  --files-with-matches   Only return filenames with matches
  --file-separator-null  Separate filenames with null bytes
@@ -59,7 +61,6 @@ Listing modifiers:
  --highlight-after=yyy       String to put after match
  --output-file=filename      Send output to indicated file (default: STDOUT)
  --pager                     Pager to use (default: ACK_PAGER // none)
- --passthru                  Accept all lines (default: only matching pattern)
 
 Content modifiers:
  --modify-files        Change content of files using the Callable pattern

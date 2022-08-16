@@ -1,8 +1,10 @@
 use Test;
-use App::Rak;
 
 plan 1;
 
-ok MY::<&rak>, 'did rak get exported';
+{
+    use App::Rak;
+    ok MY::<&MAIN>, 'did MAIN get exported';
+}
 
 # vim: expandtab shiftwidth=4

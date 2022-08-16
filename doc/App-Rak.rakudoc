@@ -225,11 +225,6 @@ Flag.  If specified with a true value, will B<not> look at the contents of
 the selected paths, but instead consider the selected paths as lines in a
 virtual file.
 
-=head2 --follow-symlinks
-
-Flag.  Indicate whether symbolic links to directories should be followed.
-Defaults to C<False>.
-
 =head2 --group-matches
 
 Flag.  Indicate whether matches of a file should be grouped together by
@@ -437,7 +432,7 @@ $ rak foo --pager='less -r'
 Flag.  Indicate all lines that are part of the same paragraph B<around>
 any line that matches.  Defaults to C<False>.
 
-=head2 --passthru
+=head2 --passthru-context
 
 Flag.  Indicate whether B<all> lines from source should be shown, even if
 they do B<not> match the pattern.  Highlighting will still be performed, if
@@ -469,7 +464,19 @@ Flag.  Only makes sense if the pattern is a C<Callable>.  If specified
 with a true value, will catch all B<warnings> that are emitted when executing
 the pattern's C<Callable>.  Defaults to False.
 
-=head2 -repository=dir
+=head2 --recurse-unmatched-dir
+
+Flag.  Indicate whether directories that didn't match the C<--dir>
+specification, should be recursed into anyway.  Will not produce files
+from such directories, but may recurse further if directories are
+encountered. Defaults to C<False>.
+
+=head2 --recurse-symlinked-dir
+
+Flag.  Indicate whether directories that are actually symbolic links,
+should be recursed into.  Defaults to C<False>.
+
+=head2 --repository=dir
 
 Indicate the directory that should be searched for Raku module loading.
 Only makes sense if the pattern is executable code.

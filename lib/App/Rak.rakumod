@@ -1,12 +1,13 @@
 # The modules that we need here, with their full identities
-use highlighter:ver<0.0.12>:auth<zef:lizmat>;
-use Files::Containing:ver<0.0.16>:auth<zef:lizmat>;
 use as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use Git::Blame::File:ver<0.0.5>:auth<zef:lizmat>;
+use has-word:ver<0.0.3>:auth<zef:lizmat>;
+use highlighter:ver<0.0.12>:auth<zef:lizmat>;
+use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
+use rak:ver<0.0.6>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
 use Trap:ver<0.0.1>:auth<zef:lizmat>;
-use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
 
 # Defaults for highlighting on terminals
 my constant BON  = "\e[1m";   # BOLD ON
@@ -41,9 +42,7 @@ my sub s($elems) { $elems == 1 ?? "" !! "s" }
 
 # Sane way of quitting
 my sub meh($message) is hidden-from-backtrace {
-    $*REAL-MEH
-      ?? exit note $message
-      !! die $message
+    exit note $message;
 }
 
 # Quit if unexpected named arguments hash
@@ -64,19 +63,6 @@ my sub before-or-string(str $string, str $marker) {
     before($string, $marker) // $string
 }
 
-# Return named variables in order of specification on the command line
-my sub original-nameds() {
-    @*ARGS.map: {
-        .starts-with('--/')
-          ?? before-or-string(.substr(3), '=')
-          !! .starts-with('--' | '-/')
-            ?? before-or-string(.substr(2), '=')
-            !! .starts-with('-') && $_ ne '-'
-              ?? before-or-string(.substr(1), '=')
-              !! Empty
-    }
-}
-
 # Return extension of filename, if any
 my sub extension(str $filename) {
     with rindex($filename, '.') {
@@ -84,23 +70,6 @@ my sub extension(str $filename) {
     }
     else {
         ""
-    }
-}
-
-# Message for humans on STDERR
-my sub human-on-stdin(--> Nil) {
-    note "Reading from STDIN, please enter source and ^D when done:";
-}
-
-# Return object to call .lines on from STDIN
-my sub stdin-source() {
-    # handle humans
-    if $*IN.t {
-        human-on-stdin;
-        $*IN.slurp(:enc<utf8-c8>).lines
-    }
-    else {
-        $*IN.lines
     }
 }
 
@@ -120,106 +89,84 @@ my sub named-args(%args, *%wanted) {
     }
 }
 
-# Add any lines before / after in a result
-role delimiter { has $.delimiter }
-my sub add-before-after($io, @initially-selected, int $before, int $after) {
-    my str @lines = $io.lines(:enc<utf8-c8>);
-    @lines.unshift: "";   # make 1-base indexing natural
-    my int $last-linenr = @lines.end;
-
-    my int8 @seen;
-    my $selected := IterationBuffer.CREATE;
-    for @initially-selected {
-        my int $linenr = .key;
-        if $before {
-            for max($linenr - $before, 1) ..^ $linenr -> int $_ {
-                $selected.push:
-                  Pair.new($_, @lines.AT-POS($_) but delimiter('-'))
-                  unless @seen.AT-POS($_)++;
-            }
-        }
-
-        $selected.push: Pair.new(.key, .value but delimiter(':'))
-          unless @seen.AT-POS($linenr)++;
-
-        if $after {
-            for $linenr ^.. min($linenr + $after, $last-linenr ) -> int $_ {
-                $selected.push:
-                  Pair.new($_, @lines.AT-POS($_) but delimiter('-'))
-                  unless @seen.AT-POS($_)++;
-            }
-        }
-    }
-
-    $selected.List
-}
-# Add any lines until any paragraph boundary
-my sub add-paragraph($io, @initially-selected) {
-    my str @lines = $io.lines(:enc<utf8-c8>);
-    @lines.unshift: "";   # make 1-base indexing natural
-    my int $last-linenr = @lines.end;
-
-    my int8 @seen;
-    my @selected is List = @initially-selected.map: {
-        my int $linenr = .key;
-        my int $pos = $linenr;
-        my $selected := IterationBuffer.CREATE;
-        while --$pos
-          && !(@seen.AT-POS($pos)++)
-          && @lines.AT-POS($pos) -> $line {
-            $selected.unshift: Pair.new($pos, $line but delimiter('-'));
-        }
-
-        $selected.push: Pair.new(.key, .value but delimiter(':'))
-          unless @seen.AT-POS($linenr)++;
-
-        if $linenr < $last-linenr {
-            $pos = $linenr;
-            while ++$pos < $last-linenr
-              && !(@seen.AT-POS($pos)++)
-              && @lines.AT-POS($pos) -> $line {
-                $selected.push:
-                  Pair.new($pos, $line but delimiter('-'));
-            }
-            $selected.push:
-              Pair.new($pos, @lines.AT-POS($pos) but delimiter('-'))
-              unless @seen.AT-POS($pos)++;
-        }
-        $selected.Slip
-    }
-    @selected
-}
-
 # Return prelude from --repository and --module parameters
 my sub prelude(%_) {
     my $prelude = "";
-    if %_<I>:delete -> \libs {
+    if %_<repository>:delete -> \libs {
         $prelude = libs.map({"use lib '$_'; "}).join;
     }
-    if %_<M>:delete -> \modules {
+    if %_<module>:delete -> \modules {
         $prelude ~= modules.map({"use $_; "}).join;
     }
     $prelude
 }
 
-# Pre-process non literal string needles, return Callable if possible
-my sub codify($needle, %_?) {
-    Callable.ACCEPTS($needle)
-      ?? $needle
-      !! $needle.starts-with('/') && $needle.ends-with('/')
-        ?? regexify($needle, %_)
-        !! $needle.starts-with('{') && $needle.ends-with('}')
-          ?? (prelude(%_) ~ 'my $ = -> $_ ' ~ $needle).EVAL
-          !! $needle.starts-with('*.')
-            ?? (prelude(%_) ~ 'my $ := ' ~ $needle).EVAL
-            !! $needle
+# Convert a string to code if possible
+my sub codify(Str:D $code, %_?) {
+    CATCH {
+        meh "Could not compile '$code':\n$_.message()";
+    }
+    $code.starts-with('/') && $code.ends-with('/')
+      ?? regexify($code, %_)
+      !! $code.starts-with('{') && $code.ends-with('}')
+        ?? (prelude(%_) ~ 'my $ := -> $_ ' ~ $code).EVAL
+        !! $code.starts-with('-> $') && $code.ends-with('}')
+          ?? (prelude(%_) ~ 'my $ := ' ~ $code).EVAL
+          !! $code.starts-with('*.') || $code.starts-with('* ')
+            ?? (prelude(%_) ~ 'my $ := ' ~ $code).EVAL
+            !! $code
 }
 
 # Pre-process literal strings looking like a regex
-my sub regexify($needle, %_) {
-    my $i := %_<ignorecase>:delete ?? ':i' !! '';
-    my $m := %_<ignoremark>:delete ?? ':m' !! '';
-    "/$i$m$needle.substr(1)".EVAL
+my sub regexify($code, %_) {
+    my $i := %_<ignorecase> ?? ':i' !! '';
+    my $m := %_<ignoremark> ?? ':m' !! '';
+    "/$i$m$code.substr(1)".EVAL
+}
+
+# Convert a string to code, fail if not possible
+my sub convert-to-Callable(Str:D $code) {
+    my $callable := codify($code);
+    Callable.ACCEPTS($callable)
+      ?? $callable
+      !! meh "Does not look like a code specification: $code"
+}
+
+# Convert a string to non-Regex code, fail if not possible
+my sub convert-to-simple-Callable(Str:D $code) {
+    my $callable := codify($code);
+    Regex.ACCEPTS($callable)
+      ?? meh "Cannot use a regular expression in this context: '$code'"
+      !! $callable
+}
+
+# Return Callable for a pattern that is not supposed to be code
+my sub needleify($pattern, %_) {
+    my $i := %_<ignorecase>:delete;
+    my $m := %_<ignoremark>:delete;
+    my $type := %_<type>:delete || 'contains';
+
+    if $type eq 'words' {
+        $i
+          ?? $m
+            ?? *.&has-word($pattern, :i, :m)
+            !! *.&has-word($pattern, :i)
+          !! $m
+            ?? *.&has-word($pattern, :m)
+            !! *.&has-word($pattern)
+    }
+    elsif $type eq 'contains' | 'starts-with' | 'ends-with' {
+        $i
+          ?? $m
+            ?? *."$type"($pattern, :i, :m)
+            !! *."$type"($pattern, :i)
+          !! $m
+            ?? *."$type"($pattern, :m)
+            !! *."$type"($pattern)
+    }
+    else {
+        die "Don't know how to handle type: $type";
+    }
 }
 
 # Return a Seq with ~ paths substituted for actual home directory paths
@@ -255,56 +202,6 @@ my sub codify-extensions(@extensions) {
     -> $_ { !is-sha1($_) && extension($_) (elem) @extensions }
 }
 
-# Return a properly pre-processed needle for various options
-my sub preprocess-code-needle(&code, %_ --> Callable:D) {
-    my $silently := (%_<silently>:delete)<>;
-    if %_<quietly>:delete {
-        # the existence of a CONTROL block appears to disallow use of ternaries
-        # 2202.07
-        if $silently {
-            if $silently =:= True || $silently eq 'out,err' | 'err,out' {
-                -> $_ {
-                    CONTROL { .resume }
-                    Trap(my $*OUT, my $*ERR);
-                    code($_)
-                }
-            }
-            elsif $silently eq 'out' {
-                -> $_ {
-                    CONTROL { .resume }
-                    Trap(my $*OUT);
-                    code($_)
-                }
-            }
-            elsif $silently eq 'err' {
-                -> $_ {
-                    CONTROL { .resume }
-                    Trap(my $*ERR);
-                    code($_)
-                }
-            }
-            else {
-                meh "Unexpected value for --silently: $silently"
-            }
-        }
-        else {
-            -> $_ { CONTROL { .resume }; code($_) }
-        }
-    }
-    elsif $silently {  # and not quietly
-        $silently =:= True || $silently eq 'out,err' | 'err,out'
-            ?? -> $_ { Trap(my $*OUT, my $*ERR); code($_) }
-            !! $silently eq 'out'
-              ?? -> $_ { Trap(my $*OUT); code($_) }
-              !! $silently eq 'err'
-                ?? -> $_ { Trap(my $*ERR); code($_) }
-                !! meh "Unexpected value for --silently: $silently"
-    }
-    else {
-        &code
-    }
-}
-
 # Set up the --help handler
 use META::constants:ver<0.0.2>:auth<zef:lizmat> $?DISTRIBUTION;
 my sub HELP($text, @keys, :$verbose) {
@@ -326,19 +223,8 @@ my sub HELP($text, @keys, :$verbose) {
     }
 }
 
-# Allow --no-foo as an alternative to --/foo
-$_ .= subst(/^ '--' no '-' /, '--/') for @*ARGS;
-
-# Entry point for CLI processing
-my proto sub rak(|) {*}
-use CLI::Version:ver<0.0.7>:auth<zef:lizmat>  $?DISTRIBUTION, &rak, 'long';
-use CLI::Help:ver<0.0.4>:auth<zef:lizmat> %?RESOURCES, &rak, &HELP, 'long';
-
-# Subroutine to actually output results
-my &sayer;
-
-# Main handler
-my multi sub rak(*@specs, *%n) {  # *%_ causes compilation issues
+# Preprocess parameters from the given config
+my sub handle-config-and-preprocessing(%n) {  # *%_ causes compilation issues
     my %config := $config-file.e ?? from-json($config-file.slurp) !! { }
 
     # Saving config
@@ -371,11 +257,6 @@ my multi sub rak(*@specs, *%n) {  # *%_ causes compilation issues
         for %config.sort(*.key.fc) -> (:$key, :value(%args)) {
             say sprintf($format,$key) ~ as-cli-arguments(%args);
         }
-        exit;
-    }
-    elsif %n<list-known-extensions>:delete {
-        say sprintf('%9s: %s', .key, .value.map({$_ || '(none)'}).Str)
-          for %exts.sort(*.key);
         exit;
     }
 
@@ -426,22 +307,42 @@ my multi sub rak(*@specs, *%n) {  # *%_ causes compilation issues
             %n{$option} = $original-value;
         }
     }
-    translate($_, %n{$_}) for original-nameds;
 
+    # Return named variables in order of specification on the command line
+    my sub original-nameds() {
+        @*ARGS.map: {
+            .starts-with('--/')
+              ?? before-or-string(.substr(3), '=')
+              !! .starts-with('--' | '-/')
+                ?? before-or-string(.substr(2), '=')
+                !! .starts-with('-') && $_ ne '-'
+                  ?? before-or-string(.substr(1), '=')
+                  !! Empty
+        }
+    }
+    translate($_, %n{$_}) for original-nameds;
+}
+
+# Subroutine to actually output results
+my &sayer;
+# Flag indicating a pager was used
+my $pager;
+
+# Handle the general informational and output options
+my sub handle-general-options(%n) {  # *%_ causes compilation issues
+    # What are the known extensions?
+    if %n<list-known-extensions>:delete {
+        say sprintf('%9s: %s', .key, .value.map({$_ || '(none)'}).Str)
+          for %exts.sort(*.key);
+        exit;
+    }
     # What did we do?
-    if %n<list-expanded-options>:delete {
+    elsif %n<list-expanded-options>:delete {
         say as-cli-arguments(%n);
         exit;
     }
 
-    # Set up output file if needed
-    temp $*OUT;
-    with %n<output-file>:delete -> $path {
-        $*OUT = open($path, :w) if $path ne "-";
-    }
-
     # Set up pager if necessary
-    my $pager;
     if %n<pager>:delete // %*ENV<RAK_PAGER> -> \pager {
         pager =:= True
           ?? meh("Must specify a specific pager to use: --pager=foo")
@@ -449,119 +350,189 @@ my multi sub rak(*@specs, *%n) {  # *%_ causes compilation issues
         $pager = True;
     }
 
-    # Start looking at actual actionable options
-    my $needle = %n<pattern>:delete // @specs.shift;
-    meh "Must at least specify a pattern" without $needle;
+    # Set up output file if needed
+    elsif %n<output-file>:delete -> $path {
+        $*OUT = open($path, :w) if $path ne "-";
+    }
 
-    if %n<say>:delete -> $say {
-        &sayer = Callable.ACCEPTS($say) ?? $say !! codify($say);
+    # We want to say it differently?
+    &sayer = do if %n<sayer>:delete -> $sayer {
+        &say;  # for now
     }
     else {
-        &sayer = &say;
+        my $out := $*OUT;
+        -> $_ { $out.say($_) }
     }
+}
 
-    # Activate any uniquefier
-    if %n<unique>:delete {
-        my &old-sayer := &sayer<>;
-        my %seen;
-        &sayer = -> $_ { old-sayer($_) unless %seen{$_}++ }
-    }
+# Set up paths to search
+my sub source-selection-setup(@specs, %n) {
 
-    # Pre-process non literal string needles
-    $needle = codify($needle, %n);
-    $is-simple-Callable := Callable.ACCEPTS($needle) && !Regex.ACCEPTS($needle);
-    $can-have-phasers   := $is-simple-Callable && Block.ACCEPTS($needle);
-
-    # Handle --smartcase
-    %n<ignorecase> = !$needle.contains(/ <:upper> /)
-      if Str.ACCEPTS($needle)
-      && (%n<ignorecase>:!exists)
-      && (%n<smartcase>:delete);
-
-    # Reading from STDIN
-    my $root := @specs.head;
-    if ($root && $root eq '-') || !$*IN.t  {
-        meh "Specified '$root' while reading from STDIN"
-          if $root && $root ne '-';
-        meh "Can not specify paths while reading from STDIN"
-          if @specs > 1;
-        ($is-simple-Callable
-          ?? (%n<json-per-file>:delete)
-            ?? &stdin-json-per-file
-            !! (%n<json-per-line>:delete)
-              ?? &stdin-json-per-line
-              !! &stdin
-          !! &stdin
-        )($needle, %n);
-
-        # Done
-        $*OUT.close if $pager;
-        exit;
-    }
-
-    # Not reading from STDIN, files are pre-specified
-    my $seq := do if %n<files-from>:delete -> $from {
-        meh "Cannot specify --files-from with path specification: @specs[]"
+    # files from a file
+    if %n<files-from>:exists {
+        meh "Specified path&s(@specs) '@specs[]' with --files-from"
           if @specs;
-        homify $from
     }
 
-    # Need to figure out which files to check
+    # paths from a file
+    elsif %n<paths-from>:exists {
+        meh "Specified path&s(@specs) '@specs[]' with --paths-from"
+          if @specs;
+    }
     else {
-        my %additional = named-args %n, :follow-symlinks, :file :dir;
-        if %additional<file>:exists {
-            ...
+        %n<paths> := @specs.List;
+    }
+
+    # Really want to check *all* files
+    if %n<find-all>:delete {
+        meh "Cannot specify --dir with --find-all"  if %n<dir>;
+        meh "Cannot specify --file with --find-all" if %n<file>;
+        %n<dir> := %n<file> := True;
+    }
+
+    # Do not want all files
+    else {
+
+        # Explicit directory selection specification
+        if %n<dir> -> $dir {
+            %n<dir> = convert-to-Callable($dir);
         }
+        else {
+            %n<dir> = !*.starts-with('.');
+        }
+
+        # Explicit file selection specification
+        if %n<file> -> $file {
+            %n<file> := convert-to-Callable($file);
+        }
+
+        # Explicit extensions
         elsif %n<extensions>:delete -> $extensions {
-            if $extensions.starts-with('#') {
-                if %exts{$extensions} -> @exts {
-                    %additional<file> := codify-extensions(@exts);
+            my @unknown;
+            if $extensions.split(',').map: {
+                if .starts-with('#') {
+                    if %exts{.substr(1)} -> @extensions {
+                        @extensions.Slip
+                    }
+                    else {
+                        @unknown.push: $_;
+                    }
                 }
                 else {
-                    meh "No extensions known for '$extensions'";
+                    $_
                 }
-            }
-            else {
-                %additional<file> := codify-extensions($extensions.split(','));
+            } -> @extensions {
+                meh "No extension&s(@unknown) known for '@unknown[]'"
+                  if @unknown;
+                %n<file> := codify-extensions @extensions;
             }
         }
         elsif %n<known-extensions>:delete {
-            %additional<file> := codify-extensions @known-extensions;
+            %n<file> := codify-extensions @known-extensions;
         }
+
+        # Implicit extensions
         elsif %n<json-per-file> {
-            %additional<file> := codify-extensions ("json",);
+            %n<file> := codify-extensions ("json",);
         }
         elsif %n<json-per-line> {
-            %additional<file> := codify-extensions ("jsonl",);
+            %n<file> := codify-extensions ("jsonl",);
         }
-        elsif $isa-tty && (%n<human>:!exists || %n<human>) {
-            %additional<file> := codify-extensions @known-extensions;
-        }
-
-        # Paths are pre-specified
-        if %n<paths-from>:delete -> $from {
-            meh "Cannot specify --paths-from with path specification: @specs[]"
-              if @specs;
-
-            homify($from).&hyperize(1,%n<degree>).map: {
-                paths($_, |%additional).Slip
-            }
-        }
-
-        # Paths from parameters
-        elsif @specs {
-            @specs.&hyperize(1,%n<degree>).map: {
-                .IO.f
-                  ?? $_
-                  !! paths($_, |%additional).Slip  # assume shell will handle ~
-            }
-        }
-
-        # no path, assume current dir
         else {
-            paths ".", |%additional
+            %n<file> := codify-extensions @known-extensions;
         }
     }
+}
+
+# Entry point for CLI processing
+my proto sub MAIN(|) is export {*}
+use CLI::Version:ver<0.0.7>:auth<zef:lizmat>  $?DISTRIBUTION, &MAIN, 'long';
+use CLI::Help:ver<0.0.4>:auth<zef:lizmat> %?RESOURCES, &MAIN, &HELP, 'long';
+
+# Main handler
+my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
+    handle-config-and-preprocessing(%n);
+    handle-general-options(%n);
+
+    # Start looking at actual actionable options
+    my $pattern = %n<pattern>:delete // @specs.shift;
+    meh "Must at least specify a pattern" without $pattern;
+
+    # Handle smartcase
+    %n<ignorecase> = !$pattern.contains(/ <:upper> /)
+      if (%n<ignorecase>:!exists) && (%n<smartcase>:delete);
+
+    # Process string pattern into a Callable
+    my $needle = codify($pattern, %n);
+
+    # Make sure needle is executable, remember of needle needs Str to work
+    my $must-get-strings := do if Callable.ACCEPTS($needle) {
+        Regex.ACCEPTS($needle)
+    }
+    else {
+        $needle = needleify($pattern, %n);
+        # set highlighting options
+        True
+    }
+
+    # Set up parameters of where to look
+    source-selection-setup(@specs, %n);
+
+    # Set up producers
+    my $enc := %n<encoding> // 'utf8-c8';
+    if %n<per-file>:delete -> $per-file {
+        %n<producer> := $per-file =:= True
+          ?? *.slurp(:$enc)
+          !! convert-to-simple-Callable($per-file)
+
+    }
+    elsif %n<per-line>:delete -> $per-line {
+        %n<producer> := convert-to-simple-Callable($per-line)
+          unless $per-line =:= True;
+    }
+
+    # after this, these all require simple Callables
+
+    # Match JSON data
+    elsif %n<json-per-file>:delete {
+        %n<producer> := -> $_ { from-json .IO.slurp(:$enc), :immutable }
+    }
+    elsif %n<json-per-line>:delete {
+        %n<producer> := -> $_ {
+            .IO.lines(:$enc).map: { from-json $_, :immutable }
+        }
+    }
+
+    # Match git blame data
+    elsif %n<blame-per-file>:delete {
+        %n<producer> := -> $_ { Git::Blame::File.new($_) }
+    }
+    elsif %n<blame-per-line>:delete {
+        %n<producer> := -> $_ { Git::Blame::File.new($_).lines }
+    }
+
+    # Set up (lazy) sequence
+    my $result := rak $needle, %n;
+
+    # Oops, something went wrong
+    meh $result.value if Pair.ACCEPTS($result);
+
+    # show the results!
+    for $result -> (:key($source), :value(@matches)) {
+        if @matches {
+            sayer $source.IO.relative;
+            for @matches -> (:key($line-number), :value($match)) {
+                sayer "$line-number:$match";
+            }
+        }
+    }
+
+    # Done
+    $*OUT.close if $pager;
+    exit;
+}
+
+=finish
 
     # Want to go edit
     if %n<edit>:delete -> $editor {
@@ -1210,7 +1181,5 @@ my sub stdin($needle, %_, $source = stdin-source --> Nil) {
         }
     }
 }
-
-sub EXPORT($name = '&rak') { Map.new: ($name => &rak) }
 
 # vim: expandtab shiftwidth=4

@@ -6,17 +6,19 @@
   "build-depends": [
   ],
   "depends": [
+    "as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>",
     "CLI::Help:ver<0.0.4>:auth<zef:lizmat>",
     "CLI::Version:ver<0.0.7>:auth<zef:lizmat>",
-    "META::constants:ver<0.0.2>:auth<zef:lizmat>",
-    "highlighter:ver<0.0.12>:auth<zef:lizmat>",
-    "Files::Containing:ver<0.0.16>:auth<zef:lizmat>",
-    "as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>",
     "Edit::Files:ver<0.0.4>:auth<zef:lizmat>",
     "Git::Blame::File:ver<0.0.5>:auth<zef:lizmat>",
+    "has-word:ver<0.0.3>:auth<zef:lizmat>",
+    "highlighter:ver<0.0.12>:auth<zef:lizmat>",
+    "JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>",
+    "rak:ver<0.0.6>:auth<zef:lizmat>",
     "String::Utils:ver<0.0.8>:auth<zef:lizmat>",
     "Trap:ver<0.0.1>:auth<zef:lizmat>",
-    "JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>"
+
+    "META::constants:ver<0.0.2>:auth<zef:lizmat>"
   ],
   "description": "21st century grep / find / ack / ag / rg on steroids",
   "license": "Artistic-2.0",
