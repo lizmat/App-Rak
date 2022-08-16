@@ -469,7 +469,7 @@ Flag.  Only makes sense if the pattern is a C<Callable>.  If specified
 with a true value, will catch all B<warnings> that are emitted when executing
 the pattern's C<Callable>.  Defaults to False.
 
-=head2 --repository=dir
+=head2 -repository=dir
 
 Indicate the directory that should be searched for Raku module loading.
 Only makes sense if the pattern is executable code.
