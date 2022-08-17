@@ -5,7 +5,7 @@ use Git::Blame::File:ver<0.0.5>:auth<zef:lizmat>;
 use has-word:ver<0.0.3>:auth<zef:lizmat>;
 use highlighter:ver<0.0.12>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
-use rak:ver<0.0.6>:auth<zef:lizmat>;
+use rak:ver<0.0.8>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
 use Trap:ver<0.0.1>:auth<zef:lizmat>;
 
@@ -481,13 +481,13 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     # Set up producers
     my $enc := %n<encoding> // 'utf8-c8';
     if %n<per-file>:delete -> $per-file {
-        %n<producer> := $per-file =:= True
+        %n<produce-one> := $per-file =:= True
           ?? *.slurp(:$enc)
           !! convert-to-simple-Callable($per-file)
 
     }
     elsif %n<per-line>:delete -> $per-line {
-        %n<producer> := convert-to-simple-Callable($per-line)
+        %n<produce-many> := convert-to-simple-Callable($per-line)
           unless $per-line =:= True;
     }
 
@@ -495,35 +495,89 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 
     # Match JSON data
     elsif %n<json-per-file>:delete {
-        %n<producer> := -> $_ { from-json .IO.slurp(:$enc), :immutable }
+        %n<produce-one> := -> $_ { from-json .slurp(:$enc) }
+        %n<omit-item-numbers> := True;
     }
     elsif %n<json-per-line>:delete {
-        %n<producer> := -> $_ {
-            .IO.lines(:$enc).map: { from-json $_, :immutable }
+        %n<produce-many> := -> $_ {
+            .IO.lines(:$enc).map: *.&from-json
         }
     }
 
     # Match git blame data
     elsif %n<blame-per-file>:delete {
-        %n<producer> := -> $_ { Git::Blame::File.new($_) }
+        %n<produce-this> := -> $_ { Git::Blame::File.new($_) }
+        %n<omit-item-numbers> := True;
     }
     elsif %n<blame-per-line>:delete {
         %n<producer> := -> $_ { Git::Blame::File.new($_).lines }
     }
 
+    my $count-only := %n<count-only>:delete;
+    %n<stats-only> := True if $count-only;
+
     # Set up (lazy) sequence
-    my $result := rak $needle, %n;
+    my (:$key, :value(@outer)) := rak $needle, %n;
+    meh $key.message if Exception.ACCEPTS($key);
 
     # Oops, something went wrong
-    meh $result.value if Pair.ACCEPTS($result);
+    my $show-filename := %n<show-filename>:delete;
 
     # show the results!
-    for $result -> (:key($source), :value(@matches)) {
-        if @matches {
-            sayer $source.IO.relative;
-            for @matches -> (:key($line-number), :value($match)) {
-                sayer "$line-number:$match";
+    for @outer -> $outer {
+        if Pair.ACCEPTS($outer) {
+            my $source := $outer.key;
+            sayer $source.relative if $show-filename;
+            my $result := $outer.value;
+            if Iterable.ACCEPTS($result) && $result -> @matches {
+                if Pair.ACCEPTS(@matches.head) {
+                    my str $format = '%' ~ @matches.tail.key.chars ~ 'd:%s';
+                    sayer sprintf $format, .key, .value for @matches;
+                }
+                else {
+                    sayer $_ for @matches;
+                }
             }
+            else {
+                sayer $result;
+            }
+        }
+
+        # just show unique results
+        else {
+            sayer $outer;
+        }
+    }
+
+    if $key -> %s {
+        if $count-only && !%n<verbose> {
+            sayer %s<nr-matches> + %s<nr-changes>
+              ~ " matches in %s<nr-sources> files";
+        }
+        else {
+            my str @stats;
+            unless $count-only {
+                @stats.push: "Statistics for '" ~ BON ~ $pattern ~ BOFF ~ "':";
+                my str $bar   = '-' x @stats[0].chars - BON.chars - BOFF.chars;
+                @stats.unshift: $bar;
+                @stats.push: $bar;
+            }
+            @stats.push: "  Number of sources: %s<nr-sources>";
+
+            if %s<nr-items> -> $items {
+                @stats.push: "    Number of items: $items";
+            }
+            if %s<nr-matches> -> $matches {
+                @stats.push: "  Number of matches: $matches";
+            }
+            if %s<nr-passthrus> -> $passthrus {
+                @stats.push: "Number of passthrus: $passthrus";
+            }
+            if %s<nr-changes> -> $changes {
+                @stats.push: "  Number of changes: $changes";
+            }
+
+            sayer @stats.join("\n");
         }
     }
 

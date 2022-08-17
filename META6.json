@@ -14,7 +14,7 @@
     "has-word:ver<0.0.3>:auth<zef:lizmat>",
     "highlighter:ver<0.0.12>:auth<zef:lizmat>",
     "JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>",
-    "rak:ver<0.0.6>:auth<zef:lizmat>",
+    "rak:ver<0.0.8>:auth<zef:lizmat>",
     "String::Utils:ver<0.0.8>:auth<zef:lizmat>",
     "Trap:ver<0.0.1>:auth<zef:lizmat>",
 
