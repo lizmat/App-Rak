@@ -5,9 +5,8 @@ use Git::Blame::File:ver<0.0.5>:auth<zef:lizmat>;
 use has-word:ver<0.0.3>:auth<zef:lizmat>;
 use highlighter:ver<0.0.12>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
-use rak:ver<0.0.8>:auth<zef:lizmat>;
+use rak:ver<0.0.10>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
-use Trap:ver<0.0.1>:auth<zef:lizmat>;
 
 # Defaults for highlighting on terminals
 my constant BON  = "\e[1m";   # BOLD ON
@@ -142,9 +141,9 @@ my sub convert-to-simple-Callable(Str:D $code) {
 
 # Return Callable for a pattern that is not supposed to be code
 my sub needleify($pattern, %_) {
-    my $i := %_<ignorecase>:delete;
-    my $m := %_<ignoremark>:delete;
-    my $type := %_<type>:delete || 'contains';
+    my $i := %_<ignorecase>;
+    my $m := %_<ignoremark>;
+    my $type := %_<type> //= 'contains';
 
     if $type eq 'words' {
         $i
@@ -232,7 +231,7 @@ my sub handle-config-and-preprocessing(%n) {  # *%_ causes compilation issues
         if %n {
             if %n.grep({
                 $_ eq '!' || (.starts-with('[') && .ends-with(']')) with .value
-            }) -> @reps { 
+            }) -> @reps {
                 meh "Can only have one option with replacement: @reps.map({
                     '"' ~ .key ~ '"'
                 }).join(", ") were given" if @reps > 1;
@@ -366,44 +365,46 @@ my sub handle-general-options(%n) {  # *%_ causes compilation issues
 }
 
 # Set up paths to search
-my sub source-selection-setup(@specs, %n) {
+my sub setup-sources-selection(@specs, %n, %rak) {
 
     # files from a file
-    if %n<files-from>:exists {
+    if %n<files-from>:delete -> $files-from {
         meh "Specified path&s(@specs) '@specs[]' with --files-from"
           if @specs;
+        %rak<files-from> := $files-from;
     }
 
     # paths from a file
-    elsif %n<paths-from>:exists {
+    elsif %n<paths-from> -> $paths-from {
         meh "Specified path&s(@specs) '@specs[]' with --paths-from"
           if @specs;
+        %rak<paths-from> := $paths-from;
     }
     else {
-        %n<paths> := @specs.List;
+        %rak<paths> := @specs.List;
     }
 
     # Really want to check *all* files
-    if %n<find-all>:delete {
-        meh "Cannot specify --dir with --find-all"  if %n<dir>;
-        meh "Cannot specify --file with --find-all" if %n<file>;
-        %n<dir> := %n<file> := True;
+    if %n<all-files>:delete {
+        meh "Cannot specify --dir with --find-all"  if %n<dir>:delete;
+        meh "Cannot specify --file with --find-all" if %n<file>:delete;
+        %rak<dir> := %rak<file> := True;
     }
 
     # Do not want all files
     else {
 
         # Explicit directory selection specification
-        if %n<dir> -> $dir {
-            %n<dir> = convert-to-Callable($dir);
+        if %n<dir>:delete -> $dir {
+            %rak<dir> := convert-to-Callable($dir);
         }
         else {
-            %n<dir> = !*.starts-with('.');
+            %rak<dir> := -> $_ { !.starts-with('.') }
         }
 
         # Explicit file selection specification
-        if %n<file> -> $file {
-            %n<file> := convert-to-Callable($file);
+        if %n<file>:delete -> $file {
+            %rak<file> := convert-to-Callable($file);
         }
 
         # Explicit extensions
@@ -424,23 +425,135 @@ my sub source-selection-setup(@specs, %n) {
             } -> @extensions {
                 meh "No extension&s(@unknown) known for '@unknown[]'"
                   if @unknown;
-                %n<file> := codify-extensions @extensions;
+                %rak<file> := codify-extensions @extensions;
             }
         }
         elsif %n<known-extensions>:delete {
-            %n<file> := codify-extensions @known-extensions;
+            %rak<file> := codify-extensions @known-extensions;
         }
 
         # Implicit extensions
         elsif %n<json-per-file> {
-            %n<file> := codify-extensions ("json",);
+            %rak<file> := codify-extensions ("json",);
         }
         elsif %n<json-per-line> {
-            %n<file> := codify-extensions ("jsonl",);
+            %rak<file> := codify-extensions ("jsonl",);
         }
         else {
-            %n<file> := codify-extensions @known-extensions;
+            %rak<file> := codify-extensions @known-extensions;
         }
+    }
+
+    # Boolean flags that can also be negated
+    for <recurse-symlinked-dir recurse-unmatched-dir
+         is-empty is-executable is-readable is-writable is-symbolic-link
+         is-group-executable is-group-readable is-group-writable
+         is-owned-by-group is-owned-by-user
+         is-world-executable is-world-readable is-world-writable
+        > {
+        %rak{$_} := %n{$_}:delete if %n{$_}:exists;
+    }
+
+    # Checking for epoch
+    for <accessed created meta-modified modified> {
+        # TODO
+    }
+
+    # Checking for user / group ID
+    for <uid gid> {
+        # TODO
+    }
+
+    # Checking for numeric value
+    for <blocks device-number filesize hard-links inode mode> {
+        # TODO
+    }
+}
+
+# Set up the producers of information
+my sub setup-producers(%n, %rak) {
+    # Set up producers
+    %rak<encoding> := my $enc := (%n<encoding>:delete) // 'utf8-c8';
+    if %n<per-file>:delete -> $per-file {
+        %rak<produce-one> := $per-file =:= True
+          ?? *.slurp(:$enc)
+          !! convert-to-simple-Callable($per-file)
+
+    }
+    elsif %n<per-line>:delete -> $per-line {
+        %rak<produce-many> := convert-to-simple-Callable($per-line)
+          unless $per-line =:= True;
+    }
+
+    # after this, these all require simple Callables
+
+    # Match JSON data
+    elsif %n<json-per-file>:delete {
+        %rak<produce-one> := -> $_ { from-json .slurp(:$enc) }
+        %rak<omit-item-numbers> := True;
+    }
+    elsif %n<json-per-line>:delete {
+        %rak<produce-many> := *.lines(:$enc).map: *.&from-json
+    }
+
+    # Match git blame data
+    elsif %n<blame-per-file>:delete {
+        %rak<produce-one> := -> $_ { Git::Blame::File.new($_) }
+        %rak<omit-item-numbers> := True;
+    }
+    elsif %n<blame-per-line>:delete {
+        %rak<produce-many> := -> $_ { Git::Blame::File.new($_).lines }
+    }
+}
+
+# Return a Callable to do highlighting
+my sub make-highlighter($needle, %n, %rak) {
+    my Bool() $ignorecase = %n<ignorecase>;
+    my Bool() $ignoremark = %n<ignoremark>;
+    my        $type       = %n<type>;
+    my Bool() $highlight;
+    my Bool() $trim;
+    my Bool() $only;
+    my Int()  $summary-if-larger-than;
+
+    my $human := %n<human> //= $isa-tty;
+    if $human {
+        $highlight = True;
+        $only  = False;
+        $trim  = !(%n<context> || %n<before-context> || %n<after-context> ||
+                   %n<paragraph-context> || %n<passthru-context>);
+        $summary-if-larger-than = 160;
+    }
+
+    $highlight              := $_ with %n<highlight>:delete;
+    $trim                   := $_ with %n<trim>:delete;
+    $only                   := $_ with %n<only-matching>:delete;
+    $summary-if-larger-than := $_ with %n<summary-if-larger-than>:delete;
+
+    if $highlight {
+        my Str() $pre = my Str() $post = $_ with %n<highlight-before>:delete;
+        $post = $_ with %n<highlight-after>:delete;
+        $pre  = $only ?? " " !! BON  without $pre;
+        $post = $only ?? ""  !! BOFF without $post;
+
+        $trim
+          ?? -> $line {
+                 highlighter $line.trim, $needle<>, $pre, $post,
+                   :$ignorecase, :$ignoremark, :$type,
+                   :$only, :$summary-if-larger-than
+             }
+          !! -> $line {
+                 highlighter $line, $needle<>, $pre, $post,
+                   :$ignorecase, :$ignoremark, :$type,
+                   :$only, :$summary-if-larger-than
+             }
+    }
+    else {
+        $only
+          ?? -> $line { highlighter $line, $needle, "", " ", :$only, :$type }
+          !! $trim
+            ?? *.trim
+            !! -> $line { $line }
     }
 }
 
@@ -456,100 +569,176 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 
     # Start looking at actual actionable options
     my $pattern = %n<pattern>:delete // @specs.shift;
-    meh "Must at least specify a pattern" without $pattern;
+    my $needle = do if $pattern {
 
-    # Handle smartcase
-    %n<ignorecase> = !$pattern.contains(/ <:upper> /)
-      if (%n<ignorecase>:!exists) && (%n<smartcase>:delete);
+        # Handle smartcase
+        %n<ignorecase> = !$pattern.contains(/ <:upper> /)
+          if (%n<ignorecase>:!exists) && (%n<smartcase>:delete);
 
-    # Process string pattern into a Callable
-    my $needle = codify($pattern, %n);
-
-    # Make sure needle is executable, remember of needle needs Str to work
-    my $must-get-strings := do if Callable.ACCEPTS($needle) {
-        Regex.ACCEPTS($needle)
+        # Process string pattern into a Callable
+        codify($pattern, %n);
+    }
+    elsif %n<find> {  # no explicit pattern, but using find
+        &defined
     }
     else {
+        meh "Must at least specify a pattern";
+    }
+
+    # Arguments to rak
+    my %rak;
+
+    # Make sure needle is executable and create appropriate highlighter
+    my &line-post-proc;
+    if Regex.ACCEPTS($needle) {
+        &line-post-proc = make-highlighter($needle, %n, %rak)
+    }
+    # non-executable, create executable needle and highlighter
+    elsif !Callable.ACCEPTS($needle) {
         $needle = needleify($pattern, %n);
-        # set highlighting options
-        True
+        &line-post-proc = make-highlighter($pattern, %n, %rak)
     }
 
-    # Set up parameters of where to look
-    source-selection-setup(@specs, %n);
+    # Only interested in filenames
+    if %n<files-only>:delete {
 
-    # Set up producers
-    my $enc := %n<encoding> // 'utf8-c8';
-    if %n<per-file>:delete -> $per-file {
-        %n<produce-one> := $per-file =:= True
-          ?? *.slurp(:$enc)
-          !! convert-to-simple-Callable($per-file)
+        # Only interested in number of files
+        if %n<count-only>:delete {
+            %rak<max-matches-per-source> := 1;
+            %rak<mapper> := -> $, @ --> Empty {
+                state $seen = 0;
+                LAST {
+                    sayer $seen == 0
+                      ?? "No files"
+                      !! $seen == 1
+                        ?? "One file"
+                        !! "$seen files";
+                }
+                ++$seen;
+            }
+        }
 
-    }
-    elsif %n<per-line>:delete -> $per-line {
-        %n<produce-many> := convert-to-simple-Callable($per-line)
-          unless $per-line =:= True;
-    }
+        # Need to separate files with a null-byte
+        elsif %n<file-separator-null>:delete {
+            %rak<max-matches-per-source> := 1;
+            %rak<mapper> := -> $source, @ --> Empty {
+                state @files;
+                LAST { sayer @files.join("\0") }
+                @files.push: $source.relative;
+            }
+        }
 
-    # after this, these all require simple Callables
-
-    # Match JSON data
-    elsif %n<json-per-file>:delete {
-        %n<produce-one> := -> $_ { from-json .slurp(:$enc) }
-        %n<omit-item-numbers> := True;
-    }
-    elsif %n<json-per-line>:delete {
-        %n<produce-many> := -> $_ {
-            .IO.lines(:$enc).map: *.&from-json
+        # Want to know which files
+        else {
+            %rak<sources-only> := True;
+            &line-post-proc = *.relative;
         }
     }
 
-    # Match git blame data
-    elsif %n<blame-per-file>:delete {
-        %n<produce-this> := -> $_ { Git::Blame::File.new($_) }
-        %n<omit-item-numbers> := True;
-    }
-    elsif %n<blame-per-line>:delete {
-        %n<producer> := -> $_ { Git::Blame::File.new($_).lines }
+    # Want to edit files
+    elsif %n<edit>:delete -> $editor {
+        my $ignorecase := %n<ignorecase>;
+        my $ignoremark := %n<ignoremark>;
+        my $type       := %n<type>;
+
+        %rak<mapper> := -> $source, @matches --> Empty {
+            state @files;
+            LAST {
+                edit-files
+                  @files,
+                  :editor(Bool.ACCEPTS($editor) ?? Any !! $editor)
+            }
+
+            my $path := $source.relative;
+            @files.append: @matches.map: {
+                $path => .key => columns(
+                  .value, $pattern, :$ignorecase, :$ignoremark, :$type
+               ).head
+            }
+        }
     }
 
+    # Editor searching for files
+    elsif %n<vimgrep>:delete {
+        my $ignorecase := %n<ignorecase>;
+        my $ignoremark := %n<ignoremark>;
+        my $type       := %n<type>;
+
+        %rak<mapper> := -> $source, @matches {
+            my $path := $source.relative;
+            @matches.map({
+                $path
+                  ~ ':' ~ .key
+                  ~ ':' ~ columns(
+                            .value, $pattern, :$ignorecase, :$ignoremark, :$type
+                          ).head
+                  ~ ':' ~ .value
+            }).Slip
+        }
+    }
+
+    # Various setups
+    setup-sources-selection(@specs, %n, %rak);
+    setup-producers(%n, %rak);
+
+    # Set up statistics settings
     my $count-only := %n<count-only>:delete;
-    %n<stats-only> := True if $count-only;
+    %rak<stats-only> := True if %n<stats-only>:delete || $count-only;
+    %rak<stats>      := True if %n<stats>:delete;
+    %rak<unique>     := True if %n<unique>:delete;
 
-    # Set up (lazy) sequence
-    my (:$key, :value(@outer)) := rak $needle, %n;
-    meh $key.message if Exception.ACCEPTS($key);
+    # Remove arguments that have been handled now
+    %n<human ignorecase ignoremark type>:delete;
 
-    # Oops, something went wrong
-    my $show-filename := %n<show-filename>:delete;
+    my $show-filename := %n<show-filename>:delete // True;
+
+    # Set up / do the work
+    meh-if-unexpected(%n);
+    my $rak := rak $needle, %rak;
+    meh .message with $rak.exception;
+
 
     # show the results!
-    for @outer -> $outer {
+    for $rak.result -> $outer {
         if Pair.ACCEPTS($outer) {
             my $source := $outer.key;
-            sayer $source.relative if $show-filename;
             my $result := $outer.value;
-            if Iterable.ACCEPTS($result) && $result -> @matches {
-                if Pair.ACCEPTS(@matches.head) {
-                    my str $format = '%' ~ @matches.tail.key.chars ~ 'd:%s';
-                    sayer sprintf $format, .key, .value for @matches;
-                }
-                else {
-                    sayer $_ for @matches;
+            if Iterable.ACCEPTS($result) {
+                if $result -> @matches {
+                    sayer $source.relative if $show-filename;
+                    if Pair.ACCEPTS(@matches.head) {
+                        my str $format = '%' ~ @matches.tail.key.chars ~ 'd:%s';
+                        for @matches {
+                            sayer sprintf
+                                    $format,
+                                    .key,
+                                    .matched && &line-post-proc
+                                      ?? line-post-proc .value
+                                      !! .value
+                        }
+                    }
+                    elsif &line-post-proc {
+                        sayer line-post-proc $_ for @matches;
+                    }
+                    else {
+                        sayer $_ for @matches;
+                    }
                 }
             }
             else {
-                sayer $result;
+                sayer $source.relative if $show-filename;
+                sayer &line-post-proc ?? line-post-proc($outer) !! $outer;
             }
         }
 
         # just show unique results
         else {
-            sayer $outer;
+            sayer &line-post-proc ?? line-post-proc($outer) !! $outer;
         }
     }
 
-    if $key -> %s {
+    # Statistics to show
+    if $rak.stats -> %s {
         if $count-only && !%n<verbose> {
             sayer %s<nr-matches> + %s<nr-changes>
               ~ " matches in %s<nr-sources> files";
@@ -562,10 +751,10 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
                 @stats.unshift: $bar;
                 @stats.push: $bar;
             }
-            @stats.push: "  Number of sources: %s<nr-sources>";
+            @stats.push: "    Number of files: %s<nr-sources>";
 
             if %s<nr-items> -> $items {
-                @stats.push: "    Number of items: $items";
+                @stats.push: "    Number of lines: $items";
             }
             if %s<nr-matches> -> $matches {
                 @stats.push: "  Number of matches: $matches";
@@ -588,32 +777,10 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 
 =finish
 
-    # Want to go edit
-    if %n<edit>:delete -> $editor {
-        go-edit-files($editor, $needle, $seq.sort(*.fc), %n);
-    }
-    
-    # Just match on filenames
-    elsif %n<find>:delete {
-        %n<show-line-number> //= False;
-        stdin($needle, %n, $seq);
-    }
-
-    # Need sorted filename list
-    else {
-        # Embedded in vim
-        my &handle := do if %n<vimgrep>:delete {
-            vimgrep($needle, %n, $seq);
-        }
-
         # Code to run as a needle
         elsif $is-simple-Callable {
             %n<modify-files>:delete
               ?? &modify-files
-              !! (%n<json-per-file>:delete)
-                ?? &produce-json-per-file
-                !! (%n<json-per-line>:delete)
-                  ?? &produce-json-per-line
                   !! (%n<blame-per-line>:delete)
                     ?? &produce-blame-per-line
                     !! (%n<count-only>:delete)
@@ -635,29 +802,6 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     }
 
     $*OUT.close if $pager;
-}
-
-# Edit / Inspect some files
-my sub go-edit-files($editor, $needle, @paths, %_ --> Nil) {
-    CATCH { meh .message }
-
-    my $files-with-matches := %_<files-with-matches>:delete;
-    my %ignore             := named-args %_, :ignorecase :ignoremark;
-    my %additional =
-      |(named-args %_, :max-count, :type, :batch, :degree),
-      |%ignore;
-    meh-if-unexpected(%_);
-
-    edit-files ($files-with-matches
-      ?? files-containing($needle, @paths, :files-only, |%additional)
-      !! files-containing($needle, @paths, |%additional).map: {
-             my $path := .key;
-             .value.map({
-                 $path => .key + 1 => columns(.value, $needle, |%ignore).head
-             }).Slip
-         }
-      ),
-      :editor(Bool.ACCEPTS($editor) ?? Any !! $editor)
 }
 
 # Replace contents of files using the given Callable
@@ -744,109 +888,6 @@ my sub modify-files(&needle, @paths, %_ --> Nil) {
     sayer $fb;
 }
 
-# Produce JSON per file to check
-my sub produce-json-per-file(&code, @paths, %_ --> Nil) {
-    my &needle        := preprocess-code-needle(&code, %_);
-    my $batch         := %_<batch>:delete;
-    my $degree        := %_<degree>:delete;
-    my $show-filename := %_<show-filename>:delete // True;
-    meh-if-unexpected(%_);
-
-    run-phaser(&code, 'FIRST');
-    my $NEXT := next-phaser(&code);
-
-    for @paths.&hyperize($batch, $degree).map: {
-        CONTROL { drop-location-from-warning($_) }
-
-        my $io := .IO;
-        if try from-json $io.slurp -> $json {
-            my $*IO := $io;
-            if needle($json) -> \result {
-                my $filename := $io.relative;
-                result =:= True
-                  ?? $filename
-                  !! $show-filename
-                    ?? "$filename: " ~ result
-                    !! result
-            }
-        }
-    } {
-        sayer $_;
-        $NEXT() if $NEXT;
-    }
-    run-phaser(&code, 'LAST');
-}
-
-# Produce JSON per line to check
-my sub produce-json-per-line(&code, @paths, %_ --> Nil) {
-    my &needle        := preprocess-code-needle(&code, %_);
-    my $batch         := %_<batch>:delete;
-    my $degree        := %_<degree>:delete;
-    my $show-filename := %_<show-filename>:delete // True;
-
-    run-phaser(&needle, 'FIRST');
-    my $NEXT := next-phaser(&needle);
-    if %_<count-only>:delete {
-        meh-if-unexpected(%_);
-        my int $total;
-
-        for @paths.&hyperize($batch, $degree).map: {
-            my $io := .IO;
-            my int $found;
-
-            for $io.lines -> $line {
-                if try from-json $line -> $json {
-                    CONTROL { drop-location-from-warning($_) }
-
-                    my $*IO := $io;
-                    ++$found if needle($json);
-                }
-            }
-
-            $total += $found;
-            "$io.relative(): $found" if $show-filename;
-        } {
-            sayer $_;
-            $NEXT() if $NEXT;
-        }
-        sayer $total;
-    }
-
-    else {
-        my $show-line-number := %_<show-line-number>:delete // True;
-        meh-if-unexpected(%_);
-
-        for @paths.&hyperize($batch, $degree).map: {
-            my $io := .IO;
-            my int $line-number;
-
-            $io.lines.map(-> $line {
-                ++$line-number;
-                if try from-json $line -> $json {
-                    CONTROL { drop-location-from-warning($_) }
-
-                    my $*IO := $io;
-                    if needle($json) -> \result {
-                        my $filename := $io.relative;
-                        my $mess     := result =:= True ?? '' !! ': ' ~ result;
-                        $show-filename
-                          ?? $show-line-number
-                            ?? "$filename:$line-number$mess"
-                            !! "$filename$mess"
-                          !! $show-line-number
-                            ?? "$line-number$mess"
-                            !! $mess.substr(2)
-                    }
-                }
-            }).List
-        } -> @finds {
-            sayer $_ for @finds;
-            $NEXT() if $NEXT;
-        }
-    }
-    run-phaser(&needle, 'LAST');
-}
-
 # Produce Git::Blame::Line per line to check
 my sub produce-blame-per-line(&code, @paths, %_ --> Nil) {
     my &needle        := preprocess-code-needle(&code, %_);
@@ -878,40 +919,6 @@ my sub produce-blame-per-line(&code, @paths, %_ --> Nil) {
         $NEXT() if $NEXT;
     }
     run-phaser(&needle, 'LAST');
-}
-
-# Only count matches
-my sub count-only($needle, @paths, %_ --> Nil) {
-    my $verbose    := %_<verbose>:delete;
-    my %additional := named-args %_,
-      :ignorecase, :ignoremark, :invert-match, :type, :batch, :degree;
-    meh-if-unexpected(%_);
-
-    my int $files;
-    my int $matches;
-    my $NEXT := do if $can-have-phasers {
-        $_() with $needle.callable_for_phaser('FIRST');
-        $needle.callable_for_phaser('NEXT')
-    }
-    for files-containing $needle, @paths, :count-only, |%additional {
-        ++$files;
-        $matches += .value;
-        sayer .key.relative ~ ': ' ~ .value if $verbose;
-        $NEXT() if $NEXT;
-    }
-    run-phaser($needle, 'LAST') if $can-have-phasers;
-    sayer "$matches matches in $files files";
-}
-
-# Only show filenames
-my sub files-only($needle, @paths, %_ --> Nil) {
-    my $nl := %_<file-separator-null>:delete ?? "\0" !! $*OUT.nl-out;
-    my %additional := named-args %_,
-      :ignorecase, :ignoremark, :invert-match, :type, :batch, :degree;
-    meh-if-unexpected(%_);
-
-    print .relative ~ $nl
-      for files-containing $needle, @paths, :files-only, |%additional;
 }
 
 # Show lines with highlighting and context
@@ -1064,174 +1071,6 @@ my sub want-lines($needle, @paths, %_ --> Nil) {
             else {
                 sayer show-line(.value) for @matches;
             }
-        }
-    }
-}
-
-# Provide output that can be used by vim to page through
-my sub vimgrep($needle, @paths, %_ --> Nil) {
-    my $ignorecase := %_<ignorecase>:delete;
-    my $ignoremark := %_<ignoremark>:delete;
-    my %additional := named-args %_, :max-count, :type, :batch, :degree;
-    meh-if-unexpected(%_);
-
-    sayer $_ for files-containing(
-      $needle, @paths, :$ignorecase, :$ignoremark, :offset(1), |%additional
-    ).map: {
-        my $path := .key.relative;
-        .value.map({
-            $path
-              ~ ':' ~ .key
-              ~ ':' ~ columns(.value, $needle, :$ignorecase, :$ignoremark).head
-              ~ ':' ~ .value
-        }).Slip
-    }
-}
-
-# Read from STDIN, assume JSON per line
-my sub stdin-json-per-file(&code, %_ --> Nil) {
-    my &needle := preprocess-code-needle(&code, %_);
-    meh-if-unexpected(%_);
-
-    human-on-stdin if $*IN.t;
-    if try from-json $*IN.slurp(:enc<utf8-c8>) -> $json {
-        my $*IO := $*IN;
-        if needle($json) -> \result {
-            sayer result;
-        }
-    }
-}
-
-# Read from STDIN, assume JSON per line
-my sub stdin-json-per-line(&code, %_ --> Nil) {
-    my &needle           := preprocess-code-needle(&code, %_);
-    my $count-only       := %_<count-only>:delete;
-    my $show-line-number := %_<show-line-number>:delete;
-    meh-if-unexpected(%_);
-
-    my int $line-number;
-    my int $matches;
-    my $*IO := $*IN;
-    for stdin-source() -> $line {
-        ++$line-number;
-        if try from-json $line -> $json {
-            if needle($json) -> \result {
-                $count-only
-                  ?? ++$matches
-                  !! result =:= True
-                    ?? sayer($line-number)
-                    !! $show-line-number
-                      ?? sayer($line-number ~ ': ' ~ result)
-                      !! sayer(result)
-            }
-        }
-    }
-    sayer $matches if $count-only;
-}
-
-# Handle general searching on STDIN
-my sub stdin($needle, %_, $source = stdin-source --> Nil) {
-    my Bool() $highlight;
-    my Bool() $trim;
-    my Bool() $show-line-number;
-    my Bool() $only;
-    my Int()  $summary-if-larger-than;
-
-    my UInt() $before = $_ with %_<before-context>:delete;
-    my UInt() $after  = $_ with %_<after-context>:delete;
-    $before = $after  = $_ with %_<context>:delete;
-    $before = 0 without $before;
-    $after  = 0 without $after;
-
-    my $human := %_<human>:delete // $isa-tty;
-    if $human {
-        $highlight = !$is-simple-Callable;
-        $show-line-number = $only = False;
-        $trim = !($before || $after || $is-simple-Callable);
-        $summary-if-larger-than = 160;
-    }
-
-    $highlight = $_ with %_<highlight>:delete;
-    $trim      = $_ with %_<trim>:delete;
-    $only      = $_ with %_<only-matching>:delete;
-    $before = $after = 0 if $only;
-    $show-line-number       = $_ with %_<show-line-number>:delete;
-    $summary-if-larger-than = $_ with %_<summary-if-larger-than>:delete;
-
-    my $ignorecase := %_<ignorecase>:delete;
-    my $ignoremark := %_<ignoremark>:delete;
-    my &show-line;
-    if $highlight {
-        my Str() $pre = my Str() $post = $_ with %_<highlight-before>:delete;
-        $post = $_ with %_<highlight-after>:delete;
-        $pre  = $only ?? " " !! BON  without $pre;
-        $post = $only ?? ""  !! BOFF without $post;
-
-        &show-line = $trim
-          ?? -> $line {
-                 highlighter $line.trim, $needle<>, $pre, $post,
-                 :$ignorecase, :$ignoremark, :$only,
-                 :$summary-if-larger-than
-             }
-          !! -> $line {
-                 highlighter $line, $needle<>, $pre, $post,
-                 :$ignorecase, :$ignoremark, :$only,
-                 :$summary-if-larger-than
-             }
-        ;
-    }
-    else {
-        &show-line = $only
-          ?? -> $line { highlighter $line, $needle, "", " ", :$only }
-          !! $trim
-            ?? *.trim
-            !! -> $line { $line }
-        ;
-    }
-
-    my &matcher := do if Callable.ACCEPTS($needle) {
-        Regex.ACCEPTS($needle)
-          ?? { $needle.ACCEPTS($_) }
-          !! $needle
-    }
-    elsif %_<passthru>:delete {
-        -> $ --> True { }
-    }
-    else {
-        my $type := %_<type>:delete // 'contains';
-        $type eq 'words'
-          ?? *.&has-word($needle, :$ignorecase, :$ignoremark)
-          !! $type eq 'starts-with'
-            ?? *.starts-with($needle, :$ignorecase, :$ignoremark)
-            !! $type eq 'ends-with'
-              ?? *.ends-with($needle, :$ignorecase, :$ignoremark)
-              !! *.contains($needle, :$ignorecase, :$ignoremark);
-    }
-    meh-if-unexpected(%_);
-
-    my int $line-number;
-    my int $todo-after;
-    my str @before;
-    my $*IO := $*IN;
-    for $source<> -> $line {
-        ++$line-number;
-        if matcher($line) -> \result {
-            sayer @before.shift while @before;
-            my $text := result =:= True ?? show-line($line) !! result;
-            sayer $show-line-number ?? ($line-number ~ ':' ~ $text) !! $text;
-            $todo-after = $after;
-        }
-        elsif $todo-after {
-            sayer $show-line-number
-              ?? $line-number ~ ':' ~ $line
-              !! $line;
-            --$todo-after;
-        }
-        elsif $before {
-            @before.shift if @before.elems == $before;
-            @before.push: $show-line-number
-              ?? $line-number ~ ':' ~ $line
-              !! $line;
         }
     }
 }
