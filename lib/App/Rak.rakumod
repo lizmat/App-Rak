@@ -710,6 +710,14 @@ my sub handle-checkout($pattern, %n, %rak) {
                 @matches.Slip
             }
         }
+        elsif $pattern eq 'master' {
+            run <git checkout main>;
+            Empty
+        }
+        elsif $pattern eq 'main' {
+            run <git checkout master>;
+            Empty
+        }
         else {
             sayer "No branch found with '" ~ BON ~ $pattern ~ BOFF ~ "'.";
             if $verbose {
