@@ -71,9 +71,10 @@ Resource usage:
  --batch=N   max number of files to process in a thread (default: 64)
  --degree=N  max number of threads to use for processing (default: cores - 1)
 
-Editor options:
+Special options:
  --edit[=editor]  Go edit the result in an editor, (default EDITOR or vim)
  --vimgrep        Produce output in :vimgrep format
+ --checkout       Checkout branch if pattern matches single branch name
 
 Option management:
  --save=name              Translate --name to all other options specified,
@@ -84,8 +85,8 @@ Option management:
 General options:
  --help      Show this
  --help foo  Show additional help about:
-               pattern | string | code | haystack | result | listing
-               content | resource | edit | option | general | philosophy
+               pattern | string   | code    | haystack | result  | listing
+               content | resource | special | option   | general | philosophy
                examples
  --list-known-extensions  Show all known extensions and their groups
  --version                Show version information

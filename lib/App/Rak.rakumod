@@ -5,7 +5,7 @@ use Git::Blame::File:ver<0.0.5>:auth<zef:lizmat>;
 use has-word:ver<0.0.3>:auth<zef:lizmat>;
 use highlighter:ver<0.0.12>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
-use rak:ver<0.0.10>:auth<zef:lizmat>;
+use rak:ver<0.0.11>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
 
 # Defaults for highlighting on terminals
@@ -46,7 +46,7 @@ my sub meh($message) is hidden-from-backtrace {
 
 # Quit if unexpected named arguments hash
 my sub meh-if-unexpected(%_) {
-    %_{$_}:delete if %_{$_}<> =:= False for %_.keys;
+#    %_{$_}:delete if %_{$_}<> =:= False for %_.keys;
     meh "Unexpected option{"s" if %_.elems != 1}: &as-cli-arguments(%_)\nUse --help for an overview of available options"
       if %_;
 }
@@ -512,23 +512,30 @@ my sub make-highlighter($needle, %n, %rak) {
     my Bool() $ignoremark = %n<ignoremark>;
     my        $type       = %n<type>;
     my Bool() $highlight;
+    my Bool() $show-line-number;
     my Bool() $trim;
     my Bool() $only;
     my Int()  $summary-if-larger-than;
 
     my $human := %n<human> //= $isa-tty;
     if $human {
-        $highlight = True;
+        $highlight = $show-line-number = True;
         $only  = False;
         $trim  = !(%n<context> || %n<before-context> || %n<after-context> ||
                    %n<paragraph-context> || %n<passthru-context>);
         $summary-if-larger-than = 160;
     }
 
-    $highlight              := $_ with %n<highlight>:delete;
-    $trim                   := $_ with %n<trim>:delete;
-    $only                   := $_ with %n<only-matching>:delete;
-    $summary-if-larger-than := $_ with %n<summary-if-larger-than>:delete;
+    $highlight              = $_ with %n<highlight>:delete;
+    $show-line-number       = $_ with %n<show-line-number>:delete;
+    $trim                   = $_ with %n<trim>:delete;
+    $only                   = $_ with %n<only-matching>:delete;
+    $summary-if-larger-than = $_ with %n<summary-if-larger-than>:delete;
+
+    %rak<omit-item-numbers> := True unless $show-line-number;
+    %rak{.key} := .value for %n<
+      context before-context after-context paragraph-context passthru-context
+    >:delete:p;
 
     if $highlight {
         my Str() $pre = my Str() $post = $_ with %n<highlight-before>:delete;
@@ -750,6 +757,38 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
                 $nr-lines-changed += $lines-changed;
                 $nr-lines-removed += $lines-removed;
                 @changed-files.push: ($io, $lines-changed, $lines-removed);
+            }
+        }
+    }
+
+    # Perform checkout in current repo if only one match
+    elsif %n<checkout>:delete {
+        %rak<sources>           := 'checkout';
+        %rak<omit-item-numbers> := True;
+        %rak<map-all>           := True;
+
+        my @branches;
+        %rak<produce-many> := -> $ {
+            @branches = (
+              run <git branch -r>, :out
+            ).out.lines.map(*.&after("/"));
+        }
+
+        %rak<mapper> := -> $, @matches {
+            if @matches {
+                if @matches == 1 {
+                    run 'git', 'checkout', @matches.head;
+                    Empty
+                }
+                else {
+                    sayer "Found @matches.elems matches:";
+                    @matches
+                }
+            }
+            else {
+                sayer "No branch found with '" ~ BON ~ $pattern ~ BOFF ~ "'";
+                sayer "Available branches:";
+                @branches
             }
         }
     }
