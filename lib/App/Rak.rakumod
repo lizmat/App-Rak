@@ -497,11 +497,17 @@ my sub setup-producers(%n, %rak) {
 
     # Match git blame data
     elsif %n<blame-per-file>:delete {
+        CATCH {
+            meh "Must have Git::Blame::File installed to use --blame-per-file";
+        }
         require Git::Blame::File;
         %rak<produce-one> := -> $_ { Git::Blame::File.new($_) }
         %rak<omit-item-numbers> := True;
     }
     elsif %n<blame-per-line>:delete {
+        CATCH {
+            meh "Must have Git::Blame::File installed to use --blame-per-line";
+        }
         require Git::Blame::File;
         %rak<produce-many> := -> $_ { Git::Blame::File.new($_).lines }
     }
