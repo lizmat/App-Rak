@@ -10,7 +10,6 @@
     "CLI::Help:ver<0.0.4>:auth<zef:lizmat>",
     "CLI::Version:ver<0.0.7>:auth<zef:lizmat>",
     "Edit::Files:ver<0.0.4>:auth<zef:lizmat>",
-    "Git::Blame::File:ver<0.0.5>:auth<zef:lizmat>",
     "has-word:ver<0.0.3>:auth<zef:lizmat>",
     "highlighter:ver<0.0.12>:auth<zef:lizmat>",
     "JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>",

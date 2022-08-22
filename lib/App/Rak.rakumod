@@ -1,7 +1,6 @@
 # The modules that we need here, with their full identities
 use as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
-use Git::Blame::File:ver<0.0.5>:auth<zef:lizmat>;
 use has-word:ver<0.0.3>:auth<zef:lizmat>;
 use highlighter:ver<0.0.12>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
@@ -498,10 +497,12 @@ my sub setup-producers(%n, %rak) {
 
     # Match git blame data
     elsif %n<blame-per-file>:delete {
+        require Git::Blame::File;
         %rak<produce-one> := -> $_ { Git::Blame::File.new($_) }
         %rak<omit-item-numbers> := True;
     }
     elsif %n<blame-per-line>:delete {
+        require Git::Blame::File;
         %rak<produce-many> := -> $_ { Git::Blame::File.new($_).lines }
     }
 }
