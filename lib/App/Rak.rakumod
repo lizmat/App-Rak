@@ -564,6 +564,166 @@ my sub make-highlighter($needle, %n, %rak) {
     }
 }
 
+# Handle --edit
+my sub handle-edit($editor, $pattern, %n, %rak) {
+    my $ignorecase := %n<ignorecase>;
+    my $ignoremark := %n<ignoremark>;
+    my $type       := %n<type>;
+
+    %rak<mapper> := -> $source, @matches --> Empty {
+        state @files;
+        LAST {
+            edit-files
+              @files,
+              :editor(Bool.ACCEPTS($editor) ?? Any !! $editor)
+        }
+
+        my $path := $source.relative;
+        @files.append: @matches.map: {
+            $path => .key => columns(
+              .value, $pattern, :$ignorecase, :$ignoremark, :$type
+           ).head
+        }
+    }
+}
+
+# Handle --vimgrep
+my sub handle-vimgrep($pattern, %n, %rak) {
+    my $ignorecase := %n<ignorecase>;
+    my $ignoremark := %n<ignoremark>;
+    my $type       := %n<type>;
+
+    %rak<mapper> := -> $source, @matches {
+        my $path := $source.relative;
+        @matches.map({
+            $path
+              ~ ':' ~ .key
+              ~ ':' ~ columns(
+                        .value, $pattern, :$ignorecase, :$ignoremark, :$type
+                      ).head
+              ~ ':' ~ .value
+        }).Slip
+    }
+}
+
+# Handle --modify-files
+my sub handle-modify-files($pattern, %n, %rak) {
+    my $dry-run := %n<dry-run>:delete;
+    my $verbose := %n<verbose>:delete;
+
+    my $backup = %n<backup>:delete;
+    $backup = ".bak" if $backup<> =:= True;
+    $backup = ".$backup" if $backup && !$backup.starts-with('.');
+
+    my constant no-changes =
+      "\n*** no changes where made because of --dry-run ***";
+
+    my @changed-files;
+    my int $nr-files-seen;
+    my int $nr-lines-changed;
+    my int $nr-lines-removed;
+
+    %rak<with-line-endings> := True;
+    %rak<mapper> := -> $io, @matches --> Empty {
+        ++$nr-files-seen;
+
+        LAST {
+            my int $nr-files-changed = @changed-files.elems;
+            my $fb = "Processed $nr-files-seen file&s($nr-files-seen)";
+            $fb ~= ", $nr-files-changed file&s($nr-files-changed) changed"
+              if $nr-files-changed;
+            $fb ~= ", $nr-lines-changed line&s($nr-lines-changed) changed"
+              if $nr-lines-changed;
+            $fb ~= ", $nr-lines-removed line&s($nr-lines-removed) removed"
+              if $nr-lines-removed;
+
+            if $verbose {
+                $fb ~= "\n";
+                for @changed-files -> ($io, $changed, $removed) {
+                    $fb ~= "$io.relative():";
+                    $fb ~= " $changed change&s($changed)"  if $changed;
+                    $fb ~= " $removed removal&s($removed)" if $removed;
+                    $fb ~= "\n";
+                }
+                $fb ~= no-changes if $dry-run;
+                $fb .= chomp;
+            }
+            elsif $dry-run {
+                $fb ~= no-changes;
+            }
+
+            sayer $fb;
+        }
+
+        my int $lines-removed;
+        my int $lines-changed;
+        my int $index;
+        for @matches {
+            ++$index;
+            if .key - $index -> int $missing {
+                $lines-removed += $missing;
+                $index = .key;
+            }
+            ++$lines-changed if .matched;
+        }
+        if $lines-changed || $lines-removed {
+            unless $dry-run {
+                if $backup {
+                    $io.spurt(@matches.map(*.value).join)
+                      if $io.rename($io.sibling($io.basename ~ $backup));
+                }
+                else {
+                    $io.spurt: @matches.map(*.value).join;
+                }
+            }
+            $nr-lines-changed += $lines-changed;
+            $nr-lines-removed += $lines-removed;
+            @changed-files.push: ($io, $lines-changed, $lines-removed);
+        }
+    }
+}
+
+# Handle --checkout
+my sub handle-checkout($pattern, %n, %rak) {
+    my $verbose := %n<verbose>:delete;
+
+    %rak<sources>           := 'checkout';
+    %rak<omit-item-numbers> := True;
+    %rak<map-all>           := True;
+
+    my @branches;
+    %rak<produce-many> := -> $ {
+        @branches = (
+          run <git branch -r>, :out
+        ).out.lines.map(*.&after("/"));
+    }
+
+    %rak<mapper> := -> $, @matches {
+        if @matches {
+            if @matches == 1 {
+                run 'git', 'checkout', @matches.head;
+                Empty
+            }
+            else {
+                sayer "Found @matches.elems() branches matching '"
+                  ~ BON ~ $pattern ~ BOFF ~ "':";
+                @matches.Slip
+            }
+        }
+        else {
+            sayer "No branch found with '" ~ BON ~ $pattern ~ BOFF ~ "'.";
+            if $verbose {
+                sayer "@branches.elems() branches known:";
+                @branches.Slip
+            }
+            else {
+                sayer "@branches.elems() branches known, add --verbose to see them";
+                Empty
+            }
+        }
+    }
+}
+
 # Entry point for CLI processing
 my proto sub MAIN(|) is export {*}
 use CLI::Version:ver<0.0.7>:auth<zef:lizmat>  $?DISTRIBUTION, &MAIN, 'long';
@@ -644,153 +804,22 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 
     # Want to edit files
     elsif %n<edit>:delete -> $editor {
-        my $ignorecase := %n<ignorecase>;
-        my $ignoremark := %n<ignoremark>;
-        my $type       := %n<type>;
-
-        %rak<mapper> := -> $source, @matches --> Empty {
-            state @files;
-            LAST {
-                edit-files
-                  @files,
-                  :editor(Bool.ACCEPTS($editor) ?? Any !! $editor)
-            }
-
-            my $path := $source.relative;
-            @files.append: @matches.map: {
-                $path => .key => columns(
-                  .value, $pattern, :$ignorecase, :$ignoremark, :$type
-               ).head
-            }
-        }
+        handle-edit($editor, $pattern, %n, %rak);
     }
 
     # Editor searching for files
     elsif %n<vimgrep>:delete {
-        my $ignorecase := %n<ignorecase>;
-        my $ignoremark := %n<ignoremark>;
-        my $type       := %n<type>;
-
-        %rak<mapper> := -> $source, @matches {
-            my $path := $source.relative;
-            @matches.map({
-                $path
-                  ~ ':' ~ .key
-                  ~ ':' ~ columns(
-                            .value, $pattern, :$ignorecase, :$ignoremark, :$type
-                          ).head
-                  ~ ':' ~ .value
-            }).Slip
-        }
+        handle-vimgrep($pattern, %n, %rak);
     }
 
     # Modifying files
     elsif %n<modify-files>:delete {
-        my $dry-run := %n<dry-run>:delete;
-        my $verbose := %n<verbose>:delete;
-
-        my $backup = %n<backup>:delete;
-        $backup = ".bak" if $backup<> =:= True;
-        $backup = ".$backup" if $backup && !$backup.starts-with('.');
-
-        my constant no-changes =
-          "\n*** no changes where made because of --dry-run ***";
-
-        my @changed-files;
-        my int $nr-files-seen;
-        my int $nr-lines-changed;
-        my int $nr-lines-removed;
-
-        %rak<with-line-endings> := True;
-        %rak<mapper> := -> $io, @matches --> Empty {
-            ++$nr-files-seen;
-
-            LAST {
-                my int $nr-files-changed = @changed-files.elems;
-                my $fb = "Processed $nr-files-seen file&s($nr-files-seen)";
-                $fb ~= ", $nr-files-changed file&s($nr-files-changed) changed"
-                  if $nr-files-changed;
-                $fb ~= ", $nr-lines-changed line&s($nr-lines-changed) changed"
-                  if $nr-lines-changed;
-                $fb ~= ", $nr-lines-removed line&s($nr-lines-removed) removed"
-                  if $nr-lines-removed;
-
-                if $verbose {
-                    $fb ~= "\n";
-                    for @changed-files -> ($io, $changed, $removed) {
-                        $fb ~= "$io.relative():";
-                        $fb ~= " $changed change&s($changed)"  if $changed;
-                        $fb ~= " $removed removal&s($removed)" if $removed;
-                        $fb ~= "\n";
-                    }
-                    $fb ~= no-changes if $dry-run;
-                    $fb .= chomp;
-                }
-                elsif $dry-run {
-                    $fb ~= no-changes;
-                }
-
-                sayer $fb;
-            }
-
-            my int $lines-removed;
-            my int $lines-changed;
-            my int $index;
-            for @matches {
-                ++$index;
-                if .key - $index -> int $missing {
-                    $lines-removed += $missing;
-                    $index = .key;
-                }
-                ++$lines-changed if .matched;
-            }
-            if $lines-changed || $lines-removed {
-                unless $dry-run {
-                    if $backup {
-                        $io.spurt(@matches.map(*.value).join)
-                          if $io.rename($io.sibling($io.basename ~ $backup));
-                    }
-                    else {
-                        $io.spurt: @matches.map(*.value).join;
-                    }
-                }
-                $nr-lines-changed += $lines-changed;
-                $nr-lines-removed += $lines-removed;
-                @changed-files.push: ($io, $lines-changed, $lines-removed);
-            }
-        }
+        handle-modify-files($pattern, %n, %rak);
     }
 
     # Perform checkout in current repo if only one match
     elsif %n<checkout>:delete {
-        %rak<sources>           := 'checkout';
-        %rak<omit-item-numbers> := True;
-        %rak<map-all>           := True;
-
-        my @branches;
-        %rak<produce-many> := -> $ {
-            @branches = (
-              run <git branch -r>, :out
-            ).out.lines.map(*.&after("/"));
-        }
-
-        %rak<mapper> := -> $, @matches {
-            if @matches {
-                if @matches == 1 {
-                    run 'git', 'checkout', @matches.head;
-                    Empty
-                }
-                else {
-                    sayer "Found @matches.elems matches:";
-                    @matches
-                }
-            }
-            else {
-                sayer "No branch found with '" ~ BON ~ $pattern ~ BOFF ~ "'";
-                sayer "Available branches:";
-                @branches
-            }
-        }
+        handle-checkout($pattern, %n, %rak);
     }
 
     # Various setups

@@ -30,7 +30,6 @@
     "help.txt",
     "help/code.txt",
     "help/content.txt",
-    "help/editor.txt",
     "help/examples.txt",
     "help/general.txt",
     "help/haystack.txt",
@@ -41,6 +40,7 @@
     "help/philosophy.txt",
     "help/resource.txt",
     "help/result.txt",
+    "help/special.txt",
     "help/string.txt"
   ],
   "source-url": "https://github.com/lizmat/App-Rak.git",
@@ -55,5 +55,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.0.47"
+  "version": "0.0.48"
 }
