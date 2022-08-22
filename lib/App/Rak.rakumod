@@ -495,13 +495,38 @@ my sub setup-producers(%n, %rak) {
         %rak<produce-many> := *.lines(:$enc).map: *.&from-json
     }
 
+    # Match CSV data
+    elsif %n<csv-per-line>:delete {
+        CATCH {
+            meh "Must have Text::CSV installed to use --csv-per-line";
+        }
+        require Text::CSV;
+
+        my constant %line-endings =
+          '\\n'    => "\n",
+          '\\r'    => "\r",
+          '\\r\\n' => "\n";
+
+        my %csv = %n<
+          sep quote escape binary auto-diag diag-verbose
+          blank-is-undef empty-is-undef
+          allow-whitespace allow-loose-quotes allow-loose-escapes
+          allow-unquoted-escape always-quote quote-space escape-null
+          quote-binary keep-meta strict formula undef-str comment-str
+        >:delete:p;
+        %csv<eol> := %line-endings{$_} with %n<eol>:delete;
+
+        my $csv := Text::CSV.new(|%csv);
+        %rak<produce-many> := -> $io { $csv.getline-all($io.open) }
+    }
+
     # Match git blame data
     elsif %n<blame-per-file>:delete {
         CATCH {
             meh "Must have Git::Blame::File installed to use --blame-per-file";
         }
         require Git::Blame::File;
-        %rak<produce-one> := -> $_ { Git::Blame::File.new($_) }
+        %rak<produce-one> := -> $io { Git::Blame::File.new($io) }
         %rak<omit-item-numbers> := True;
     }
     elsif %n<blame-per-line>:delete {
@@ -509,7 +534,7 @@ my sub setup-producers(%n, %rak) {
             meh "Must have Git::Blame::File installed to use --blame-per-line";
         }
         require Git::Blame::File;
-        %rak<produce-many> := -> $_ { Git::Blame::File.new($_).lines }
+        %rak<produce-many> := -> $io { Git::Blame::File.new($io).lines }
     }
 }
 
@@ -845,7 +870,9 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     my $count-only := %n<count-only>:delete;
     %rak<stats-only> := True if %n<stats-only>:delete || $count-only;
     %rak<stats>      := True if %n<stats>:delete;
-    %rak<unique>     := True if %n<unique>:delete;
+
+    # Set up standard flags
+    %rak{$_} := True for %n<unique quietly silently>:delete:v;
 
     # Remove arguments that have been handled now
     %n<human ignorecase ignoremark type>:delete;
