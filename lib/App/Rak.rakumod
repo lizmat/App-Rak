@@ -600,7 +600,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     }
 
     # Only interested in filenames
-    if %n<files-only>:delete {
+    if %n<files-with-matches>:delete {
 
         # Only interested in number of files
         if %n<count-only>:delete {
@@ -674,6 +674,83 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
                           ).head
                   ~ ':' ~ .value
             }).Slip
+        }
+    }
+
+    # Modifying files
+    elsif %n<modify-files>:delete {
+        my $dry-run := %n<dry-run>:delete;
+        my $verbose := %n<verbose>:delete;
+
+        my $backup = %n<backup>:delete;
+        $backup = ".bak" if $backup<> =:= True;
+        $backup = ".$backup" if $backup && !$backup.starts-with('.');
+
+        my constant no-changes =
+          "\n*** no changes where made because of --dry-run ***";
+
+        my @changed-files;
+        my int $nr-files-seen;
+        my int $nr-lines-changed;
+        my int $nr-lines-removed;
+
+        %rak<with-line-endings> := True;
+        %rak<mapper> := -> $io, @matches --> Empty {
+            ++$nr-files-seen;
+
+            LAST {
+                my int $nr-files-changed = @changed-files.elems;
+                my $fb = "Processed $nr-files-seen file&s($nr-files-seen)";
+                $fb ~= ", $nr-files-changed file&s($nr-files-changed) changed"
+                  if $nr-files-changed;
+                $fb ~= ", $nr-lines-changed line&s($nr-lines-changed) changed"
+                  if $nr-lines-changed;
+                $fb ~= ", $nr-lines-removed line&s($nr-lines-removed) removed"
+                  if $nr-lines-removed;
+
+                if $verbose {
+                    $fb ~= "\n";
+                    for @changed-files -> ($io, $changed, $removed) {
+                        $fb ~= "$io.relative():";
+                        $fb ~= " $changed change&s($changed)"  if $changed;
+                        $fb ~= " $removed removal&s($removed)" if $removed;
+                        $fb ~= "\n";
+                    }
+                    $fb ~= no-changes if $dry-run;
+                    $fb .= chomp;
+                }
+                elsif $dry-run {
+                    $fb ~= no-changes;
+                }
+
+                sayer $fb;
+            }
+
+            my int $lines-removed;
+            my int $lines-changed;
+            my int $index;
+            for @matches {
+                ++$index;
+                if .key - $index -> int $missing {
+                    $lines-removed += $missing;
+                    $index = .key;
+                }
+                ++$lines-changed if .matched;
+            }
+            if $lines-changed || $lines-removed {
+                unless $dry-run {
+                    if $backup {
+                        $io.spurt(@matches.map(*.value).join)
+                          if $io.rename($io.sibling($io.basename ~ $backup));
+                    }
+                    else {
+                        $io.spurt: @matches.map(*.value).join;
+                    }
+                }
+                $nr-lines-changed += $lines-changed;
+                $nr-lines-removed += $lines-removed;
+                @changed-files.push: ($io, $lines-changed, $lines-removed);
+            }
         }
     }
 
@@ -776,150 +853,6 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 }
 
 =finish
-
-        # Code to run as a needle
-        elsif $is-simple-Callable {
-            %n<modify-files>:delete
-              ?? &modify-files
-                  !! (%n<blame-per-line>:delete)
-                    ?? &produce-blame-per-line
-                    !! (%n<count-only>:delete)
-                      ?? &count-only
-                      !! (%n<files-with-matches>:delete)
-                        ?? &files-only
-                        !! &want-lines;
-        }
-
-        # Needle is either string or regex
-        else {
-            %n<count-only>:delete
-              ?? &count-only
-              !! (%n<files-with-matches>:delete)
-                ?? &files-only
-                !! &want-lines
-        }
-        handle($needle, $seq.sort(*.fc), %n);
-    }
-
-    $*OUT.close if $pager;
-}
-
-# Replace contents of files using the given Callable
-my sub modify-files(&needle, @paths, %_ --> Nil) {
-    my $batch   := %_<batch>:delete;
-    my $degree  := %_<degree>:delete;
-    my $dryrun  := %_<dryrun>:delete;
-    my $verbose := %_<verbose>:delete;
-
-    my $backup = %_<backup>:delete;
-    $backup = ".bak" if $backup<> =:= True;
-    $backup = ".$backup" if $backup && !$backup.starts-with('.');
-    meh-if-unexpected(%_);
-
-    my @files-changed;
-    my int $nr-changed;
-    my int $nr-removed;
-
-    run-phaser(&needle, 'FIRST');
-    my $NEXT := next-phaser(&needle);
-    @paths.&hyperize($batch, $degree).map: -> $path {
-        my str @lines;
-        my int $lines-changed;
-        my int $lines-removed;
-
-        my $io := $path.IO;
-        for $io.slurp.lines(:!chomp) {  # MUST slurp to prevent race condition
-            my $*IO := $io;
-            my $result := needle($_);
-            if $result =:= True || $result =:= Empty {
-                @lines.push: $_;
-            }
-            elsif $result =:= False {
-                ++$lines-removed;
-            }
-            elsif $result eq $_ {
-                @lines.push: $_;
-            }
-            else {
-                @lines.push: $result.join;
-                ++$lines-changed;
-            }
-        }
-        if $lines-changed || $lines-removed {
-            unless $dryrun {
-                if $backup {
-                    $io.spurt(@lines.join)
-                      if $io.rename($io.sibling($io.basename ~ $backup));
-                }
-                else {
-                    $io.spurt: @lines.join;
-                }
-            }
-            @files-changed.push: ($io, $lines-changed, $lines-removed);
-            $nr-changed += $lines-changed;
-            $nr-removed += $lines-removed;
-        }
-        $NEXT() if $NEXT;
-    }
-    run-phaser(&needle, 'LAST');
-
-    my $nr-files = @files-changed.elems;
-    my $fb = "Processed @paths.elems() file&s(@paths.elems)";
-    $fb ~= ", $nr-files file&s($nr-files) changed"     if $nr-files;
-    $fb ~= ", $nr-changed line&s($nr-changed) changed" if $nr-changed;
-    $fb ~= ", $nr-removed line&s($nr-removed) removed" if $nr-removed;
-
-    if $verbose {
-        $fb ~= "\n";
-        for @files-changed -> ($io, $nr-changed, $nr-removed) {
-            $fb ~= "$io.relative():";
-            $fb ~= " $nr-changed changes" if $nr-changed;
-            $fb ~= " $nr-removed removals" if $nr-removed;
-            $fb ~= "\n";
-        }
-        $fb ~= "*** no changes where made because of --dryrun ***\n"
-          if $dryrun;
-        $fb .= chomp;
-    }
-    elsif $dryrun {
-        $fb ~= "\n*** no changes where made because of --dryrun ***";
-    }
-
-    sayer $fb;
-}
-
-# Produce Git::Blame::Line per line to check
-my sub produce-blame-per-line(&code, @paths, %_ --> Nil) {
-    my &needle        := preprocess-code-needle(&code, %_);
-    my $batch         := %_<batch>:delete // 1;
-    my $degree        := %_<degree>:delete;
-    my $show-filename := %_<show-filename>:delete // True;
-    meh-if-unexpected(%_);
-
-    run-phaser(&needle, 'FIRST');
-    my $NEXT := next-phaser(&needle);
-    for @paths.&hyperize($batch, $degree).map: -> $filename {
-        if try Git::Blame::File.new($filename) -> $blamer {
-            my $io := my $*IO := $filename.IO;
-            my $finds := $blamer.lines.map(-> $_ {
-                CONTROL { drop-location-from-warning($_) }
-                if needle($_) -> \result {
-                    result =:= True ?? .Str !! result
-                }
-            }).List;
-            $finds.elems ?? ($io.relative, $finds) !! Empty
-        }
-    } -> ($filename, @finds) {
-        if $show-filename {
-            sayer "$filename: $_" for @finds;
-        }
-        else {
-            sayer $_ for @finds;
-        }
-        $NEXT() if $NEXT;
-    }
-    run-phaser(&needle, 'LAST');
-}
 
 # Show lines with highlighting and context
 my sub want-lines($needle, @paths, %_ --> Nil) {
