@@ -3,7 +3,9 @@ Result modifiers:
  --after-context=N      List N lines after any line with a match
  --context=N            List N lines around any line with a match
  --paragraph-context    List all lines in the same paragraph around a match
+ --passthru-context     List all lines (default: only matching pattern)
  --count-only           Only return count of matches
  --files-with-matches   Only return filenames with matches
  --file-separator-null  Separate filenames with null bytes
  --unique               Only return unique lines
+ --frequencies          Only return lines and their frequencies 

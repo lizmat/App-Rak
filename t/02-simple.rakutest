@@ -1,0 +1,48 @@
+use Test;
+
+my constant BON  = "\e[1m";   # BOLD ON
+my constant BOFF = "\e[22m";  # RESET
+
+my $dir := $*TMPDIR.add("App-Rak");
+my $abs := $dir.absolute;
+my $dot := $?FILE.IO.parent.parent;
+my $rak := $dot.add("bin").add("rak");
+my @targets  := <zero one two three four five six seven eight nine>;
+my %name2path = @targets.map: { $_ => $dir.add($_).absolute }
+my %path2name = %name2path.kv.reverse;
+
+$dir.mkdir;
+for @targets.kv -> $n, $name {
+    %name2path{$name}.IO.spurt: @targets[0..$n].join("\n") ~ "\n";
+    is %name2path{$name}.IO.slurp, @targets[0..$n].join("\n") ~ "\n",
+      "is the file for $name ok?";
+}
+LEAVE { 
+    .IO.unlink for %name2path.values; 
+    $dir.rmdir;
+} 
+
+my sub query-ok(*@query, :%ok) is test-assertion {
+    my @args = $*EXECUTABLE, "-I$dot", $rak, @query.Slip, $dir;
+    my $proc := run @args, :out, :err;
+    my $key = "huh?";
+    my %matches;
+    for $proc.out.lines(:close) {
+        .match($abs)
+          ?? ($key = .IO.basename)
+          !! (%matches{$key}.push: $_);
+    }
+    is-deeply %matches, %ok, "is '@query[]' result ok?";
+    is $proc.err.slurp(:close), "", "is '@query[]' STDERR clean?";
+}
+
+query-ok 'ine', ok => {
+    nine => ['10:nine']
+}
+query-ok <ine --human>, ok => {
+    nine => ['10:n' ~ BON ~ 'ine' ~ BOFF]
+}
+
+done-testing;
+
+# vim: expandtab shiftwidth=4

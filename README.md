@@ -104,6 +104,20 @@ Indicate whether backups should be made of files that are being modified. If spe
 
 Indicate the number of lines that should be shown **before** any line that matches. Defaults to **0**. Will be overridden by a `--context` argument.
 
+--blame-per-file
+----------------
+
+Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each of the selected files will be provided as [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File#methods-on-gitblamefile) objects if `git blame` can be performed on the a selected file. If that is not possible, then the selected file will be ignored.
+
+If <git blame> information can be obtained, then the associated `Git::Blame::File` object will be presented to the pattern `Callable`. If the Callable returns a true value, then filename will be shown. If the returned value is a string, then that string will be shown.
+
+```bash
+# show files with more than 10 commits
+$ rak '*.commits > 10' --blame-per-file
+```
+
+Requires that the [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File) is installed.
+
 --blame-per-line
 ----------------
 
@@ -112,8 +126,11 @@ Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True
 If <git blame> information can be obtained, then the associated `Git::Blame::Line` object will be presented to the pattern `Callable`. If the Callable returns a true value, then the short representation of the `git blame` information will be shown. If the returned value is a string, then that string will be shown.
 
 ```bash
+# show git blame on lines of which the author is "Scooby Doo"
 $ rak '{ .author eq "Scooby Doo" }' --blame-per-line
 ```
+
+Requires that the [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File) is installed.
 
 --break[=string]
 ----------------
@@ -180,10 +197,15 @@ Flag. If specified with a true value, will only produce the filenames of the fil
 
 Flag. If specified with a true value, will **not** look at the contents of the selected paths, but instead consider the selected paths as lines in a virtual file.
 
---follow-symlinks
------------------
+--first-only[=N]
+----------------
 
-Flag. Indicate whether symbolic links to directories should be followed. Defaults to `False`.
+Indicate the number of matches to show. If specified without a value, will default to **1**. Defaults to show all possible matches.
+
+--frequencies
+-------------
+
+Flag. If specified, will produce a frequency table of the matches with the most frequent match first. Default is `False`. See also `--unique`;
 
 --group-matches
 ---------------
@@ -216,7 +238,7 @@ Show argument documentation, possibly extended by giving the area of interest, w
 
   * resource
 
-  * edit
+  * special
 
   * option
 
@@ -362,8 +384,8 @@ $ rak foo --pager='less -r'
 
 Flag. Indicate all lines that are part of the same paragraph **around** any line that matches. Defaults to `False`.
 
---passthru
-----------
+--passthru-context
+------------------
 
 Flag. Indicate whether **all** lines from source should be shown, even if they do **not** match the pattern. Highlighting will still be performed, if so (implicitely) specified.
 
@@ -386,6 +408,16 @@ Alternative way to specify the pattern to search for. If (implicitly) specified,
 ---------
 
 Flag. Only makes sense if the pattern is a `Callable`. If specified with a true value, will catch all **warnings** that are emitted when executing the pattern's `Callable`. Defaults to False.
+
+--recurse-unmatched-dir
+-----------------------
+
+Flag. Indicate whether directories that didn't match the `--dir` specification, should be recursed into anyway. Will not produce files from such directories, but may recurse further if directories are encountered. Defaults to `False`.
+
+--recurse-symlinked-dir
+-----------------------
+
+Flag. Indicate whether directories that are actually symbolic links, should be recursed into. Defaults to `False`.
 
 --repository=dir
 ----------------
@@ -485,7 +517,7 @@ Flag. Indicate whether lines that have the pattern, should have any whitespace a
 --unique
 --------
 
-Flag. If specified with a true value, will only produce unique lines of output. Default is `False`.
+Flag. If specified with a true value, will only produce unique lines of output. Default is `False`. See also `--frequencies`.
 
 --version
 ---------

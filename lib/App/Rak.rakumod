@@ -4,7 +4,7 @@ use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use has-word:ver<0.0.3>:auth<zef:lizmat>;
 use highlighter:ver<0.0.12>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
-use rak:ver<0.0.11>:auth<zef:lizmat>;
+use rak:ver<0.0.13>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
 
 # Defaults for highlighting on terminals
@@ -18,6 +18,9 @@ my $isa-tty := $*OUT.t;
 my constant %exts =
   '#c'        => <c h hdl>,
   '#c++'      => <cpp cxx hpp hxx>,
+  '#csv'      => ('', <csv psv tsv>).flat.List,
+  '#json'     => <json>,
+  '#jsonl'    => <jsonl>,
   '#markdown' => <md markdown>,
   '#perl'     => ('', <pl pm t>).flat.List,
   '#python'   => <py>,
@@ -433,10 +436,13 @@ my sub setup-sources-selection(@specs, %n, %rak) {
 
         # Implicit extensions
         elsif %n<json-per-file> {
-            %rak<file> := codify-extensions ("json",);
+            %rak<file> := codify-extensions %exts<#json>;
         }
         elsif %n<json-per-line> {
-            %rak<file> := codify-extensions ("jsonl",);
+            %rak<file> := codify-extensions %exts<#jsonl>;
+        }
+        elsif %n<csv-per-line> {
+            %rak<file> := codify-extensions %exts<#csv>;
         }
         else {
             %rak<file> := codify-extensions @known-extensions;
@@ -470,7 +476,7 @@ my sub setup-sources-selection(@specs, %n, %rak) {
 }
 
 # Set up the producers of information
-my sub setup-producers(%n, %rak) {
+my sub setup-producers(@specs, %n, %rak) {
     # Set up producers
     %rak<encoding> := my $enc := (%n<encoding>:delete) // 'utf8-c8';
     if %n<per-file>:delete -> $per-file {
@@ -508,12 +514,10 @@ my sub setup-producers(%n, %rak) {
           '\\r\\n' => "\n";
 
         my %csv = %n<
-          sep quote escape binary auto-diag diag-verbose
-          blank-is-undef empty-is-undef
-          allow-whitespace allow-loose-quotes allow-loose-escapes
-          allow-unquoted-escape always-quote quote-space escape-null
-          quote-binary keep-meta strict formula undef-str comment-str
+          sep quote escape allow-whitespace allow-loose-quotes
+          allow-loose-escapes keep-meta strict formula
         >:delete:p;
+        %csv<auto-diag> := %n<auto-diag>:delete // True;
         %csv<eol> := %line-endings{$_} with %n<eol>:delete;
 
         my $csv := Text::CSV.new(|%csv);
@@ -526,15 +530,19 @@ my sub setup-producers(%n, %rak) {
             meh "Must have Git::Blame::File installed to use --blame-per-file";
         }
         require Git::Blame::File;
+
         %rak<produce-one> := -> $io { Git::Blame::File.new($io) }
-        %rak<omit-item-numbers> := True;
+        %rak<under-version-control> := True;
+        %rak<omit-item-numbers>     := True;
     }
     elsif %n<blame-per-line>:delete {
         CATCH {
             meh "Must have Git::Blame::File installed to use --blame-per-line";
         }
         require Git::Blame::File;
+
         %rak<produce-many> := -> $io { Git::Blame::File.new($io).lines }
+        %rak<under-version-control> := True;
     }
 }
 
@@ -544,14 +552,14 @@ my sub make-highlighter($needle, %n, %rak) {
     my Bool() $ignoremark = %n<ignoremark>;
     my        $type       = %n<type>;
     my Bool() $highlight;
-    my Bool() $show-line-number;
+    my Bool() $show-line-number = True;
     my Bool() $trim;
     my Bool() $only;
     my Int()  $summary-if-larger-than;
 
     my $human := %n<human> //= $isa-tty;
     if $human {
-        $highlight = $show-line-number = True;
+        $highlight = True;
         $only  = False;
         $trim  = !(%n<context> || %n<before-context> || %n<after-context> ||
                    %n<paragraph-context> || %n<passthru-context>);
@@ -806,6 +814,10 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
         &line-post-proc = make-highlighter($pattern, %n, %rak)
     }
 
+    # Various setups
+    setup-sources-selection(@specs, %n, %rak);
+    setup-producers(@specs, %n, %rak);
+
     # Only interested in filenames
     if %n<files-with-matches>:delete {
 
@@ -862,30 +874,45 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
         handle-checkout($pattern, %n, %rak);
     }
 
-    # Various setups
-    setup-sources-selection(@specs, %n, %rak);
-    setup-producers(%n, %rak);
+    # Just find path names
+    elsif %n<find>:delete {
+        %rak<find>              := True;
+        %rak<find-all> := $_ with %n<find-all>:delete;
+        %rak<omit-item-numbers> := True;
+        %n<show-filename> := False;
+        &line-post-proc = *.Str;
+    }
 
     # Set up statistics settings
     my $count-only := %n<count-only>:delete;
     %rak<stats-only> := True if %n<stats-only>:delete || $count-only;
     %rak<stats>      := True if %n<stats>:delete;
 
+    # Set up frequency settings
+    if %n<frequencies>:delete {
+        %rak<frequencies> := True;
+        &line-post-proc = { .value ~ ':' ~ .key };
+    }
+
     # Set up standard flags
-    %rak{$_} := True for %n<unique quietly silently>:delete:v;
+    %rak{.key} := .value for %n<
+      unique quietly silently invert-match under-version-control
+    >:delete:p;
 
     # Remove arguments that have been handled now
     %n<human ignorecase ignoremark type>:delete;
 
     my $show-filename := %n<show-filename>:delete // True;
+    my int $only-first = .Int with %n<only-first>:delete;
 
     # Set up / do the work
     meh-if-unexpected(%n);
     my $rak := rak $needle, %rak;
     meh .message with $rak.exception;
 
-
     # show the results!
+    my int $seen;
+    RESULT:
     for $rak.result -> $outer {
         if Pair.ACCEPTS($outer) {
             my $source := $outer.key;
@@ -893,34 +920,45 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
             if Iterable.ACCEPTS($result) {
                 if $result -> @matches {
                     sayer $source.relative if $show-filename;
-                    if Pair.ACCEPTS(@matches.head) {
+                    my $type := @matches.head.WHAT;
+                    if Pair.ACCEPTS($type) {
                         my str $format = '%' ~ @matches.tail.key.chars ~ 'd:%s';
                         for @matches {
                             sayer sprintf
                                     $format,
                                     .key,
                                     .matched && &line-post-proc
-                                      ?? line-post-proc .value
-                                      !! .value
+                                      ?? line-post-proc .value.Str
+                                      !! .value.Str;
+                            last RESULT if ++$seen == $only-first;
                         }
                     }
                     elsif &line-post-proc {
-                        sayer line-post-proc $_ for @matches;
+                        for @matches {
+                            sayer line-post-proc $_;
+                            last RESULT if ++$seen == $only-first;
+                        }
                     }
                     else {
-                        sayer $_ for @matches;
+                        for @matches {
+                            sayer $_;
+                            last RESULT if ++$seen == $only-first;
+                        }
                     }
                 }
             }
             else {
-                sayer $source.relative if $show-filename;
+                sayer $source.relative
+                  if $show-filename && IO::Path.ACCEPTS($source);
                 sayer &line-post-proc ?? line-post-proc($outer) !! $outer;
+                last RESULT if ++$seen == $only-first;
             }
         }
 
         # just show unique results
         else {
             sayer &line-post-proc ?? line-post-proc($outer) !! $outer;
+            last RESULT if ++$seen == $only-first;
         }
     }
 

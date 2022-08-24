@@ -126,6 +126,28 @@ If specified without extension, the extension C<.bak> will be used.
 Indicate the number of lines that should be shown B<before> any line that
 matches.  Defaults to B<0>.  Will be overridden by a C<--context> argument.
 
+=head2 --blame-per-file
+
+Flag.  Only makes sense if the pattern is a C<Callable>.  If specified with a
+C<True> value, indicates that each of the selected files will be provided as
+L<C<Git::Blame::File>|https://raku.land/zef:lizmat/Git::Blame::File#methods-on-gitblamefile>
+objects if C<git blame> can be performed on the a selected file.  If that
+is not possible, then the selected file will be ignored.
+
+If <git blame> information can be obtained, then the associated
+C<Git::Blame::File> object will be presented to the pattern C<Callable>.
+If the Callable returns a true value, then filename will be shown.  If the
+returned value is a string, then that string will be shown.
+
+=begin code :lang<bash>
+
+# show files with more than 10 commits
+$ rak '*.commits > 10' --blame-per-file --files-with-matches
+
+=end code
+
+Requires that the L<C<Git::Blame::File>|https://raku.land/zef:lizmat/Git::Blame::File> is installed.
+
 =head2 --blame-per-line
 
 Flag.  Only makes sense if the pattern is a C<Callable>.  If specified with a
@@ -142,9 +164,12 @@ string, then that string will be shown.
 
 =begin code :lang<bash>
 
+# show git blame on lines of which the author is "Scooby Doo"
 $ rak '{ .author eq "Scooby Doo" }' --blame-per-line
 
 =end code
+
+Requires that the L<C<Git::Blame::File>|https://raku.land/zef:lizmat/Git::Blame::File> is installed.
 
 =head2 --break[=string]
 
@@ -225,6 +250,16 @@ Flag.  If specified with a true value, will B<not> look at the contents of
 the selected paths, but instead consider the selected paths as lines in a
 virtual file.
 
+=head2 --first-only[=N]
+
+Indicate the number of matches to show.  If specified without a value, will
+default to B<1>.  Defaults to show all possible matches.
+
+=head2 --frequencies
+
+Flag.  If specified, will produce a frequency table of the matches with
+the most frequent match first.  Default is C<False>.  See also C<--unique>;
+
 =head2 --group-matches
 
 Flag.  Indicate whether matches of a file should be grouped together by
@@ -251,7 +286,7 @@ interest, which are:
 =item result
 =item listing
 =item resource
-=item edit
+=item special
 =item option
 =item general
 =item philosophy
@@ -593,7 +628,7 @@ C<True> if no context for lines was specified, else defaults to C<False>.
 =head2 --unique
 
 Flag.  If specified with a true value, will only produce unique lines of
-output.  Default is C<False>.
+output.  Default is C<False>.  See also C<--frequencies>.
 
 =head2 --version
 

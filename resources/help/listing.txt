@@ -13,4 +13,4 @@ Listing modifiers:
  --highlight-after=yyy       String to put after match
  --output-file=filename      Send output to indicated file (default: STDOUT)
  --pager                     Pager to use (default: ACK_PAGER // none)
- --passthru                  Accept all lines (default: only matching pattern)
+ --first-only[=N]            Show only the N results, N defaults to 1
