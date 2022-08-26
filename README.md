@@ -94,6 +94,21 @@ All options are optional. Any unexpected options, will cause an exception to be 
 
 Indicate the number of lines that should be shown **after** any line that matches. Defaults to **0**. Will be overridden by a `--context` argument.
 
+--allow-loose-escapes
+---------------------
+
+Only applicable if `--csv-per-line` has been specified. Flag. If specified, indicates that **any** character may be escaped.
+
+--allow-loose-quotes
+--------------------
+
+Only applicable if `--csv-per-line` has been specified. Flag. If specified, indicates that fields do not need to be quoted to be acceptable.
+
+--allow-whitespace
+------------------
+
+Only applicable if `--csv-per-line` has been specified. Flag. If specified, indicates that whitespace is allowed around separators.
+
 --backup[=extension]
 --------------------
 
@@ -113,7 +128,7 @@ If <git blame> information can be obtained, then the associated `Git::Blame::Fil
 
 ```bash
 # show files with more than 10 commits
-$ rak '*.commits > 10' --blame-per-file
+$ rak '*.commits > 10' --blame-per-file --filename-only
 ```
 
 Requires that the [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File) is installed.
@@ -135,7 +150,7 @@ Requires that the [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::
 --break[=string]
 ----------------
 
-Indicate whether there should be a visible division between matches of different files. Can also be specified as a string to be used as the divider. Defaults to `True` (using an empty line as a divider) if `--human` is (implicitly) set to `True`, else defaults to `False`.
+Indicate whether there should be a visible division between matches of different files. Can also be specified as a string to be used as the divider. Defaults to `True` (using an empty line as a divider) if `--group-matches` is (implicitly) set to `True`, else defaults to `False`.
 
 --context=N
 -----------
@@ -145,7 +160,16 @@ Indicate the number of lines that should be shown **around** any line that match
 --count-only
 ------------
 
-Flag. Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:files-with-matches` option is also specified with a `True` value, will also list the file names with their respective counts.
+Flag. Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:filename-only` option is also specified with a `True` value, will also list the file names with their respective counts.
+
+--csv-per-line
+--------------
+
+Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that selected files should be interpreted as comma separated values (CSV). Each row from the selected files will be provided as a list of strings (or of `CSV::Field` objects).
+
+Attempt to interpret file as a CSV file, and pass each row as a List to to the pattern Callable. Only files with extensions from the `#csv` group will be tried, unless overridden by any explicit extension specification.
+
+More documentation can be found with the [Text::CSV](https://raku.land/github:Tux/Text::CSV) module itself.
 
 --dryrun
 --------
@@ -156,6 +180,16 @@ Flag. Indicate to **not** actually make any changes to any content modification 
 ---------------
 
 Indicate whether the patterns found should be fed into an editor for inspection and/or changes. Defaults to `False`. Optionally takes the name of the editor to be used.
+
+--eol=[lf|cr|crlf]
+------------------
+
+Only applicable if `--csv-per-line` has been specified. Indicate a line ending different from the standard line ending assumed by the system. Can be specified as `lf` for a single LineFeed character, `cr` for a single CarriageReturn character, or `crlf` for a combination of a CarriageReturn and a LineFeed character.
+
+--escape=["]
+------------
+
+Only applicable if `--csv-per-line` has been specified. Indicates the escape character to be used to escape characters in a field. Defaults to **double quote**.
 
 --extensions=spec
 -----------------
@@ -180,17 +214,17 @@ Predefined groups are `#raku`, `#perl`, `#c`, `#c++`, `#yaml`, <#ruby> `#python`
 --file-separator-null
 ---------------------
 
-Flag. Indicate to separate filenames by null bytes rather than newlines if the `--files-with-matches` option is specified with a `True` value.
+Flag. Indicate to separate filenames by null bytes rather than newlines if the `--filename-only` option is specified with a `True` value.
+
+--filename-only
+---------------
+
+Flag. If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
 
 --files-from=filename
 ---------------------
 
 Indicate the path of the file to read filenames from instead of the expansion of paths from any positional arguments. "-" can be specified to read filenames from STDIN.
-
---files-with-matches
---------------------
-
-Flag. If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
 
 --find
 ------
@@ -202,6 +236,19 @@ Flag. If specified with a true value, will **not** look at the contents of the s
 
 Indicate the number of matches to show. If specified without a value, will default to **1**. Defaults to show all possible matches.
 
+--formula=[none]
+----------------
+
+Only applicable if `--csv-per-line` has been specified. If specified, indicates the action to be taken when a field starts with an equal sign (indicating a formula of some kind in many spreadsheets). The following values are recognized:
+
+  * none - take not action, just pass on
+
+  * die - throw an exception
+
+  * diag - report line and position where formula was found
+
+  * empty - replace the formula by an empty string
+
 --frequencies
 -------------
 
@@ -210,12 +257,7 @@ Flag. If specified, will produce a frequency table of the matches with the most 
 --group-matches
 ---------------
 
-Flag. Indicate whether matches of a file should be grouped together by mentioning the filename only once (instead of on every line). Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
-
---highlight
------------
-
-Flag. Indicate whether the pattern should be highlighted in the line in which it was found. Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
+Flag. Indicate whether matches of a file should be grouped together by mentioning the filename only once (instead of on every line). Defaults to `True`.
 
 --help [area-of-interest]
 -------------------------
@@ -248,20 +290,100 @@ Show argument documentation, possibly extended by giving the area of interest, w
 
   * examples
 
+--highlight
+-----------
+
+Flag. Indicate whether the pattern should be highlighted in the line in which it was found. Defaults to `True` if a human is watching (aka STDOUT connected to a terminal), or `--highlight-before` or `highlight-after` are explicitely specified, or `False` otherwise.
+
 --highlight--after[=string]
 ---------------------------
 
-Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitly) set to `True`. Defaults to the empty string if `--only-matching` is specified with a `True` value, or to the terminal code to end **bold** otherwise.
+Indicate the string that should be used at the end of the pattern found in a line. Specifying implies `--highlight`ing implicitely. If `--highlight` or `--highlight-before` are explicitely specified, will default to the empty string if `--matches-only` is specified with a `True` value, or whatever is specified with `--highlight-before`, or to the ANSI code to end **bold**.
 
 --highlight--before[=string]
 ----------------------------
 
-Indicate the string that should be used at the end of the pattern found in a line. Only makes sense if `--highlight` is (implicitly) set to `True`. Defaults to a space if `--only-matching` is specified with a `True` value, or to the terminal code to start **bold** otherwise.
+Indicate the string that should be used at the end of the pattern found in a line. Specifying implies `--highlight`ing implicitly. If `highlight` is explicitely specified with a trueish value, will default to a space if `--matches-only` is specified with a `True` value, or to the terminal code to start **bold** otherwise.
 
---human
--------
+--is-empty
+----------
 
-Flag. Indicate that search results should be presented in a human readable manner. This means: filenames shown on a separate line, line numbers shown, and highlighting performed. Defaults to `True` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `False`.
+Flag. If specified with a trueish value, will only select files that do not contain any data. Use negation `--/is-empty` to only select files that **do** contain data.
+
+--is-executable
+---------------
+
+Flag. If specified with a trueish value, will only select files that can be executed by the current user. Use negation `--/is-executable` to only select files that are **not** executable by the current user.
+
+--is-group-executable
+---------------------
+
+Flag. If specified with a trueish value, will only select files that can be executed by members of the group of the owner. Use negation `--/is-group-executable` to only select files that are **not** executable by the members of the group of the owner.
+
+--is-group-readable
+-------------------
+
+Flag. If specified with a trueish value, will only select files that can be read by members of the group of the owner. Use negation `--/is-group-readable` to only select files that are **not** readable by the members of the group of the owner.
+
+--is-group-writable
+-------------------
+
+Flag. If specified with a trueish value, will only select files that can be written to by members of the group of the owner. Use negation `--/is-group-writable` to only select files that are **not** writable by the members of the group of the owner.
+
+--is-owned-by-group
+-------------------
+
+Flag. If specified with a trueish value, will only select files that are owned by the group of the current user. Use negation `--/is-owned-by-group` to only select files that are **not** owned by the group of the current user.
+
+--is-owned-by-user
+------------------
+
+Flag. If specified with a trueish value, will only select files that are owned by current user. Use negation `--/is-owned-by-user` to only select files that are **not** owned by the current user.
+
+--is-owner-executable
+---------------------
+
+Flag. If specified with a trueish value, will only select files that can be executed by the owner. Use negation `--/is-owner-executable` to only select files that are **not** executable by the owner.
+
+--is-owner-readable
+-------------------
+
+Flag. If specified with a trueish value, will only select files that can be read by the owner. Use negation `--/is-owner-readable` to only select files that are **not** readable by the owner.
+
+--is-owner-writable
+-------------------
+
+Flag. If specified with a trueish value, will only select files that can be written to by the owner. Use negation `--/is-owner-writable` to only select files that are **not** writable by the owner.
+
+--is-readable
+-------------
+
+Flag. If specified with a trueish value, will only select files that can be read by the the current user. Use negation `--/is-readable` to only select files that are **not** readable by the current user.
+
+--is-symbolic-link
+------------------
+
+Flag. If specified with a trueish value, will only select files that are symbolic links. Use negation `--/is-symbolic-link` to only select files that are **not** symbolic links.
+
+--is-world-executable
+---------------------
+
+Flag. If specified with a trueish value, will only select files that can be executed by anybody. Use negation `--/is-group-executable` to only select files that are **not** executable by anybody.
+
+--is-world-readable
+-------------------
+
+Flag. If specified with a trueish value, will only select files that can be read by anybody. Use negation `--/is-world-readable` to only select files that are **not** readable by anybody.
+
+--is-world-writable File can (not) be written to by anybody
+-----------------------------------------------------------
+
+Flag. If specified with a trueish value, will only select files that can be written to by anybody. Use negation `--/is-world-writable` to only select files that can **not** be written to by anybody.
+
+--is-writable File can (not) be written to by owner
+---------------------------------------------------
+
+Flag. If specified with a trueish value, will only select files that can be written to by the current user. Use negation `--/is-writable` to only select files that can **not** be written to by the current user.
 
 --json-per-file
 ---------------
@@ -281,10 +403,23 @@ Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True
 $ rak '{ $_ with .<auth> }' --json-per-line
 ```
 
+--keep-meta
+-----------
+
+Only applicable if `--csv-per-line` has been specified. Flag. If specified, indicates that meta-information will be kept for each field, by presenting each field as a `CSV::Field|https://github.com/Tux/CSV/blob/master/doc/Text-CSV.md#csvfield` object rather than as a string. The most important methods that can be called on a `CSV::Field` object are:
+
+  * is-quoted - field was quoted
+
+  * is-binary - field contains undecodable data
+
+  * is-utf8 - field contains decodable data beyond ASCII
+
+  * is-formula = field looks like it contains a spreadsheet formula
+
 --known-extensions
 ------------------
 
-Flag. Indicate that only files with known extensions (occuring in any of the `#groups`) should be searched. Defaults to `True` if a human is watching.
+Flag. Indicate that only files with known extensions (occuring in any of the `#groups`) should be searched. Defaults to `True` if a human is watching (aka STDOUT is connected to a terminal).
 
 --list-custom-options
 ---------------------
@@ -358,8 +493,8 @@ Inserts this value in the file instead of the given line. The value can either b
 
 Indicate the Raku module that should be loaded. Only makes sense if the pattern is executable code.
 
---only-matching
----------------
+--matches-only
+--------------
 
 Flag. Indicate whether only the matched pattern should be produced, rather than the line in which the pattern was found. Defaults to `False`.
 
@@ -384,15 +519,20 @@ $ rak foo --pager='less -r'
 
 Flag. Indicate all lines that are part of the same paragraph **around** any line that matches. Defaults to `False`.
 
---passthru-context
-------------------
+--passthru
+----------
 
-Flag. Indicate whether **all** lines from source should be shown, even if they do **not** match the pattern. Highlighting will still be performed, if so (implicitely) specified.
+Flag. Indicate whether **all** lines from source should be shown always. Highlighting will still be performed, if so (implicitely) specified.
 
 ```bash
 # Watch a log file, and highlight a certain IP address.
 $ tail -f ~/access.log | rak --passthru 123.45.67.89
 ```
+
+--passthru-context
+------------------
+
+Flag. Indicate whether **all** lines from source should be shown if at least one line matches. Highlighting will still be performed, if so (implicitely) specified.
 
 --paths-from=filename
 ---------------------
@@ -408,6 +548,11 @@ Alternative way to specify the pattern to search for. If (implicitly) specified,
 ---------
 
 Flag. Only makes sense if the pattern is a `Callable`. If specified with a true value, will catch all **warnings** that are emitted when executing the pattern's `Callable`. Defaults to False.
+
+--quote=["]
+-----------
+
+Only applicable if `--csv-per-line` has been specified. Indicates the character that should be used for quoting fields. Defaults to **double quote**.
 
 --recurse-unmatched-dir
 -----------------------
@@ -467,20 +612,25 @@ One option can be marked as requiring a value to be specified (with "!") or have
 
 To remove a saved set of options, use `--save` as the only option.
 
+--sep=[,]
+---------
+
+Only applicable if `--csv-per-line` has been specified. Indicates the character to indicate the field separator. Defaults to the **comma**.
+
 --show-blame
 ------------
 
-Flag. Indicate whether to show `git blame` information for matching lines if possible, instead of just the line. Defaults to `False`.
+Flag. Indicate whether to show `git blame` information for matching lines if possible, instead of just the line. Defaults to `False`. **TEMPORARILY UNAVAILABLE**.
 
 --show-filename
 ---------------
 
-Flag. Indicate whether filenames should be shown. Defaults to `True` if `--human` is (implicitly) set to `True`, else defaults to `False`.
+Flag. Indicate whether filenames should be shown. Defaults to `True`.
 
 --show-line-number
 ------------------
 
-Flag. Indicate whether line numbers should be shown. Defaults to `True` if `--human` is (implicitly) set to `True` and <-h> is **not** set to `True`, else defaults to `False`.
+Flag. Indicate whether line numbers should be shown. Defaults to `True`.
 
 --silently[=out,err]
 ====================
@@ -499,6 +649,11 @@ Flag and option. Only applicable if the pattern is a `Callable`. Indicates wheth
 -----------
 
 Flag. An intelligent version of `--ignorecase`. If the pattern does **not** contain any uppercase characters, it will act as if `--ignorecase` was specified. Otherwise it is ignored.
+
+--strict
+--------
+
+Only applicable if `--csv-per-line` has been specified. Flag. If specified with a trueish value, then each line in the CSV file **must** have the same number of fields. Default is to allow different numbers of fields.
 
 --summary-if-larger-than=N
 --------------------------
@@ -528,21 +683,6 @@ Flag. If the only argument, shows the name and version of the script, and the sy
 ---------
 
 Flag. If specified with a true value, will output search results in the format "filename:linenumber:column:line". This allows integration with the `:grep` action in vim-like editors.
-
-IN APPLICATION USAGE
-====================
-
-You can also load the `App::Rak` module as a module in your own application. It will then export a `rak` subroutine with the same arguments as the `rak` command line interface.
-
-This is still a bit experimental.
-
-Currently calling this subroutine will return `Nil`. That may change in the future.
-
-```raku
-use App::Rak;
-
-rak 'foo';  # look for "foo" in all files with known extensions from "."
-```
 
 AUTHOR
 ======

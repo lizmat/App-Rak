@@ -66,5 +66,17 @@ Callable:
 --csv-per-line
 
 Attempt to interprete file as a CSV file, and pass each row as a List to
-to the pattern Callable.  Only files with the .csv extension will be tried,
-unless overridden by any explicit extension specification.
+to the pattern Callable.  Only files with extensions from the C<#csv> group
+will be tried, unless overridden by any explicit extension specification.
+
+The following options only make sense when --csv-per-line has been specified:
+- --eol=[\n|\r|\r\n]     different line ending to assume
+- --sep=[,]              field separator, default: ,
+- --quote=["]            quoting char, default: "
+- --escape=[\\]          escape character, default \  (shell requires \\)
+- --strict               flag, do not allow different number of fields
+- --formula=[type]       none | die | diag | empty, default: none
+- --allow-whitespace     flag, allow whitespace around separator
+- --allow-loose-quotes   flag, allow unquoted fields
+- --allow-loose-escapes  flag, allow any character to be escaped
+- --keep-meta            flag, produce fields as CSV::Field instead of Str

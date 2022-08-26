@@ -1,0 +1,14 @@
+Filesystem filters:
+ --is-empty             File does (not) contain any data
+ --is-executable        File can (not) be executed by owner
+ --is-readable          File can (not) be read by owner
+ --is-writable          File can (not) be written to by owner
+ --is-symbolic-link     File is (not) a symbolic link
+ --is-group-executable  File can (not) be executed by group members of owner
+ --is-group-readable    File can (not) be read by group members of owner
+ --is-group-writable    File can (not) be written to by group members of owner
+ --is-owned-by-group    File is (not) owned by group of user
+ --is-owned-by-user     File is (not) owned by user
+ --is-world-executable  File can (not) be executed by anybody
+ --is-world-readable    File can (not) be read by anybody
+ --is-world-writable    File can (not) be written to by anybody

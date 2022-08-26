@@ -1,0 +1,415 @@
+BEGIN %*ENV<RAKU_TEST_DIE_ON_FAIL> = 1;
+use Test;
+
+my constant BON  = "\e[1m";   # BOLD ON
+my constant BOFF = "\e[22m";  # BOLD OFF
+
+my $dir  = $*TMPDIR.add("App-Rak");
+my $abs := $dir.absolute;
+my $dot  = $?FILE.IO.parent.parent;
+my $rak := $dot.add("bin").add("rak").relative;
+
+my @filenames := <zero one two three four five six seven eight nine>;
+my %name2path  = @filenames.map: { $_ => $dir.add($_).absolute }
+my %path2name  = %name2path.kv.reverse;
+
+my $paths = $dir.sibling("rak-paths");
+$paths.spurt: %name2path{@filenames}.join("\n");
+
+my @targets  = @filenames;
+@targets[3]  = "";
+@targets[6] .= uc;
+
+$dir.mkdir;
+for @filenames.kv -> $n, $name {
+    %name2path{$name}.IO.spurt: @targets[0..$n].join("\n") ~ "\n";
+    is %name2path{$name}.IO.slurp, @targets[0..$n].join("\n") ~ "\n",
+      "is the file for $name ok?";
+}
+
+# using paths from here on out
+$dot   .= relative;
+$dir   .= absolute;
+$paths .= absolute;
+
+END {
+    .IO.unlink for %name2path.values;
+    $paths.IO.unlink;
+    $dir.IO.rmdir;
+}
+
+my sub query-ok(*@query, :$ok is copy, :$head = 1) is test-assertion {
+    my @args = $*EXECUTABLE.absolute, "-I$dot", $rak, "--paths-from=$paths",
+      @query.Slip;
+    $ok .= chomp;
+
+    # Logic to run the query
+    my sub run-query() {
+        my $proc := run @args, :out, :err;
+        my $key = "huh?";
+
+        is $proc.err.slurp(:close), "", "is '@query[]' STDERR clean?";
+        $proc.out.lines.map({
+            .match($abs) ?? .IO.basename !! $_
+        }).join("\n")
+    }
+
+    # Base query
+    is run-query, $ok, "is '@query[]' result ok?";
+
+    # If there was a result, try for only the first result
+    if $ok && $head {
+        @query.push: '--only-first';
+        @args.push:  '--only-first';
+        is run-query, $ok.lines.head($head).join("\n"),
+          "is '@query[]' result ok?";
+    }
+}
+
+# Checks for "ine"
+my @ine = (
+  <ine>,
+  <ine --type=ends-with>,
+  <INE --type=ends-with --ignorecase>,
+  <ïñę --type=ends-with --ignoremark>,
+  <ÍNĒ --type=ends-with --ignorecase --ignoremark>,
+  <ine --type=contains>,
+  <ine --type=contains --smartcase>,
+  </ine/>,
+  </ine$/>,
+  </in.$/>,
+  </INE$/ --ignorecase>,
+  </ïñę/ --ignoremark>,
+  </ÍNĒ/ --ignorecase --ignoremark>,
+);
+
+# Check highlighting as if a human was watching
+for @ine {
+    query-ok .Slip, '--highlight', :head(2), ok => qq:to/OK/;
+nine
+10:n{BON}ine{BOFF}
+OK
+}
+
+# Check without highlighting
+for @ine {
+    query-ok .Slip, <--show-filename --show-line-number --group-matches>,
+      :head(2), ok => q:to/OK/;
+nine
+10:nine
+OK
+}
+
+# Sure to not produce any matches
+for (
+  <ine --type=words>,
+  <ine --type=starts-with>,
+  <INE>,
+  </^ine/>,
+  <42>,
+) {
+    query-ok .Slip, :ok("\n");
+    query-ok .Slip, '--highlight', :ok("\n");
+}
+
+query-ok <six --smartcase --no-group-matches --/show-line-number>,
+  ok => q:to/OK/;
+six:SIX
+seven:SIX
+eight:SIX
+nine:SIX
+OK
+
+query-ok <seven --type=words --highlight>, :head(2), ok => qq:to/OK/;
+seven
+8:{BON}seven{BOFF}
+
+eight
+8:{BON}seven{BOFF}
+
+nine
+8:{BON}seven{BOFF}
+OK
+
+query-ok </o$/ --find --highlight>, ok => qq:to/OK/;
+tw{BON}o{BOFF}
+zer{BON}o{BOFF}
+OK
+
+query-ok q/{.uc if .contains("u")}/, :head(2), ok => q:to/OK/;
+four
+5:FOUR
+
+five
+5:FOUR
+
+six
+5:FOUR
+
+seven
+5:FOUR
+
+eight
+5:FOUR
+
+nine
+5:FOUR
+OK
+
+query-ok q/{.uc if .contains("v")}/, '--/group-matches',
+  ok => q:to/OK/;
+five:6:FIVE
+six:6:FIVE
+seven:6:FIVE
+seven:8:SEVEN
+eight:6:FIVE
+eight:8:SEVEN
+nine:6:FIVE
+nine:8:SEVEN
+OK
+
+query-ok q/{.uc if .contains("v")}/, '--/group-matches', '--break',
+  ok => q:to/OK/;
+five:6:FIVE
+
+six:6:FIVE
+
+seven:6:FIVE
+seven:8:SEVEN
+
+eight:6:FIVE
+eight:8:SEVEN
+
+nine:6:FIVE
+nine:8:SEVEN
+OK
+
+for </\w+/>, <*.words.Slip> {
+    query-ok $_, '--frequencies', ok => q:to/OK/;
+10:zero
+9:one
+8:two
+6:four
+5:five
+4:SIX
+3:seven
+2:eight
+1:nine
+OK
+}
+
+for <*.&defined>, <{$_}> {
+    query-ok $_, '--frequencies', ok => q:to/OK/;
+10:zero
+9:one
+8:two
+7:
+6:four
+5:five
+4:SIX
+3:seven
+2:eight
+1:nine
+OK
+}
+
+for </\w+/>, <*.words.Slip> {
+    query-ok $_, '--unique', ok => q:to/OK/;
+zero
+one
+two
+four
+five
+SIX
+seven
+eight
+nine
+OK
+}
+
+for <*.&defined>, <{$_}> {
+    query-ok $_, '--unique', ok => q:to/OK/;
+zero
+one
+two
+
+four
+five
+SIX
+seven
+eight
+nine
+OK
+}
+
+query-ok '*.comb.Slip', '--frequencies', ok => q:to/OK/;
+33:e
+33:o
+16:r
+14:n
+11:f
+10:t
+10:z
+8:i
+8:v
+8:w
+6:u
+4:I
+4:S
+4:X
+3:s
+2:g
+2:h
+OK
+
+query-ok 'zero', '--stats-only', :!head, ok => qq:to/OK/;
+----------------------
+Statistics for 'zero':
+----------------------
+    Number of files: 10
+    Number of lines: 55
+  Number of matches: 10
+OK
+
+query-ok 'zero', '--count-only', :!head, ok => qq:to/OK/;
+10 matches in 10 files
+OK
+
+query-ok 'eight', '--stats', :!head, ok => qq:to/OK/;
+eight
+9:eight
+
+nine
+9:eight
+-----------------------
+Statistics for 'eight':
+-----------------------
+    Number of files: 10
+    Number of lines: 55
+  Number of matches: 2
+OK
+
+query-ok 'eight', '--stats', '--highlight', :!head, ok => qq:to/OK/;
+eight
+9:{BON}eight{BOFF}
+
+nine
+9:{BON}eight{BOFF}
+-----------------------
+Statistics for 'eight':
+-----------------------
+    Number of files: 10
+    Number of lines: 55
+  Number of matches: 2
+OK
+
+query-ok 'seven', :head(2), ok => q:to/OK/;
+seven
+8:seven
+
+eight
+8:seven
+
+nine
+8:seven
+OK
+
+query-ok <even --no-group-matches --/show-line-number>, ok => q:to/OK/;
+seven:seven
+eight:seven
+nine:seven
+OK
+
+query-ok <eve --/show-filename>, ok => q:to/OK/;
+8:seven
+8:seven
+8:seven
+OK
+
+query-ok <ev --/group-matches>, ok => q:to/OK/;
+seven:8:seven
+eight:8:seven
+nine:8:seven
+OK
+
+query-ok <ven --highlight-before=* --/show-filename --/show-line-number>,
+  ok => q:to/OK/;
+se*ven*
+se*ven*
+se*ven*
+OK
+
+query-ok <eig --highlight-before=* --highlight-after=## --/show-filename>,
+  ok => q:to/OK/;
+9:*eig##ht
+9:*eig##ht
+OK
+
+query-ok <seven --context=2>, :head(2), ok => q:to/OK/;
+seven
+6:five
+7:SIX
+8:seven
+
+eight
+6:five
+7:SIX
+8:seven
+9:eight
+
+nine
+6:five
+7:SIX
+8:seven
+9:eight
+10:nine
+OK
+
+query-ok <seven --before-context=2>, :head(2), ok => q:to/OK/;
+seven
+6:five
+7:SIX
+8:seven
+
+eight
+6:five
+7:SIX
+8:seven
+
+nine
+6:five
+7:SIX
+8:seven
+OK
+
+query-ok <seven --after-context=2>, :head(2), ok => q:to/OK/;
+seven
+8:seven
+
+eight
+8:seven
+9:eight
+
+nine
+8:seven
+9:eight
+10:nine
+OK
+
+query-ok <nine --passthru-context --highlight>, :!head, ok => qq:to/OK/;
+nine
+1:zero
+2:one
+3:two
+4:
+5:four
+6:five
+7:SIX
+8:seven
+9:eight
+10:{BON}nine{BOFF}
+OK
+
+done-testing;
+
+# vim: expandtab shiftwidth=4
