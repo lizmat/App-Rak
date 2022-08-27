@@ -1,7 +1,9 @@
 Haystack specification:
- path1 path2 ...     All other arguments are paths (default: current dir)
- --extensions        Extensions as group (e.g. #raku) or comma separated
- --known-extensions  Only search files with known extensions
- --paths-from=file   Read path specifications from given file
- --follow-symlinks   Follow symlinked directories? (default: don't)
- --files-from=file   Read files to inspect from given file
+ path1 path2 ...          All other arguments are paths (default: current dir)
+ --extensions             By group (e.g. #raku) and/or comma separated
+ --files-from=file        Read files to inspect from given file
+ --known-extensions       Only search files with known extensions
+ --paths-from=file        Read path specifications from given file
+ --recurse-symlinked-dir  Recurse into symlinked directories? (default: don't)
+ --recurse-unmatched-dir  Recurse into directories not matching (default: don't)
+ --under-version-control  Only select paths that are under version control

@@ -39,7 +39,7 @@ The pattern to search for. This can either be a string, or a [Raku regular expre
 
 Can also be specified with the `--pattern` option, in which case **all** the positional arguments are considered to be a path specification.
 
-If the pattern is a `Callable`, then the dynamic variable `$*IO` will contain the `IO::Path` object of the file being processed. Note that pattern `Callable`s will be called in a thread **unsafe** manner.
+If the pattern is a `Callable`, then the dynamic variable `$*SOURCE` will contain the `IO::Path` object of the file being processed. Note that pattern `Callable`s will be called in a thread **unsafe** manner.
 
 path(s)
 -------
@@ -147,6 +147,16 @@ $ rak '{ .author eq "Scooby Doo" }' --blame-per-line
 
 Requires that the [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File) is installed.
 
+--blocks=condition
+------------------
+
+If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The number of logical blocks that a file takes up in the filesystem, will be passed as the only argument.
+
+```bash
+# show files that consist of at least 3 blocks
+$ rak --find --blocks='* >= 3'
+```
+
 --break[=string]
 ----------------
 
@@ -170,6 +180,11 @@ Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True
 Attempt to interpret file as a CSV file, and pass each row as a List to to the pattern Callable. Only files with extensions from the `#csv` group will be tried, unless overridden by any explicit extension specification.
 
 More documentation can be found with the [Text::CSV](https://raku.land/github:Tux/Text::CSV) module itself.
+
+--device-number=condition
+-------------------------
+
+If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The device number of the filesystem on which the file is located, will be passed as the only argument.
 
 --dryrun
 --------
@@ -226,6 +241,16 @@ Flag. If specified with a true value, will only produce the filenames of the fil
 
 Indicate the path of the file to read filenames from instead of the expansion of paths from any positional arguments. "-" can be specified to read filenames from STDIN.
 
+--filesize=condition
+--------------------
+
+If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The number of bytes of data in the file, will be passed as the only argument.
+
+```bash
+# show files that consist of at 30 bytes
+$ rak --find --filesize='* >= 30'
+```
+
 --find
 ------
 
@@ -259,6 +284,21 @@ Flag. If specified, will produce a frequency table of the matches with the most 
 
 Flag. Indicate whether matches of a file should be grouped together by mentioning the filename only once (instead of on every line). Defaults to `True`.
 
+--hard-links=condition
+----------------------
+
+If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The number of hard-links to the file on the filesystem, will be passed as the only argument.
+
+--has-setgid
+------------
+
+Flag. If specified with a trueish value, will only select files that do have the SETGID bit set in their attributes. Use negation `--/has-setgid` to only select files that do **not** have the SETGID bit set.
+
+--has-setuid
+------------
+
+Flag. If specified with a trueish value, will only select files that do have the SETUID bit set in their attributes. Use negation `--/has-setuid` to only select files that do **not** have the SETUID bit set.
+
 --help [area-of-interest]
 -------------------------
 
@@ -273,6 +313,8 @@ Show argument documentation, possibly extended by giving the area of interest, w
   * input
 
   * haystack
+
+  * filesystem
 
   * result
 
@@ -304,6 +346,11 @@ Indicate the string that should be used at the end of the pattern found in a lin
 ----------------------------
 
 Indicate the string that should be used at the end of the pattern found in a line. Specifying implies `--highlight`ing implicitly. If `highlight` is explicitely specified with a trueish value, will default to a space if `--matches-only` is specified with a `True` value, or to the terminal code to start **bold** otherwise.
+
+--inode=condition
+-----------------
+
+If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The inode number of the file on the filesystem, will be passed as the only argument.
 
 --is-empty
 ----------
@@ -359,6 +406,11 @@ Flag. If specified with a trueish value, will only select files that can be writ
 -------------
 
 Flag. If specified with a trueish value, will only select files that can be read by the the current user. Use negation `--/is-readable` to only select files that are **not** readable by the current user.
+
+--is-sticky
+-----------
+
+Flag. If specified with a trueish value, will only select files that do have the STICKY bit set in their attributes. Use negation `--/is-sticky` to only select files that do **not** have the STICKY bit set.
 
 --is-symbolic-link
 ------------------
@@ -460,6 +512,16 @@ $ rak --list-known-extensions
 ```
 
 Flag. If specified with a true value, will show all known extension groups and the extensions they represent. Intended as an informational aid.
+
+--mode=condition
+----------------
+
+If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The full numeric mode value of the file on the filesystem, will be passed as the only argument.
+
+```bash
+# list files with sticky bit set
+$ rak --find --mode='{ $_ +& 0o1000 }'
+```
 
 --modify-files
 --------------
@@ -668,6 +730,11 @@ Only makes sense if the pattern is a string. With `words` specified, will look f
 ------
 
 Flag. Indicate whether lines that have the pattern, should have any whitespace at the start and/or end of the line removed. Defaults to `True` if no context for lines was specified, else defaults to `False`.
+
+--under-version-control[=git]
+-----------------------------
+
+Indicate whether to only select files that are under some form of version control. If specified with a trueish value, will assume files that are under `git` version control. Can also specify the name of the version control system as the value: currently only **git** is supported.
 
 --unique
 --------

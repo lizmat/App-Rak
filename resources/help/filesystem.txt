@@ -1,14 +1,27 @@
 Filesystem filters:
+ --blocks               Number of filesystem blocks used by file
+ --device-number        Number of device on which file is located
+ --filesize             Number of bytes of data used by file
+ --hard-links           Number of hard-links to file on filesystem
+ --inode                Inode number of file on filesystem
+ --group=selector       File is owned by group names / expression
+ --gid=expression       File is owned by given gid
+ --has-setgid           Has SETGID bit set in attributes
+ --has-setuid           Has SETUID bit set in attributes
  --is-empty             File does (not) contain any data
  --is-executable        File can (not) be executed by owner
  --is-readable          File can (not) be read by owner
  --is-writable          File can (not) be written to by owner
- --is-symbolic-link     File is (not) a symbolic link
  --is-group-executable  File can (not) be executed by group members of owner
  --is-group-readable    File can (not) be read by group members of owner
  --is-group-writable    File can (not) be written to by group members of owner
  --is-owned-by-group    File is (not) owned by group of user
  --is-owned-by-user     File is (not) owned by user
+ --is-sticky            Has STICKY bit set in attributes
+ --is-symbolic-link     File is (not) a symbolic link
  --is-world-executable  File can (not) be executed by anybody
  --is-world-readable    File can (not) be read by anybody
  --is-world-writable    File can (not) be written to by anybody
+ --mode                 The full mode value of the file
+ --user=selector        File is owned by user names / expression
+ --uid=expression       File is owned by given uid

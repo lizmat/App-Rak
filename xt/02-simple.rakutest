@@ -410,6 +410,17 @@ nine
 10:{BON}nine{BOFF}
 OK
 
+query-ok 'zero', q/--filesize=*>30/, :head(2), ok => q:to/OK/;
+seven
+1:zero
+
+eight
+1:zero
+
+nine
+1:zero
+OK
+
 done-testing;
 
 # vim: expandtab shiftwidth=4

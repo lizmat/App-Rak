@@ -4,7 +4,7 @@ use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use has-word:ver<0.0.3>:auth<zef:lizmat>;
 use highlighter:ver<0.0.12>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
-use rak:ver<0.0.14>:auth<zef:lizmat>;
+use rak:ver<0.0.16>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
 
 # Defaults for highlighting on terminals
@@ -113,7 +113,7 @@ my sub codify(Str:D $code, %_?) {
         ?? (prelude(%_) ~ 'my $ := -> $_ ' ~ $code).EVAL
         !! $code.starts-with('-> $') && $code.ends-with('}')
           ?? (prelude(%_) ~ 'my $ := ' ~ $code).EVAL
-          !! $code.starts-with('*.') || $code.starts-with('* ')
+          !! $code.starts-with('*')
             ?? (prelude(%_) ~ 'my $ := ' ~ $code).EVAL
             !! $code
 }
@@ -130,7 +130,7 @@ my sub convert-to-matcher(Str:D $code) {
     my $callable := codify($code);
     Callable.ACCEPTS($callable)
       ?? $callable
-      !! * eq $code
+      !! *.contains($callable)
 }
 
 # Convert a string to code, fail if not possible
@@ -460,9 +460,10 @@ my sub setup-sources-selection(@specs, %n, %rak) {
     # Boolean flags that can also be negated
     for <recurse-symlinked-dir recurse-unmatched-dir
          is-empty is-executable is-readable is-writable is-symbolic-link
-         is-group-executable is-group-readable is-group-writable
          is-owned-by-group is-owned-by-user
+         has-setuid has-setgid is-sticky
          is-owner-executable is-owner-readable is-owner-writable
+         is-group-executable is-group-readable is-group-writable
          is-world-executable is-world-readable is-world-writable
         > {
         %rak{$_} := %n{$_}:delete if %n{$_}:exists;
@@ -473,14 +474,116 @@ my sub setup-sources-selection(@specs, %n, %rak) {
         # TODO
     }
 
-    # Checking for user / group ID
-    for <uid gid> {
-        # TODO
+    # Checking for user ID
+    if %n<user>:delete -> $code {
+
+        # Get lookup of uid
+        my (&getpwnam, &getpwuid) = do {
+            CATCH { meh "Must have P5getpwnam module installed to do --user" }
+            'use P5getpwnam; &getpwnam, &getpwuid'.EVAL
+        }
+
+        my sub names2uids($names) {
+            $names.split(",").map: {
+                getpwnam($_)[2]
+                  // meh "Unknown user name '$_' with --user";
+            }
+        }
+
+        my $compiled := convert-to-simple-Callable($code);
+        %rak<uid> := do if Callable.ACCEPTS($compiled) {
+            -> $uid { $compiled($_) with getpwuid($uid).head }
+        }
+        elsif $compiled.starts-with('!') {
+            my int @uids = names2uids($compiled.substr(1));
+            my $uid := @uids.head;
+            my $ := @uids == 1
+              ?? * != $uid
+              !! { !($_ (elem) @uids) }
+        }
+        else {
+            my int @uids = names2uids($compiled);
+            my $uid := @uids.head;
+            my $ := @uids == 1
+              ?? * == $uid
+              !! * (elem) @uids
+        }
+    }
+    elsif %n<uid>:delete -> $code {
+        my $compiled := convert-to-simple-Callable($code);
+        %rak<uid> := do if Callable.ACCEPTS($compiled) {
+            $compiled
+        }
+        elsif (try $code.Int) -> $uid {
+            my $ := * == $uid
+        }
+        else {
+            meh "Must specify a numeric uid or an expression with --uid";
+        }
+    }
+
+    # Checking for user ID
+    if %n<group>:delete -> $code {
+
+        # Get lookup of uid
+        my (&getgrnam, &getgrgid) = do {
+            CATCH { meh "Must have P5getgrnam module installed to do --group" }
+            'use P5getgrnam; &getgrnam, &getgrgid'.EVAL
+        }
+
+        my sub names2gids($names) {
+            $names.split(",").map: {
+                getgrnam($_)[2]
+                  // meh "Unknown group name '$_' with --group";
+            }
+        }
+
+        my $compiled := convert-to-simple-Callable($code);
+        %rak<gid> := do if Callable.ACCEPTS($compiled) {
+            -> $gid { $compiled($_) with getgrgid($gid).head }
+        }
+        elsif $compiled.starts-with('!') {
+            my int @gids = names2gids($compiled.substr(1));
+            my $gid := @gids.head;
+            my $ := @gids == 1
+              ?? * != $gid
+              !! { !($_ (elem) @gids) }
+        }
+        else {
+            my int @gids = names2gids($compiled);
+            my $gid := @gids.head;
+            my $ := @gids == 1
+              ?? * == $gid
+              !! * (elem) @gids
+        }
+    }
+    elsif %n<gid>:delete -> $code {
+        my $compiled := convert-to-simple-Callable($code);
+        %rak<gid> := do if Callable.ACCEPTS($compiled) {
+            $compiled
+        }
+        elsif (try $code.Int) -> $gid {
+            my $ := * == $gid
+        }
+        else {
+            meh "Must specify a numeric gid or an expression with --gid";
+        }
     }
 
     # Checking for numeric value
     for <blocks device-number filesize hard-links inode mode> {
-        # TODO
+        if %n{$_}:exists {
+            my $code := %n{$_}:delete;
+            if Bool.ACCEPTS($code) {
+                meh "Must specify a condition for '--$_'";
+            }
+            else {
+                my $compiled := convert-to-simple-Callable($code);
+                Callable.ACCEPTS($compiled)
+                  ?? (%rak{$_} := $compiled)
+                  !! meh "Problem compiling condition for '--$_': $code";
+            }
+        }
     }
 }
 
@@ -967,7 +1070,9 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
             # Just listing paths
             if $key eq '<find>' {
                 for @$value.sort(*.fc) {
-                    sayer line-post-proc .absolute;
+                    sayer IO::Path.ACCEPTS($_)
+                      ?? line-post-proc .absolute
+                      !! $_;
                     last RESULT if ++$seen == $only-first;
                 }
             }
