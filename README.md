@@ -279,6 +279,39 @@ Only applicable if `--csv-per-line` has been specified. If specified, indicates 
 
 Flag. If specified, will produce a frequency table of the matches with the most frequent match first. Default is `False`. See also `--unique`;
 
+--gid=condition
+---------------
+
+If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The numeric `gid` of the file will be passed as the only argument. Can also be specified as a single numeric argument. See also `--group`.
+
+```bash
+# show files of which the numeric group id is greater than 20
+$ rak --find --gid='* > 20'
+
+# show files of which the numeric group id is 20
+$ rak --find --gid=20
+```
+
+--group=condition
+-----------------
+
+If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The name of the group associated with the `gid` of the file will be passed as the only argument.
+
+Can also be specified as a list of comma separated names to (not) select on. To select all names **except** the listed named, prefix with a `!`.
+
+See also `--gid`. Requires the [P5getgrnam](https://raku.land/zef:lizmat/P5getgrnam) module to be installed.
+
+```bash
+# files of which the name associated with the user id starts with underscore
+$ rak --find --group='*.starts-with("_")'
+
+# show files of which the group is "staff"
+$ rak --find --group=staff
+
+# show files of which the group is NOT "staff"
+$ rak --find --group='!staff'
+```
+
 --group-matches
 ---------------
 
@@ -731,10 +764,43 @@ Only makes sense if the pattern is a string. With `words` specified, will look f
 
 Flag. Indicate whether lines that have the pattern, should have any whitespace at the start and/or end of the line removed. Defaults to `True` if no context for lines was specified, else defaults to `False`.
 
+--uid=condition
+---------------
+
+If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The numeric `uid` of the file will be passed as the only argument. Can also be specified as a single numeric argument. See also `--user`.
+
+```bash
+# show files of which the numeric user id is greater than 500
+$ rak --find --uid='* > 500'
+
+# show files of which the numeric user id is 501
+$ rak --find --uid=501
+```
+
 --under-version-control[=git]
 -----------------------------
 
 Indicate whether to only select files that are under some form of version control. If specified with a trueish value, will assume files that are under `git` version control. Can also specify the name of the version control system as the value: currently only **git** is supported.
+
+--user=condition
+----------------
+
+If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The user name associated with the `uid` of the file will be passed as the only argument.
+
+Can also be specified as a list of comma separated names to (not) select on. To select all names **except** the listed named, prefix with a `!`.
+
+See also `--uid`. Requires the [P5getpwnam](https://raku.land/zef:lizmat/P5getpwnam) module to be installed.
+
+```bash
+# files of which the name associated with the user id starts with underscore
+$ rak --find --user='*.starts-with("_")'
+
+# show files of which the owner is liz or wendy
+$ rak --find --user=liz,wendy
+
+# show files of which the owner is NOT liz or wendy
+$ rak --find --user='!liz,wendy'
+```
 
 --unique
 --------
