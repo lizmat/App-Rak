@@ -53,6 +53,14 @@ my sub meh-if-unexpected(%_) {
       if %_;
 }
 
+# Quit if module not installed
+my sub meh-not-installed($module, $param) {
+    meh qq:to/MEH/;
+Must have the $module module installed to do --$param.
+You can do this by running 'zef install $module'.
+MEH
+}
+
 # Is a pattern a simple Callable?
 my $is-simple-Callable;
 
@@ -479,7 +487,7 @@ my sub setup-sources-selection(@specs, %n, %rak) {
 
         # Get lookup of uid
         my (&getpwnam, &getpwuid) = do {
-            CATCH { meh "Must have P5getpwnam module installed to do --user" }
+            CATCH { meh-not-installed 'P5getpwnam', 'user' }
             'use P5getpwnam; &getpwnam, &getpwuid'.EVAL
         }
 
@@ -490,10 +498,13 @@ my sub setup-sources-selection(@specs, %n, %rak) {
             }
         }
 
+        # An actual condition
         my $compiled := convert-to-simple-Callable($code);
         %rak<uid> := do if Callable.ACCEPTS($compiled) {
             -> $uid { $compiled($_) with getpwuid($uid).head }
         }
+
+        # Negation of list of user names
         elsif $compiled.starts-with('!') {
             my int @uids = names2uids($compiled.substr(1));
             my $uid := @uids.head;
@@ -501,6 +512,8 @@ my sub setup-sources-selection(@specs, %n, %rak) {
               ?? * != $uid
               !! { !($_ (elem) @uids) }
         }
+
+        # List of user names
         else {
             my int @uids = names2uids($compiled);
             my $uid := @uids.head;
@@ -522,12 +535,12 @@ my sub setup-sources-selection(@specs, %n, %rak) {
         }
     }
 
-    # Checking for user ID
+    # Checking for group ID
     if %n<group>:delete -> $code {
 
-        # Get lookup of uid
+        # Get lookup of gid
         my (&getgrnam, &getgrgid) = do {
-            CATCH { meh "Must have P5getgrnam module installed to do --group" }
+            CATCH { meh-not-installed 'P5getgrnam', 'group' }
             'use P5getgrnam; &getgrnam, &getgrgid'.EVAL
         }
 
@@ -538,10 +551,13 @@ my sub setup-sources-selection(@specs, %n, %rak) {
             }
         }
 
+        # An actual condition
         my $compiled := convert-to-simple-Callable($code);
         %rak<gid> := do if Callable.ACCEPTS($compiled) {
             -> $gid { $compiled($_) with getgrgid($gid).head }
         }
+
+        # Negation of list of group names
         elsif $compiled.starts-with('!') {
             my int @gids = names2gids($compiled.substr(1));
             my $gid := @gids.head;
@@ -549,6 +565,8 @@ my sub setup-sources-selection(@specs, %n, %rak) {
               ?? * != $gid
               !! { !($_ (elem) @gids) }
         }
+
+        # List of group names
         else {
             my int @gids = names2gids($compiled);
             my $gid := @gids.head;
@@ -615,9 +633,7 @@ my sub setup-producers(@specs, %n, %rak) {
 
     # Match CSV data
     elsif %n<csv-per-line>:delete {
-        CATCH {
-            meh "Must have Text::CSV installed to use --csv-per-line";
-        }
+        CATCH { meh-not-installed 'Text::CSV', 'csv-per-line' }
         require Text::CSV;
 
         my constant %line-endings =
@@ -638,9 +654,7 @@ my sub setup-producers(@specs, %n, %rak) {
 
     # Match git blame data
     elsif %n<blame-per-file>:delete {
-        CATCH {
-            meh "Must have Git::Blame::File installed to use --blame-per-file";
-        }
+        CATCH { meh-not-installed 'Git::Blame::File', 'blame-per-file' }
         require Git::Blame::File;
 
         %rak<produce-one> := -> $io { Git::Blame::File.new($io) }
@@ -649,7 +663,7 @@ my sub setup-producers(@specs, %n, %rak) {
     }
     elsif %n<blame-per-line>:delete {
         CATCH {
-            meh "Must have Git::Blame::File installed to use --blame-per-line";
+            meh-not-installed 'Git::Blame::File', 'blame-per-line';
         }
         require Git::Blame::File;
 
@@ -1006,7 +1020,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 
     # Set up standard flags
     %rak{.key} := .value for %n<
-      quietly silently invert-match under-version-control
+      quietly silently invert-match under-version-control degree batch
     >:delete:p;
 
     # Fetch arguments we definitely need now

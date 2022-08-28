@@ -114,6 +114,11 @@ Only applicable if `--csv-per-line` has been specified. Flag. If specified, indi
 
 Indicate whether backups should be made of files that are being modified. If specified without extension, the extension `.bak` will be used.
 
+--batch=N
+---------
+
+Indicate the number of files that should be checked per thread. Defaults to `64` if not specified. See also <--degree>.
+
 --before-context=N
 ------------------
 
@@ -180,6 +185,11 @@ Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True
 Attempt to interpret file as a CSV file, and pass each row as a List to to the pattern Callable. Only files with extensions from the `#csv` group will be tried, unless overridden by any explicit extension specification.
 
 More documentation can be found with the [Text::CSV](https://raku.land/github:Tux/Text::CSV) module itself.
+
+--degree=N
+----------
+
+Indicate the number of worker threads that should be maximally. Defaults to the number of cores minus 1 if not specified. See also <--batch>.
 
 --device-number=condition
 -------------------------

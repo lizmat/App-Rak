@@ -40,7 +40,7 @@ END {
 
 my sub query-ok(*@query, :$ok is copy, :$head = 1) is test-assertion {
     my @args = $*EXECUTABLE.absolute, "-I$dot", $rak, "--paths-from=$paths",
-      @query.Slip;
+      @query.Slip, '--degree=1';
     $ok .= chomp;
 
     # Logic to run the query
@@ -420,6 +420,52 @@ eight
 nine
 1:zero
 OK
+
+my $user = ~$*USER;
+my $uid  = +$*USER;
+for "--user=$user", qq/--user=*eq"$user"/, "--user=$user,$user",
+    "--uid=$uid", "--uid=*==$uid" {
+    query-ok '--find', $_, ok => qq:to/OK/;
+eight
+five
+four
+nine
+one
+seven
+six
+three
+two
+zero
+OK
+}
+
+for "--user=!$user", qq/--user=*ne"$user"/, "--user=!$user,$user",
+    "--uid=*!=$uid" {
+    query-ok '--find', $_, ok => "";
+}
+
+my $group = ~$*GROUP;
+my $gid   = +$*GROUP;
+for "--group=$group", qq/--group=*eq"$group"/, "--group=$group,$group",
+    "--gid=$gid", "--gid=*==$gid" {
+    query-ok '--find', $_, ok => qq:to/OK/;
+eight
+five
+four
+nine
+one
+seven
+six
+three
+two
+zero
+OK
+}
+
+for "--group=!$group", qq/--group=*ne"$group"/, "--group=!$group,$group",
+    "--gid=*!=$gid" {
+    query-ok '--find', $_, ok => "";
+}
 
 done-testing;
 

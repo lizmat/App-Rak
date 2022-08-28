@@ -136,6 +136,11 @@ indicates that whitespace is allowed around separators.
 Indicate whether backups should be made of files that are being modified.
 If specified without extension, the extension C<.bak> will be used.
 
+=head2 --batch=N
+
+Indicate the number of files that should be checked per thread.  Defaults
+to C<64> if not specified.  See also <--degree>.
+
 =head2 --before-context=N
 
 Indicate the number of lines that should be shown B<before> any line that
@@ -233,6 +238,11 @@ will be tried, unless overridden by any explicit extension specification.
 
 More documentation can be found with the
 L<Text::CSV|https://raku.land/github:Tux/Text::CSV> module itself.
+
+=head2 --degree=N
+
+Indicate the number of worker threads that should be maximally.  Defaults
+to the number of cores minus 1 if not specified.  See also <--batch>.
 
 =head2 --device-number=condition
 
