@@ -15,7 +15,7 @@ $ rak foo bar  # look for "foo" in directory "bar" recursively
 
 $ rak '/ << foo >> /'    # look for "foo" as word in current directory
 
-$ rak foo --files-only  # look for "foo", only produce filenames
+$ rak foo --files-with-matches  # look for "foo", only produce filenames
 
 $ rak foo --before=2 --after=2  # also produce 2 lines before and after
 
@@ -133,7 +133,7 @@ If <git blame> information can be obtained, then the associated `Git::Blame::Fil
 
 ```bash
 # show files with more than 10 commits
-$ rak '*.commits > 10' --blame-per-file --filename-only
+$ rak '*.commits > 10' --blame-per-file --files-with-matches
 ```
 
 Requires that the [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File) is installed.
@@ -175,7 +175,7 @@ Indicate the number of lines that should be shown **around** any line that match
 --count-only
 ------------
 
-Flag. Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:filename-only` option is also specified with a `True` value, will also list the file names with their respective counts.
+Flag. Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:files-with-matches` (or `files-without matches`) option is also specified with a `True` value, will just show total counts.
 
 --csv-per-line
 --------------
@@ -239,17 +239,22 @@ Predefined groups are `#raku`, `#perl`, `#c`, `#c++`, `#yaml`, <#ruby> `#python`
 --file-separator-null
 ---------------------
 
-Flag. Indicate to separate filenames by null bytes rather than newlines if the `--filename-only` option is specified with a `True` value.
-
---filename-only
----------------
-
-Flag. If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
+Flag. Indicate to separate filenames by null bytes rather than newlines if the `--files-with-matches` option is specified with a `True` value.
 
 --files-from=filename
 ---------------------
 
 Indicate the path of the file to read filenames from instead of the expansion of paths from any positional arguments. "-" can be specified to read filenames from STDIN.
+
+--files-with-matches
+--------------------
+
+Flag. If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
+
+--files-without-matches
+-----------------------
+
+Flag. If specified with a true value, will only produce the filenames of the files in which the pattern was **not** found. Defaults to `False`.
 
 --filesize=condition
 --------------------

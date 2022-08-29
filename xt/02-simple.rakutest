@@ -5,7 +5,7 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 my $dir  = $*TMPDIR.add("App-Rak");
-my $abs := $dir.absolute;
+my $rel := $dir.relative ~ $*SPEC.dir-sep;
 my $dot  = $?FILE.IO.parent.parent;
 my $rak := $dot.add("bin").add("rak").relative;
 
@@ -38,7 +38,11 @@ END {
     $dir.IO.rmdir;
 }
 
-my sub query-ok(*@query, :$ok is copy, :$head = 1) is test-assertion {
+my sub query-ok(
+  *@query,         # the actual parameters
+  :$ok is copy,    # the expected result
+  :$head = 1,      # whether to do the --only-first test with this number
+) is test-assertion {
     my @args = $*EXECUTABLE.absolute, "-I$dot", $rak, "--paths-from=$paths",
       @query.Slip, '--degree=1';
     $ok .= chomp;
@@ -49,9 +53,7 @@ my sub query-ok(*@query, :$ok is copy, :$head = 1) is test-assertion {
         my $key = "huh?";
 
         is $proc.err.slurp(:close), "", "is '@query[]' STDERR clean?";
-        $proc.out.lines.map({
-            .match($abs) ?? .IO.basename !! $_
-        }).join("\n")
+        $proc.out.lines.map(*.subst($rel, :g)).join("\n")
     }
 
     # Base query
@@ -421,8 +423,8 @@ nine
 1:zero
 OK
 
-my $user = ~$*USER;
-my $uid  = +$*USER;
+my $user := ~$*USER;
+my $uid  := +$*USER;
 for "--user=$user", qq/--user=*eq"$user"/, "--user=$user,$user",
     "--uid=$uid", "--uid=*==$uid" {
     query-ok '--find', $_, ok => qq:to/OK/;
@@ -444,8 +446,8 @@ for "--user=!$user", qq/--user=*ne"$user"/, "--user=!$user,$user",
     query-ok '--find', $_, ok => "";
 }
 
-my $group = ~$*GROUP;
-my $gid   = +$*GROUP;
+my $group := ~$*GROUP;
+my $gid   := +$*GROUP;
 for "--group=$group", qq/--group=*eq"$group"/, "--group=$group,$group",
     "--gid=$gid", "--gid=*==$gid" {
     query-ok '--find', $_, ok => qq:to/OK/;
@@ -465,6 +467,34 @@ OK
 for "--group=!$group", qq/--group=*ne"$group"/, "--group=!$group,$group",
     "--gid=*!=$gid" {
     query-ok '--find', $_, ok => "";
+}
+
+for <zero --files-with-matches>, <null --files-without-matches> {
+    query-ok $_, ok => qq:to/OK/;
+zero
+one
+two
+three
+four
+five
+six
+seven
+eight
+nine
+OK
+}
+
+query-ok 'zero', '--files-with-matches', '--count-only', :!head,
+  ok => '10 files with matches';
+query-ok 'null', '--files-without-matches', '--count-only', :!head,
+  ok => '10 files without matches';
+
+for (
+  <zero --files-with-matches    --file-separator-null>,
+  <null --files-without-matches --file-separator-null>,
+) {
+    query-ok $_, :!head,
+  ok => "zero\0one\0two\0three\0four\0five\0six\0seven\0eight\0nine";
 }
 
 done-testing;

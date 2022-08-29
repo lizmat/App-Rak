@@ -14,7 +14,7 @@ $ rak foo bar  # look for "foo" in directory "bar" recursively
 
 $ rak '/ << foo >> /'    # look for "foo" as word in current directory
 
-$ rak foo --files-only  # look for "foo", only produce filenames
+$ rak foo --files-with-matches  # look for "foo", only produce filenames
 
 $ rak foo --before=2 --after=2  # also produce 2 lines before and after
 
@@ -162,7 +162,7 @@ returned value is a string, then that string will be shown.
 =begin code :lang<bash>
 
 # show files with more than 10 commits
-$ rak '*.commits > 10' --blame-per-file --filename-only
+$ rak '*.commits > 10' --blame-per-file --files-with-matches
 
 =end code
 
@@ -221,9 +221,9 @@ C<--before-context> arguments.
 
 Flag.  Indicate whether just the number of lines with matches should be
 calculated.  When specified with a C<True> value, will show a "N matches
-in M files" by default, and if the C<:filename-only> option is also
-specified with a C<True> value, will also list the file names with their
-respective counts.
+in M files" by default, and if the C<:files-with-matches> (or
+C<files-without matches>) option is also specified with a C<True> value,
+will just show total counts.
 
 =head2 --csv-per-line
 
@@ -303,18 +303,23 @@ C<#python>, C<#markdown> and C<#text>.
 =head2 --file-separator-null
 
 Flag.  Indicate to separate filenames by null bytes rather than newlines
-if the C<--filename-only> option is specified with a C<True> value.
-
-=head2 --filename-only
-
-Flag.  If specified with a true value, will only produce the filenames of
-the files in which the pattern was found.  Defaults to C<False>.
+if the C<--files-with-matches> option is specified with a C<True> value.
 
 =head2 --files-from=filename
 
 Indicate the path of the file to read filenames from instead of the
 expansion of paths from any positional arguments.  "-" can be specified
 to read filenames from STDIN.
+
+=head2 --files-with-matches
+
+Flag.  If specified with a true value, will only produce the filenames of
+the files in which the pattern was found.  Defaults to C<False>.
+
+=head2 --files-without-matches
+
+Flag.  If specified with a true value, will only produce the filenames of
+the files in which the pattern was B<not> found.  Defaults to C<False>.
 
 =head2 --filesize=condition
 

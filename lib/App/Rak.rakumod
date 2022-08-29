@@ -4,7 +4,7 @@ use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use has-word:ver<0.0.3>:auth<zef:lizmat>;
 use highlighter:ver<0.0.12>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
-use rak:ver<0.0.16>:auth<zef:lizmat>;
+use rak:ver<0.0.17>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
 
 # Defaults for highlighting on terminals
@@ -956,9 +956,8 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     setup-producers(@specs, %n, %rak);
 
     # Only interested in filenames
-    my $filename-only;
-    if %n<filename-only>:delete {
-        $filename-only := True;
+    my $files-with-matches;
+    if %n<files-with-matches>:delete {
 
         # Only interested in number of files
         if %n<count-only>:delete {
@@ -966,10 +965,10 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
             %rak<max-matches-per-source> := 1;
             %rak<mapper> := -> $, @ --> Empty {
                 LAST sayer $seen == 0
-                  ?? "No files"
+                  ?? "No files with matches"
                   !! $seen == 1
-                    ?? "One file"
-                    !! "$seen files";
+                    ?? "One file with matches"
+                    !! "$seen files with matches";
                 ++$seen;
             }
         }
@@ -984,9 +983,47 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
             }
         }
 
-        # Want to know which files
+        # Want to know files with matches
         else {
-            %rak<sources-only> := True;
+            $files-with-matches := True;
+            %rak<sources-only>  := True;
+            &line-post-proc = *.relative;
+        }
+    }
+
+    # Want to know files without matches
+    if %n<files-without-matches>:delete {
+
+        # Only interested in number of files
+        if %n<count-only>:delete {
+            my int $seen;
+            %rak<max-matches-per-source> := 1;
+            %rak<map-all> := True;
+            %rak<mapper>  := -> $, @a --> Empty {
+                LAST sayer $seen == 0
+                  ?? "No files without matches"
+                  !! $seen == 1
+                    ?? "One file without matches"
+                    !! "$seen files without matches";
+                ++$seen if @a == 0;
+            }
+        }
+
+        # Need to separate files with a null-byte
+        elsif %n<file-separator-null>:delete {
+            my @files;
+            %rak<max-matches-per-source> := 1;
+            %rak<map-all> := True;
+            %rak<mapper>  := -> $source, @a --> Empty {
+                LAST sayer @files.join("\0");
+                @files.push: $source.relative if @a == 0;
+            }
+        }
+
+        # Want to know files without matches
+        else {
+            $files-with-matches := True;  # same final handling
+            %rak<sources-without-only>  := True;
             &line-post-proc = *.relative;
         }
     }
@@ -1027,7 +1064,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     my $show-filename    := %n<show-filename>:delete // True;
     my $show-line-number := %n<show-line-number>:delete // True;
     my int $only-first = .Int with %n<only-first>:delete;
-    %rak<omit-item-number> = True if $filename-only || !$show-line-number;
+    %rak<omit-item-number> = True unless $show-line-number;
 
     # Set up statistics settings
     my $count-only := %n<count-only>:delete;
@@ -1162,7 +1199,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
         }
 
         # Only want filename, so show its relative path
-        elsif $filename-only {
+        elsif $files-with-matches {
             sayer $outer.relative;
             last RESULT if ++$seen == $only-first;
         }
