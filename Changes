@@ -2,6 +2,22 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.90  2022-08-30T23:53:04+02:00
+    - A complete rework of the internals.  Instead of having its own
+      internal engine, now depends on the new "rak" module for the
+      plumbing.
+    - All of the options of earlier versions should still work, albeit
+      with maybe a changed name, or slightly different (better) semantics.
+    - Many, many new options available, most notably:
+      - many options for selecting files from path properties
+      - support for CSV files, based on Text::CSV
+      - can now look into whole file if necessary, rather than by line
+      - integrated statistics and frequencies options
+      - git checkout on partial names
+      - made some external dependencies optional
+    - This now starts the path to version 0.1, the first official beta
+      release.
+
 0.0.47  2022-08-09T12:59:56+02:00
     - Make sure you can specify a ~/file with --files-from and --paths-from
 
