@@ -166,7 +166,7 @@ $ rak '*.commits > 10' --blame-per-file --files-with-matches
 
 =end code
 
-Requires that the L<C<Git::Blame::File>|https://raku.land/zef:lizmat/Git::Blame::File> is installed.
+Requires that the L<C<Git::Blame::File>|https://raku.land/zef:lizmat/Git::Blame::File> module is installed.
 
 =head2 --blame-per-line
 
@@ -189,7 +189,7 @@ $ rak '{ .author eq "Scooby Doo" }' --blame-per-line
 
 =end code
 
-Requires that the L<C<Git::Blame::File>|https://raku.land/zef:lizmat/Git::Blame::File> is installed.
+Requires that the L<C<Git::Blame::File>|https://raku.land/zef:lizmat/Git::Blame::File> module is installed.
 
 =head2 --blocks=condition
 
@@ -210,6 +210,13 @@ Indicate whether there should be a visible division between matches of
 different files.  Can also be specified as a string to be used as the
 divider.  Defaults to C<True> (using an empty line as a divider) if
 C<--group-matches> is (implicitly) set to C<True>, else defaults to C<False>.
+
+=head2 --checkout=branch
+
+Only valid if the current directory is under git version control.  Indicate
+the branch to checkout by the general matching logic of App::Rak.  Will
+produce listing of matching branches if more than one, or say that there
+is no match.  Branches need not have been checked out locally yet.
 
 =head2 --context=N
 
@@ -249,6 +256,14 @@ to the number of cores minus 1 if not specified.  See also <--batch>.
 If specified, indicates the C<Callable> that should return True to include a
 file in the selection of files to be checked.  The device number of the
 filesystem on which the file is located, will be passed as the only argument.
+
+=head2 --dir=condition
+
+If specified, indicates the C<Callable> that should return True to have a
+directory be included for further recursions in file selection.  The basename
+of the directory will be passed as the only argument.  Defaults to all
+directories that do not start with a period.  Can specify as a flag to
+include B<all> directories for recursion.
 
 =head2 --dryrun
 
@@ -300,6 +315,13 @@ $ rak foo --extensions=
 Predefined groups are C<#raku>, C<#perl>, C<#c>, C<#c++>, C<#yaml>, <#ruby>
 C<#python>, C<#markdown> and C<#text>.
 
+=head2 --file=condition
+
+If specified, indicates the C<Callable> that should return True to have a
+file be included in the file selection process.  The basename of the file
+will be passed as the only argument.  Defaults to C<True>, indicating that
+all files should be included.
+
 =head2 --file-separator-null
 
 Flag.  Indicate to separate filenames by null bytes rather than newlines
@@ -339,6 +361,11 @@ $ rak --find --filesize='* >= 30'
 Flag.  If specified with a true value, will B<not> look at the contents of
 the selected paths, but instead consider the selected paths as lines in a
 virtual file.
+
+=head2 --find-all
+
+Flag.  If specified with a true value, will override any file or directory
+filter settings and include all possible files for inspection.
 
 =head2 --first-only[=N]
 
@@ -459,17 +486,25 @@ are explicitely specified, or C<False> otherwise.
 
 Indicate the string that should be used at the end of the pattern found in
 a line.  Specifying implies C<--highlight>ing implicitely.  If C<--highlight>
-or C<--highlight-before> are explicitely specified, will default to the empty
-string if C<--matches-only> is specified with a C<True> value, or whatever
+or C<--highlight-before> are explicitely specified, will default to whatever
 is specified with C<--highlight-before>, or to the ANSI code to end B<bold>.
 
 =head2 --highlight--before[=string]
 
 Indicate the string that should be used at the end of the pattern found in
 a line.  Specifying implies C<--highlight>ing implicitly.  If C<highlight>
-is explicitely specified with a trueish value, will default to a space if
-C<--matches-only> is specified with a C<True> value, or to the terminal code
-to start B<bold> otherwise.
+is explicitely specified with a trueish value, will default to the terminal
+code to start B<bold>.
+
+=head2 --ignorecase
+
+Flag.  If specified with a trueish value, indicates that any matching should
+be done case insensitively.  Default is C<False>.
+
+=head2 --ignoremark
+
+Flag.  If specified with a trueish value, indicates that any matching should
+be done without consideration of any accents.  Default is C<False>.
 
 =head2 --inode=condition
 
@@ -571,13 +606,13 @@ Flag. If specified with a trueish value, will only select files that can be
 read by anybody.  Use negation C<--/is-world-readable> to only select files
 that are B<not> readable by anybody.
 
-=head2 --is-world-writable    File can (not) be written to by anybody
+=head2 --is-world-writable
 
 Flag. If specified with a trueish value, will only select files that can be
 written to by anybody.  Use negation C<--/is-world-writable> to only select
 files that can B<not> be written to by anybody.
 
-=head2 --is-writable          File can (not) be written to by owner
+=head2 --is-writable
 
 Flag. If specified with a trueish value, will only select files that can be
 written to by the current user.  Use negation C<--/is-writable> to only select
@@ -736,6 +771,8 @@ pattern is executable code.
 
 Flag.  Indicate whether only the matched pattern should be produced, rather
 than the line in which the pattern was found.  Defaults to C<False>.
+Frequently used in conjunction with C<--per-file>.  Will show separated by
+space if multiple matches are found on the same line.
 
 =head2 --output-file=filename
 
@@ -792,6 +829,22 @@ Alternative way to specify the pattern to search for.  If (implicitly)
 specified, will assume the first positional parameter specified is
 actually a path specification, rather than a pattern.  This allows
 the pattern to be searched for to be saved with C<--save>.
+
+=head2 --per-file[=code]
+
+Indicate whether matching should be done per file, rather than per line.
+If specified as a flag, will slurp a file with the indicated C<--encoding>
+and present that to the matcher.  Optionally takes a C<Callable>
+specification: this will be given an C<IO::Path> object of the file:
+whatever it produces will be presented to the matcher.  Usually used in
+conjunction with C<--matches-only> and/or C<count-only>.
+
+=begin code :lang<bash>
+
+# look for foo in only the first 10 lines of each file
+$ rak foo --per-file='*.lines(:!chomp).head(10).join'
+
+=end code
 
 =head2 --quietly
 
@@ -883,7 +936,8 @@ character to indicate the field separator.  Defaults to the B<comma>.
 
 Flag.  Indicate whether to show C<git blame> information for matching lines
 if possible, instead of just the line.  Defaults to C<False>.
-B<TEMPORARILY UNAVAILABLE>.
+
+Requires that the L<C<Git::Blame::File>|https://raku.land/zef:lizmat/Git::Blame::File> module is installed.
 
 =head2 --show-filename
 

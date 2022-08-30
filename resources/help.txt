@@ -37,6 +37,9 @@ Haystack specification:
  --recurse-symlinked-dir  Recurse into symlinked directories? (default: don't)
  --recurse-unmatched-dir  Recurse into directories not matching (default: don't)
  --under-version-control  Only select paths that are under version control
+ --dir=expression         Directory basename filter, default: not ^.
+ --file=expression        File basename filter, default: all
+ --find-all               Override --dir / --file defaults
 
 Filesystem filters:
  --blocks               Number of filesystem blocks used by file

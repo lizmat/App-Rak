@@ -136,7 +136,7 @@ If <git blame> information can be obtained, then the associated `Git::Blame::Fil
 $ rak '*.commits > 10' --blame-per-file --files-with-matches
 ```
 
-Requires that the [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File) is installed.
+Requires that the [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File) module is installed.
 
 --blame-per-line
 ----------------
@@ -150,7 +150,7 @@ If <git blame> information can be obtained, then the associated `Git::Blame::Lin
 $ rak '{ .author eq "Scooby Doo" }' --blame-per-line
 ```
 
-Requires that the [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File) is installed.
+Requires that the [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File) module is installed.
 
 --blocks=condition
 ------------------
@@ -166,6 +166,11 @@ $ rak --find --blocks='* >= 3'
 ----------------
 
 Indicate whether there should be a visible division between matches of different files. Can also be specified as a string to be used as the divider. Defaults to `True` (using an empty line as a divider) if `--group-matches` is (implicitly) set to `True`, else defaults to `False`.
+
+--checkout=branch
+-----------------
+
+Only valid if the current directory is under git version control. Indicate the branch to checkout by the general matching logic of App::Rak. Will produce listing of matching branches if more than one, or say that there is no match. Branches need not have been checked out locally yet.
 
 --context=N
 -----------
@@ -195,6 +200,11 @@ Indicate the number of worker threads that should be maximally. Defaults to the 
 -------------------------
 
 If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The device number of the filesystem on which the file is located, will be passed as the only argument.
+
+--dir=condition
+---------------
+
+If specified, indicates the `Callable` that should return True to have a directory be included for further recursions in file selection. The basename of the directory will be passed as the only argument. Defaults to all directories that do not start with a period. Can specify as a flag to include **all** directories for recursion.
 
 --dryrun
 --------
@@ -236,6 +246,11 @@ $ rak foo --extensions=
 
 Predefined groups are `#raku`, `#perl`, `#c`, `#c++`, `#yaml`, <#ruby> `#python`, `#markdown` and `#text`.
 
+--file=condition
+----------------
+
+If specified, indicates the `Callable` that should return True to have a file be included in the file selection process. The basename of the file will be passed as the only argument. Defaults to `True`, indicating that all files should be included.
+
 --file-separator-null
 ---------------------
 
@@ -270,6 +285,11 @@ $ rak --find --filesize='* >= 30'
 ------
 
 Flag. If specified with a true value, will **not** look at the contents of the selected paths, but instead consider the selected paths as lines in a virtual file.
+
+--find-all
+----------
+
+Flag. If specified with a true value, will override any file or directory filter settings and include all possible files for inspection.
 
 --first-only[=N]
 ----------------
@@ -388,12 +408,22 @@ Flag. Indicate whether the pattern should be highlighted in the line in which it
 --highlight--after[=string]
 ---------------------------
 
-Indicate the string that should be used at the end of the pattern found in a line. Specifying implies `--highlight`ing implicitely. If `--highlight` or `--highlight-before` are explicitely specified, will default to the empty string if `--matches-only` is specified with a `True` value, or whatever is specified with `--highlight-before`, or to the ANSI code to end **bold**.
+Indicate the string that should be used at the end of the pattern found in a line. Specifying implies `--highlight`ing implicitely. If `--highlight` or `--highlight-before` are explicitely specified, will default to whatever is specified with `--highlight-before`, or to the ANSI code to end **bold**.
 
 --highlight--before[=string]
 ----------------------------
 
-Indicate the string that should be used at the end of the pattern found in a line. Specifying implies `--highlight`ing implicitly. If `highlight` is explicitely specified with a trueish value, will default to a space if `--matches-only` is specified with a `True` value, or to the terminal code to start **bold** otherwise.
+Indicate the string that should be used at the end of the pattern found in a line. Specifying implies `--highlight`ing implicitly. If `highlight` is explicitely specified with a trueish value, will default to the terminal code to start **bold**.
+
+--ignorecase
+------------
+
+Flag. If specified with a trueish value, indicates that any matching should be done case insensitively. Default is `False`.
+
+--ignoremark
+------------
+
+Flag. If specified with a trueish value, indicates that any matching should be done without consideration of any accents. Default is `False`.
 
 --inode=condition
 -----------------
@@ -475,13 +505,13 @@ Flag. If specified with a trueish value, will only select files that can be exec
 
 Flag. If specified with a trueish value, will only select files that can be read by anybody. Use negation `--/is-world-readable` to only select files that are **not** readable by anybody.
 
---is-world-writable File can (not) be written to by anybody
------------------------------------------------------------
+--is-world-writable
+-------------------
 
 Flag. If specified with a trueish value, will only select files that can be written to by anybody. Use negation `--/is-world-writable` to only select files that can **not** be written to by anybody.
 
---is-writable File can (not) be written to by owner
----------------------------------------------------
+--is-writable
+-------------
 
 Flag. If specified with a trueish value, will only select files that can be written to by the current user. Use negation `--/is-writable` to only select files that can **not** be written to by the current user.
 
@@ -606,7 +636,7 @@ Indicate the Raku module that should be loaded. Only makes sense if the pattern 
 --matches-only
 --------------
 
-Flag. Indicate whether only the matched pattern should be produced, rather than the line in which the pattern was found. Defaults to `False`.
+Flag. Indicate whether only the matched pattern should be produced, rather than the line in which the pattern was found. Defaults to `False`. Frequently used in conjunction with `--per-file`. Will show separated by space if multiple matches are found on the same line.
 
 --output-file=filename
 ----------------------
@@ -653,6 +683,16 @@ Indicate the path of the file to read path specifications from instead of from a
 -------------
 
 Alternative way to specify the pattern to search for. If (implicitly) specified, will assume the first positional parameter specified is actually a path specification, rather than a pattern. This allows the pattern to be searched for to be saved with `--save`.
+
+--per-file[=code]
+-----------------
+
+Indicate whether matching should be done per file, rather than per line. If specified as a flag, will slurp a file with the indicated `--encoding` and present that to the matcher. Optionally takes a `Callable` specification: this will be given an `IO::Path` object of the file: whatever it produces will be presented to the matcher. Usually used in conjunction with `--matches-only` and/or `count-only`.
+
+```bash
+# look for foo in only the first 10 lines of each file
+$ rak foo --per-file='*.lines(:!chomp).head(10).join'
+```
 
 --quietly
 ---------
@@ -730,7 +770,9 @@ Only applicable if `--csv-per-line` has been specified. Indicates the character 
 --show-blame
 ------------
 
-Flag. Indicate whether to show `git blame` information for matching lines if possible, instead of just the line. Defaults to `False`. **TEMPORARILY UNAVAILABLE**.
+Flag. Indicate whether to show `git blame` information for matching lines if possible, instead of just the line. Defaults to `False`.
+
+Requires that the [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File) module is installed.
 
 --show-filename
 ---------------

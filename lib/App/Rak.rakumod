@@ -2,9 +2,9 @@
 use as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>;
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use has-word:ver<0.0.3>:auth<zef:lizmat>;
-use highlighter:ver<0.0.12>:auth<zef:lizmat>;
+use highlighter:ver<0.0.14>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
-use rak:ver<0.0.17>:auth<zef:lizmat>;
+use rak:ver<0.0.18>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
 
 # Defaults for highlighting on terminals
@@ -99,12 +99,12 @@ my sub named-args(%args, *%wanted) {
 }
 
 # Return prelude from --repository and --module parameters
-my sub prelude(%_) {
+my sub prelude(%n) {
     my $prelude = "";
-    if %_<repository>:delete -> \libs {
+    if %n<repository>:delete -> \libs {
         $prelude = libs.map({"use lib '$_'; "}).join;
     }
-    if %_<module>:delete -> \modules {
+    if %n<module>:delete -> \modules {
         $prelude ~= modules.map({"use $_; "}).join;
     }
     $prelude
@@ -403,7 +403,7 @@ my sub setup-sources-selection(@specs, %n, %rak) {
     }
 
     # Really want to check *all* files
-    if %n<all-files>:delete {
+    if %n<find-all>:delete {
         meh "Cannot specify --dir with --find-all"  if %n<dir>:delete;
         meh "Cannot specify --file with --find-all" if %n<file>:delete;
         %rak<dir> := %rak<file> := True;
@@ -466,6 +466,7 @@ my sub setup-sources-selection(@specs, %n, %rak) {
     }
 
     # Boolean flags that can also be negated
+    # %n<recurse-symlinked-dir recurse-unmatched-dir is-empty is-executable is-readable is-writable is-symbolic-link is-owned-by-group is-owned-by-user has-setuid has-setgid is-sticky is-owner-executable is-owner-readable is-owner-writable is-group-executable is-group-readable is-group-writable is-world-executable is-world-readable is-world-writable> # for option parsing
     for <recurse-symlinked-dir recurse-unmatched-dir
          is-empty is-executable is-readable is-writable is-symbolic-link
          is-owned-by-group is-owned-by-user
@@ -478,6 +479,7 @@ my sub setup-sources-selection(@specs, %n, %rak) {
     }
 
     # Checking for epoch
+    # %n<accessed created meta-modified modified> # for option parsing
     for <accessed created meta-modified modified> {
         # TODO
     }
@@ -589,6 +591,7 @@ my sub setup-sources-selection(@specs, %n, %rak) {
     }
 
     # Checking for numeric value
+    # %n<blocks device-number filesize hard-links inode mode> # option parser
     for <blocks device-number filesize hard-links inode mode> {
         if %n{$_}:exists {
             my $code := %n{$_}:delete;
@@ -610,14 +613,15 @@ my sub setup-producers(@specs, %n, %rak) {
     # Set up producers
     %rak<encoding> := my $enc := (%n<encoding>:delete) // 'utf8-c8';
     if %n<per-file>:delete -> $per-file {
-        %rak<produce-one> := $per-file =:= True
+        %rak<omit-item-number> := True;
+        %rak<produce-one> := $per-file<> =:= True
           ?? *.slurp(:$enc)
           !! convert-to-simple-Callable($per-file)
 
     }
     elsif %n<per-line>:delete -> $per-line {
         %rak<produce-many> := convert-to-simple-Callable($per-line)
-          unless $per-line =:= True;
+          unless $per-line<> =:= True;
     }
 
     # after this, these all require simple Callables
@@ -662,21 +666,31 @@ my sub setup-producers(@specs, %n, %rak) {
         %rak<omit-item-number>       = True;
     }
     elsif %n<blame-per-line>:delete {
-        CATCH {
-            meh-not-installed 'Git::Blame::File', 'blame-per-line';
-        }
+        CATCH { meh-not-installed 'Git::Blame::File', 'blame-per-line' }
         require Git::Blame::File;
 
         %rak<produce-many> := -> $io { Git::Blame::File.new($io).lines }
         %rak<under-version-control> := True;
     }
+    elsif %n<show-blame>:delete {
+        CATCH { meh-not-installed 'Git::Blame::File', 'show-blame' }
+        require Git::Blame::File;
+        %rak<mapper> := -> $source, @matches {
+            my @line-numbers = @matches.map: *.key;
+            with Git::Blame::File.new($source, :@line-numbers) -> $blamer {
+                $blamer.lines.Slip
+            }
+            else {
+                @matches.map({ .key ~ ':' ~ .value }).Slip
+            }
+        }
+    }
 }
 
 # Return a Callable to do highlighting
 my sub make-highlighter($needle, %n, %rak) {
-    my $type      := %n<type>;
-    my $trim      := %n<trim>:delete;
-    my $only      := %n<matches-only>:delete;
+    my $type := %n<type>;
+    my $trim := %n<trim>:delete;
     my Int() $summary-if-larger-than :=
       %n<summary-if-larger-than>:delete // 160;
 
@@ -702,11 +716,11 @@ my sub make-highlighter($needle, %n, %rak) {
     if $highlight {
         my Str() $pre = my Str() $post = $_ with $highlight-before;
         $post                          = $_ with $highlight-after;
-        $pre  = $only ?? " " !! BON  without $pre;
-        $post = $only ?? ""  !! BOFF without $post;
+        $pre  = BON  without $pre;
+        $post = BOFF without $post;
 
         my %nameds =
-          |(%n<ignorecase ignoremark>:p), :$only, :$summary-if-larger-than;
+          |(%n<ignorecase ignoremark>:p), :$summary-if-larger-than;
         %nameds<type> = $_ with $type;
 
         $trim
@@ -720,15 +734,7 @@ my sub make-highlighter($needle, %n, %rak) {
 
     # No highlighting wanted, abuse highlighter logic anyway
     else {
-        $only
-          ?? $type
-            ?? -> $line {
-                   highlighter $line, $needle, "", " ", :$only, :$type
-               }
-            !! -> $line {
-                   highlighter $line, $needle, "", " ", :$only
-               }
-          !! $trim ?? *.Str.trim !! *.Str
+        $trim ?? *.Str.trim !! *.Str
     }
 }
 
@@ -776,7 +782,7 @@ my sub handle-vimgrep($pattern, %n, %rak) {
 
 # Handle --modify-files
 my sub handle-modify-files($pattern, %n, %rak) {
-    my $dry-run := %n<dry-run>:delete;
+    my $dryrun  := %n<dryrun>:delete;
     my $verbose := %n<verbose>:delete;
 
     my $backup = %n<backup>:delete;
@@ -784,7 +790,7 @@ my sub handle-modify-files($pattern, %n, %rak) {
     $backup = ".$backup" if $backup && !$backup.starts-with('.');
 
     my constant no-changes =
-      "\n*** no changes where made because of --dry-run ***";
+      "\n*** no changes where made because of --dryrun ***";
 
     my @changed-files;
     my int $nr-files-seen;
@@ -814,10 +820,10 @@ my sub handle-modify-files($pattern, %n, %rak) {
                     $fb ~= " $removed removal&s($removed)" if $removed;
                     $fb ~= "\n";
                 }
-                $fb ~= no-changes if $dry-run;
+                $fb ~= no-changes if $dryrun;
                 $fb .= chomp;
             }
-            elsif $dry-run {
+            elsif $dryrun {
                 $fb ~= no-changes;
             }
 
@@ -836,7 +842,7 @@ my sub handle-modify-files($pattern, %n, %rak) {
             ++$lines-changed if .matched;
         }
         if $lines-changed || $lines-removed {
-            unless $dry-run {
+            unless $dryrun {
                 if $backup {
                     $io.spurt(@matches.map(*.value).join)
                       if $io.rename($io.sibling($io.basename ~ $backup));
@@ -935,11 +941,26 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     # Make sure needle is executable and create appropriate highlighter
     my &line-post-proc = *.Str;
     if Regex.ACCEPTS($needle) {
-        &line-post-proc = make-highlighter($needle, %n, %rak)
+        if %n<matches-only>:delete {
+            my $old-needle = $needle<>;
+            $needle = *.&matches($old-needle);
+        }
+        else {
+            &line-post-proc = make-highlighter($needle, %n, %rak)
+        }
     }
     elsif Callable.ACCEPTS($needle) {
         $is-simple-Callable = True;
     }
+
+    # non-executable
+    elsif %n<matches-only>:delete {
+        my %nameds = %n<ignorecase ignoremark type>:p;
+        $needle = %nameds
+          ?? *.&matches($pattern, |%nameds)
+          !! *.&matches($pattern)
+    }
+
     # non-executable, create executable needle and highlighter
     else {
         $needle = needleify($pattern, %n);
@@ -949,6 +970,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     # Pass on any context settings
     %rak{.key} := .value for %n<
       context before-context after-context paragraph-context passthru-context
+      passthru
     >:delete:p;
 
     # Various setups
@@ -992,7 +1014,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     }
 
     # Want to know files without matches
-    if %n<files-without-matches>:delete {
+    elsif %n<files-without-matches>:delete {
 
         # Only interested in number of files
         if %n<count-only>:delete {
@@ -1051,7 +1073,6 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     # Just find path names
     elsif %n<find>:delete {
         %rak<find>            := True;
-        %rak<find-all>        := $_ with %n<find-all>:delete;
         %rak<omit-item-number> = True;
     }
 
@@ -1137,7 +1158,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
                     if PairContext.ACCEPTS(@matches.head) {
                         if $group-matches {
                             sayer $source if $show-filename;
-                            for @matches {
+                            for @matches.map({ $_ if .value.elems }) {
                                 sayer .key ~ ':' ~ (.matched
                                   ?? line-post-proc .value
                                   !! .value.Str
@@ -1148,7 +1169,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 
                         # Not grouping
                         elsif $show-filename {
-                            for @matches {
+                            for @matches.map({ $_ if .value.elems }) {
                                 sayer $source
                                   ~ ':' ~ .key
                                   ~ ':' ~ (.matched
@@ -1161,7 +1182,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 
                         # Not grouping and don't want to know the filename
                         else {
-                            for @matches {
+                            for @matches.map({ $_ if .value.elems }) {
                                 sayer .key
                                   ~ ':' ~ (.matched
                                   ?? line-post-proc .value

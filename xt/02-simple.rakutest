@@ -5,6 +5,7 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 my $dir  = $*TMPDIR.add("App-Rak");
+my $dira = $dir.absolute ~ $*SPEC.dir-sep;
 my $rel := $dir.relative ~ $*SPEC.dir-sep;
 my $dot  = $?FILE.IO.parent.parent;
 my $rak := $dot.add("bin").add("rak").relative;
@@ -134,8 +135,8 @@ nine
 OK
 
 query-ok </o$/ --find --highlight>, ok => qq:to/OK/;
-tw{BON}o{BOFF}
-zer{BON}o{BOFF}
+{$dira}tw{BON}o{BOFF}
+{$dira}zer{BON}o{BOFF}
 OK
 
 query-ok q/{.uc if .contains("u")}/, :head(2), ok => q:to/OK/;
@@ -428,16 +429,16 @@ my $uid  := +$*USER;
 for "--user=$user", qq/--user=*eq"$user"/, "--user=$user,$user",
     "--uid=$uid", "--uid=*==$uid" {
     query-ok '--find', $_, ok => qq:to/OK/;
-eight
-five
-four
-nine
-one
-seven
-six
-three
-two
-zero
+{$dira}eight
+{$dira}five
+{$dira}four
+{$dira}nine
+{$dira}one
+{$dira}seven
+{$dira}six
+{$dira}three
+{$dira}two
+{$dira}zero
 OK
 }
 
@@ -451,16 +452,16 @@ my $gid   := +$*GROUP;
 for "--group=$group", qq/--group=*eq"$group"/, "--group=$group,$group",
     "--gid=$gid", "--gid=*==$gid" {
     query-ok '--find', $_, ok => qq:to/OK/;
-eight
-five
-four
-nine
-one
-seven
-six
-three
-two
-zero
+{$dira}eight
+{$dira}five
+{$dira}four
+{$dira}nine
+{$dira}one
+{$dira}seven
+{$dira}six
+{$dira}three
+{$dira}two
+{$dira}zero
 OK
 }
 
@@ -495,6 +496,59 @@ for (
 ) {
     query-ok $_, :!head,
   ok => "zero\0one\0two\0three\0four\0five\0six\0seven\0eight\0nine";
+}
+
+for '--per-file', q/--per-file=*.slurp/ {
+    query-ok <nine --/group-matches>, $_, :!head, ok => q:to/OK/;
+nine:zero
+one
+two
+
+four
+five
+SIX
+seven
+eight
+nine
+
+OK
+}
+
+for '--per-file', q/--per-file=*.slurp/ {
+    query-ok '/ \w* v \w* /', $_, '--matches-only', :head(2), ok => q:to/OK/;
+five
+five
+
+six
+five
+
+seven
+five
+seven
+
+eight
+five
+seven
+
+nine
+five
+seven
+OK
+}
+
+for '--per-file', q/--per-file=*.slurp/ {
+    query-ok '/ \w* v \w* /', $_, '--matches-only', '--unique', ok => q:to/OK/;
+five
+seven
+OK
+}
+
+for '--per-file', q/--per-file=*.slurp/ {
+    query-ok '/ \w* v \w* /', $_, '--matches-only', '--frequencies',
+      ok => q:to/OK/;
+5:five
+3:seven
+OK
 }
 
 done-testing;
