@@ -111,6 +111,11 @@ Only applicable if `--csv-per-line` has been specified. Flag. If specified, indi
 
 Only applicable if `--csv-per-line` has been specified. Flag. If specified, indicates that whitespace is allowed around separators.
 
+--auto-diag
+-----------
+
+Only applicable if `--csv-per-line` has been specified. Flag. If (implicitly) specified with a trueish value, will show diagnostic information about problems that occurred during parsing of the CSV file. The default is `True`.
+
 --backup[=extension]
 --------------------
 
@@ -432,6 +437,19 @@ Flag. If specified with a trueish value, indicates that any matching should be d
 
 If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The inode number of the file on the filesystem, will be passed as the only argument.
 
+--invert-match
+--------------
+
+Flag. If specified with a trueish value, will negate the result of any match if it has a logical meaning:
+
+  * True -> False
+
+  * Nil -> True
+
+  * Empty -> True
+
+  * none of the above -> just that
+
 --is-empty
 ----------
 
@@ -593,6 +611,11 @@ $ rak --list-known-extensions
 
 Flag. If specified with a true value, will show all known extension groups and the extensions they represent. Intended as an informational aid.
 
+--matches-only
+--------------
+
+Flag. Indicate whether only the matched pattern should be produced, rather than the line in which the pattern was found. Defaults to `False`. Frequently used in conjunction with `--per-file`. Will show separated by space if multiple matches are found on the same line.
+
 --mode=condition
 ----------------
 
@@ -634,11 +657,6 @@ Inserts this value in the file instead of the given line. The value can either b
 ------------
 
 Indicate the Raku module that should be loaded. Only makes sense if the pattern is executable code.
-
---matches-only
---------------
-
-Flag. Indicate whether only the matched pattern should be produced, rather than the line in which the pattern was found. Defaults to `False`. Frequently used in conjunction with `--per-file`. Will show separated by space if multiple matches are found on the same line.
 
 --output-file=filename
 ----------------------
@@ -851,6 +869,11 @@ $ rak --find --uid=501
 
 Indicate whether to only select files that are under some form of version control. If specified with a trueish value, will assume files that are under `git` version control. Can also specify the name of the version control system as the value: currently only **git** is supported.
 
+--unique
+--------
+
+Flag. If specified with a true value, will only produce unique lines of output. Default is `False`. See also `--frequencies`.
+
 --user=condition
 ----------------
 
@@ -870,11 +893,6 @@ $ rak --find --user=liz,wendy
 # show files of which the owner is NOT liz or wendy
 $ rak --find --user='!liz,wendy'
 ```
-
---unique
---------
-
-Flag. If specified with a true value, will only produce unique lines of output. Default is `False`. See also `--frequencies`.
 
 --version
 ---------

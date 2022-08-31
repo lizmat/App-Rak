@@ -1,6 +1,0 @@
-
-my $code = "lib/App/Rak.rakumod".IO.slurp;
-
-.say for $code.match(/ '%n<' <( <-[>]>+ /, :g).map({
-    .words.Slip
-}).unique.sort;

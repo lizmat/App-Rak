@@ -70,13 +70,14 @@ to the pattern Callable.  Only files with extensions from the C<#csv> group
 will be tried, unless overridden by any explicit extension specification.
 
 The following options only make sense when --csv-per-line has been specified:
-- --eol=[\n|\r|\r\n]     different line ending to assume
-- --sep=[,]              field separator, default: ,
-- --quote=["]            quoting char, default: "
-- --escape=[\\]          escape character, default \  (shell requires \\)
-- --strict               flag, do not allow different number of fields
-- --formula=[type]       none | die | diag | empty, default: none
-- --allow-whitespace     flag, allow whitespace around separator
-- --allow-loose-quotes   flag, allow unquoted fields
 - --allow-loose-escapes  flag, allow any character to be escaped
+- --allow-loose-quotes   flag, allow unquoted fields
+- --allow-whitespace     flag, allow whitespace around separator
+- --auto-diag            flag, show diagnostics (default: true)
+- --eol=[\n|\r|\r\n]     different line ending to assume
+- --escape=[\\]          escape character, default \  (shell requires \\)
+- --formula=[type]       none | die | diag | empty, default: none
+- --quote=["]            quoting char, default: "
+- --sep=[,]              field separator, default: ,
+- --strict               flag, do not allow different number of fields
 - --keep-meta            flag, produce fields as CSV::Field instead of Str

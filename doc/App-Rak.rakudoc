@@ -135,6 +135,13 @@ indicates that fields do not need to be quoted to be acceptable.
 Only applicable if C<--csv-per-line> has been specified.  Flag.  If specified,
 indicates that whitespace is allowed around separators.
 
+=head2 --auto-diag
+
+Only applicable if C<--csv-per-line> has been specified.  Flag.  If
+(implicitly) specified with a trueish value, will show diagnostic information
+about problems that occurred during parsing of the CSV file.  The default is
+C<True>.
+
 =head2 --backup[=extension]
 
 Indicate whether backups should be made of files that are being modified.
@@ -516,6 +523,16 @@ If specified, indicates the C<Callable> that should return True to include a
 file in the selection of files to be checked.  The inode number of the file
 on the filesystem, will be passed as the only argument.
 
+=head2 --invert-match
+
+Flag.  If specified with a trueish value, will negate the result of any
+match if it has a logical meaning:
+
+=item True -> False
+=item Nil -> True
+=item Empty -> True
+=item none of the above -> just that
+
 =head2 --is-empty
 
 Flag. If specified with a trueish value, will only select files that do not
@@ -719,6 +736,13 @@ Flag.  If specified with a true value, will show all known extension
 groups and the extensions they represent.  Intended as an informational
 aid.
 
+=head2 --matches-only
+
+Flag.  Indicate whether only the matched pattern should be produced, rather
+than the line in which the pattern was found.  Defaults to C<False>.
+Frequently used in conjunction with C<--per-file>.  Will show separated by
+space if multiple matches are found on the same line.
+
 =head2 --mode=condition
 
 If specified, indicates the C<Callable> that should return True to include a
@@ -770,13 +794,6 @@ either be a string, or a list of strings.
 
 Indicate the Raku module that should be loaded.  Only makes sense if the
 pattern is executable code.
-
-=head2 --matches-only
-
-Flag.  Indicate whether only the matched pattern should be produced, rather
-than the line in which the pattern was found.  Defaults to C<False>.
-Frequently used in conjunction with C<--per-file>.  Will show separated by
-space if multiple matches are found on the same line.
 
 =head2 --output-file=filename
 
@@ -1033,6 +1050,11 @@ control.  If specified with a trueish value, will assume files that are
 under C<git> version control.  Can also specify the name of the version
 control system as the value: currently only B<git> is supported.
 
+=head2 --unique
+
+Flag.  If specified with a true value, will only produce unique lines of
+output.  Default is C<False>.  See also C<--frequencies>.
+
 =head2 --user=condition
 
 If specified, indicates the C<Callable> that should return True to include a
@@ -1057,11 +1079,6 @@ $ rak --find --user=liz,wendy
 $ rak --find --user='!liz,wendy'
 
 =end code
-
-=head2 --unique
-
-Flag.  If specified with a true value, will only produce unique lines of
-output.  Default is C<False>.  See also C<--frequencies>.
 
 =head2 --version
 

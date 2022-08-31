@@ -82,6 +82,7 @@ Result modifiers:
  --count-only           Only return count of matches
  --files-with-matches   Only return filenames with matches
  --file-separator-null  Separate filenames with null bytes
+ --matches-only         Only produce the actual matches
  --unique               Only return unique lines
  --frequencies          Only return lines and their frequencies
 
@@ -92,7 +93,6 @@ Listing modifiers:
  --show-blame                Show git blame information if possible
  --show-filename             Show the filename in which match occurred
  --show-line-number          Show the line number in which match occurred
- --only-matching             Only produce the actual matches
  --summary-if-larger-than=N  Summarize matching line if longer than N chars
  --trim                      Remove whitespace, true if no context
  --highlight                 Highlight matches if possible

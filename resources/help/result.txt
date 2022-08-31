@@ -8,5 +8,6 @@ Result modifiers:
  --count-only           Only return count of matches
  --files-with-matches   Only return filenames with matches
  --file-separator-null  Separate filenames with null bytes
+ --matches-only         Only produce the actual matches
  --unique               Only return unique lines
  --frequencies          Only return lines and their frequencies 

@@ -7,6 +7,13 @@ use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
 use rak:ver<0.0.19>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
 
+#- start of available options --------------------------------------------------
+#- Generated on 2022-08-31T21:26:27+02:00 by tools/makeOPTIONS.raku
+#- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
+my str @options = <accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dryrun edit encoding eol escape extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep show-blame show-filename show-line-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unique user verbose version vimgrep with-line-endings>;
+#- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
+#- end of available options ----------------------------------------------------
+
 # Defaults for highlighting on terminals
 my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF

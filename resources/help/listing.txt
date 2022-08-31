@@ -5,7 +5,6 @@ Listing modifiers:
  --show-blame                Show git blame information if possible
  --show-filename             Show the filename in which match occurred
  --show-line-number          Show the line number in which match occurred
- --only-matching             Only produce the actual matches
  --summary-if-larger-than=N  Summarize matching line if longer than N chars
  --trim                      Remove whitespace, true if no context
  --highlight                 Highlight matches if possible
