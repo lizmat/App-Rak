@@ -4,7 +4,7 @@ use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use has-word:ver<0.0.3>:auth<zef:lizmat>;
 use highlighter:ver<0.0.14>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
-use rak:ver<0.0.18>:auth<zef:lizmat>;
+use rak:ver<0.0.19>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
 
 # Defaults for highlighting on terminals
@@ -385,20 +385,33 @@ my sub handle-general-options(%n) {  # *%_ causes compilation issues
 # Set up paths to search
 my sub setup-sources-selection(@specs, %n, %rak) {
 
+    my sub meh-with-specs($name) {
+        meh "Specified path&s(@specs) '@specs[]' with --$name"
+    }
+
     # files from a file
     if %n<files-from>:delete -> $files-from {
-        meh "Specified path&s(@specs) '@specs[]' with --files-from"
-          if @specs;
+        meh-with-specs('files-from') if @specs;
         %rak<files-from> := $files-from;
     }
 
     # paths from a file
     elsif %n<paths-from>:delete -> $paths-from {
-        meh "Specified path&s(@specs) '@specs[]' with --paths-from"
-          if @specs;
+        meh-with-specs('paths-from') if @specs;
         %rak<paths-from> := $paths-from;
     }
-    else {
+
+    # paths from command line
+    elsif %n<paths>:delete -> $paths {
+        meh-with-specs('paths') if @specs;
+        if $paths eq "-" {
+            %rak<paths-from> := $paths;
+        }
+        else {
+            %rak<paths> := $paths.split(',').List;
+        }
+    }
+    elsif @specs {
         %rak<paths> := @specs.List;
     }
 
@@ -744,19 +757,30 @@ my sub handle-edit($editor, $pattern, %n, %rak) {
     my $ignoremark := %n<ignoremark>;
     my $type       := %n<type>;
 
-    %rak<mapper> := -> $source, @matches --> Empty {
-        state @files;
-        LAST {
+    if %n<find>:delete {
+        %rak<find>            := True;
+        %rak<omit-item-number> = True;
+        %rak<mapper> := -> $, @files --> Empty {
             edit-files
               @files,
               :editor(Bool.ACCEPTS($editor) ?? Any !! $editor)
         }
+    }
+    else {
+        my @files;
+        %rak<mapper> := -> $source, @matches --> Empty {
+            LAST {
+                edit-files
+                  @files,
+                  :editor(Bool.ACCEPTS($editor) ?? Any !! $editor)
+            }
 
-        my $path := $source.relative;
-        @files.append: @matches.map: {
-            $path => .key => columns(
-              .value, $pattern, :$ignorecase, :$ignoremark, :$type
-           ).head
+            my $path := $source.relative;
+            @files.append: @matches.map: {
+                $path => .key => columns(
+                  .value, $pattern, :$ignorecase, :$ignoremark, :$type
+               ).head
+            }
         }
     }
 }
@@ -1106,30 +1130,27 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
 
     my $group-matches;
     my $break;
+    my $has-break;
     if $show-filename {
         $group-matches := %n<group-matches>:delete // True;
         $break = $_ with %n<break>:delete // $group-matches;
-        unless $break<> =:= False  {
-            $break = "" but True
-              if Bool.ACCEPTS($break) || ($break.defined && !$break);
-        }
+        $break = "" if $break<> =:= True;
+        $has-break = !($break.defined && $break<> =:= False);
     }
 
     # Remove arguments that have been handled now
     %n<ignorecase ignoremark type>:delete;
 
     # Debug parameters passed to rak
-    dd %rak if %n<rak>:delete;
+    if %n<rak>:delete {
+        note .key ~ ': ' ~ .value.raku for %rak.sort(*.key);
+    }
 
     # Do the work, return the result
     meh-if-unexpected(%n);
     my $rak := rak $needle, %rak;
     meh .message with $rak.exception;
     note "Unexpected leftovers: %rak.raku()" if %rak;
-
-    my &source-post-proc = {
-        IO::Path.ACCEPTS($_) ?? .relative !! $_
-    }
 
     # show the results!
     my int $seen;
@@ -1153,7 +1174,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
             elsif Iterable.ACCEPTS($value) {
                 if $value -> @matches {
                     my $source := $key.relative;
-                    sayer $break if $break && $seen;
+                    sayer $break if $has-break && $seen;
 
                     if PairContext.ACCEPTS(@matches.head) {
                         if $group-matches {

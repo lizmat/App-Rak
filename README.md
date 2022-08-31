@@ -46,7 +46,9 @@ path(s)
 
 Optional. Either indicates the path of the directory (and its sub-directories), or the file that will be searched. By default, all directories that do not start with a period, will be recursed into (but this can be changed with the `--dir` option).
 
-By default, all files will be searched in the directories. This can be changed with the `--file` option
+By default, all files will be searched in the directories. This can be changed with the `--file` option.
+
+Paths can also be specified with the `--paths` option, in which case there should only be a positional argument for the pattern, or none if `--pattern` option was used for the pattern specification.
 
 ON CALLABLES AS PATTERN
 =======================
@@ -674,6 +676,11 @@ $ tail -f ~/access.log | rak --passthru 123.45.67.89
 
 Flag. Indicate whether **all** lines from source should be shown if at least one line matches. Highlighting will still be performed, if so (implicitely) specified.
 
+--paths=path1,path2
+-------------------
+
+Indicates the path specification to be used instead of from any positional arguments. "-" can be specified to read path specifications from STDIN. Multiple path specifications should be separated by comma's.
+
 --paths-from=filename
 ---------------------
 
@@ -703,6 +710,11 @@ Flag. Only makes sense if the pattern is a `Callable`. If specified with a true 
 -----------
 
 Only applicable if `--csv-per-line` has been specified. Indicates the character that should be used for quoting fields. Defaults to **double quote**.
+
+--rak
+-----
+
+Flag. Intended for debugging purposes only. When specified with a trueish value, will show the named arguments sent to the `rak` subroutine just before it is being called.
 
 --recurse-unmatched-dir
 -----------------------

@@ -1,5 +1,6 @@
 Haystack specification:
  path1 path2 ...          All other arguments are paths (default: current dir)
+ --paths                  Comma separated list of paths instead of ^^
  --extensions             By group (e.g. #raku) and/or comma separated
  --files-from=file        Read files to inspect from given file
  --known-extensions       Only search files with known extensions
@@ -10,4 +11,3 @@ Haystack specification:
  --dir=expression         Directory basename filter, default: not ^.
  --file=expression        File basename filter, default: all
  --find-all               Override --dir / --file defaults
-

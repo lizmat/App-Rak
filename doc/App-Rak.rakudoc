@@ -59,7 +59,11 @@ directories that do not start with a period, will be recursed into (but
 this can be changed with the C<--dir> option).
 
 By default, all files will be searched in the directories.  This can be
-changed with the C<--file> option
+changed with the C<--file> option.
+
+Paths can also be specified with the C<--paths> option, in which case there
+should only be a positional argument for the pattern, or none if C<--pattern>
+option was used for the pattern specification.
 
 =head1 ON CALLABLES AS PATTERN
 
@@ -817,6 +821,12 @@ Flag.  Indicate whether B<all> lines from source should be shown if at
 least one line matches.  Highlighting will still be performed, if so
 (implicitely) specified.
 
+=head2 --paths=path1,path2
+
+Indicates the path specification to be used instead of from any positional
+arguments.  "-" can be specified to read path specifications from STDIN.
+Multiple path specifications should be separated by comma's.
+
 =head2 --paths-from=filename
 
 Indicate the path of the file to read path specifications from instead of
@@ -856,6 +866,12 @@ the pattern's C<Callable>.  Defaults to False.
 
 Only applicable if C<--csv-per-line> has been specified.  Indicates the
 character that should be used for quoting fields.  Defaults to B<double quote>.
+
+=head2 --rak
+
+Flag.  Intended for debugging purposes only.  When specified with a trueish
+value, will show the named arguments sent to the C<rak> subroutine just
+before it is being called.
 
 =head2 --recurse-unmatched-dir
 

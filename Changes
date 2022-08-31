@@ -2,6 +2,13 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.91  2022-08-31T12:14:16+02:00
+     - Make --find / --edit combination work
+     - Document / Refine the --rak debugging option
+     - Add --paths option, for specifying paths as named argument
+     - Bump dependency on "rak" to get uvc fix
+     - Hopefully workaround spesh issue causing execution errors
+
 0.0.90  2022-08-30T23:53:04+02:00
     - A complete rework of the internals.  Instead of having its own
       internal engine, now depends on the new "rak" module for the
