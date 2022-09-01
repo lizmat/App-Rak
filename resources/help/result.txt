@@ -6,6 +6,7 @@ Result modifiers:
  --passthru-context     List all lines if there is at least one match
  --passthru             List all lines always
  --count-only           Only return count of matches
+ --stats-only           Only return statistics of the search
  --files-with-matches   Only return filenames with matches
  --file-separator-null  Separate filenames with null bytes
  --matches-only         Only produce the actual matches

@@ -14,6 +14,58 @@ my str @options = <accessed after-context allow-loose-escapes allow-loose-quotes
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
+my constant %falsies =
+# from ack
+  A                => 'after-context',
+  B                => 'before-context',
+  C                => 'context',
+  c                => 'count-only',
+  count            => 'count-only',
+  dump             => 'list-expanded-options',
+  f                => 'find',
+  follow           => 'recurse-symlinked-dir',
+  group            => 'group-matches',
+  H                => 'show-filename',
+  with-filename    => 'show-filename',
+  h                => 'no-show-filename',
+  filename         => 'show-filename',
+  heading          => 'group-matches',
+  help-types       => 'known-extensions',
+  i                => 'ignorecase',
+  ignore-case      => 'ignorecase',
+  I                => 'no-ignorecase',
+  ignore-dir       => 'dir',
+  ignore-directory => 'dir',
+  k                => 'known-extensions',
+  known-types      => 'known-extensions',
+  l                => 'files-with-matches',
+  L                => 'files-without-matches',
+  match            => 'pattern',
+  m                => 'max-matches-per-file',
+  max-count        => 'max-matches-per-file',
+  man              => 'help',
+  o                => 'matches-only',
+  output           => 'pattern',
+  print0           => 'file-separator-null',
+  S                => 'smartcase',
+  smart-case       => 'smartcase',
+  t                => 'extensions',
+  type             => 'extensions',
+  TYPE             => 'extensions',
+  v                => 'invert-match',
+  x                => 'files-from',
+
+# from ag
+  a                => 'find-all',
+  all-types        => 'find-all',
+  after            => 'after-context',
+  before           => 'before-context',
+  0                => 'file-separator-null',
+  null             => 'file-separator-null',
+  u                => 'find-all',
+  unrestricted     => 'find-all',
+;
+
 # Defaults for highlighting on terminals
 my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
@@ -55,9 +107,22 @@ my sub meh($message) is hidden-from-backtrace {
 
 # Quit if unexpected named arguments hash
 my sub meh-if-unexpected(%_) {
-#    %_{$_}:delete if %_{$_}<> =:= False for %_.keys;
-    meh "Unexpected option{"s" if %_.elems != 1}: &as-cli-arguments(%_)\nUse --help for an overview of available options"
-      if %_;
+    if %_ {
+        my @alternatives = %_.keys.map: -> $before {
+            $before => @options.map(-> $after {
+                my $distance := StrDistance.new(:$before, :$after).Int;
+                $after => $distance
+            }).sort(*.value).head(10);
+        }
+dd @alternatives;
+        my $cutoff := @alternatives.head.value + 3;
+        @alternatives .= map: { .key if .value < $cutoff }
+        meh qq:to/MEH/;
+Unexpected option&s(%_.elems != 1): &as-cli-arguments(%_)
+Did you mean: @alternatives[]?
+Use --help for an overview of available options
+MEH
+    }
 }
 
 # Quit if module not installed

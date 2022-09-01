@@ -187,7 +187,7 @@ Indicate the number of lines that should be shown **around** any line that match
 --count-only
 ------------
 
-Flag. Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:files-with-matches` (or `files-without matches`) option is also specified with a `True` value, will just show total counts.
+Flag. Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:files-with-matches` (or `files-without matches`) option is also specified with a `True` value, will just show total counts. See also `stats-only`.
 
 --csv-per-line
 --------------
@@ -831,6 +831,16 @@ Flag and option. Only applicable if the pattern is a `Callable`. Indicates wheth
 -----------
 
 Flag. An intelligent version of `--ignorecase`. If the pattern does **not** contain any uppercase characters, it will act as if `--ignorecase` was specified. Otherwise it is ignored.
+
+--stats
+-------
+
+Flag. Also show statistics about the search operation after having shown the full search result.
+
+--stats-only
+------------
+
+Flag. **Only** show statistics about the search operation. See also `--count-only`.
 
 --strict
 --------

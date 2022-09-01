@@ -241,7 +241,7 @@ Flag.  Indicate whether just the number of lines with matches should be
 calculated.  When specified with a C<True> value, will show a "N matches
 in M files" by default, and if the C<:files-with-matches> (or
 C<files-without matches>) option is also specified with a C<True> value,
-will just show total counts.
+will just show total counts.  See also C<stats-only>.
 
 =head2 --csv-per-line
 
@@ -998,6 +998,16 @@ will accept:
 Flag.  An intelligent version of C<--ignorecase>.  If the pattern does
 B<not> contain any uppercase characters, it will act as if C<--ignorecase>
 was specified.  Otherwise it is ignored.
+
+=head2 --stats
+
+Flag.  Also show statistics about the search operation after having shown
+the full search result.
+
+=head2 --stats-only
+
+Flag.  B<Only> show statistics about the search operation.  See also
+C<--count-only>.
 
 =head2 --strict
 

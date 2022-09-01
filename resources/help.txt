@@ -70,8 +70,6 @@ Filesystem filters:
  --user=selector        File is owned by user names / expression
  --uid=expression       File is owned by given uid
 
-blocks device-number filesize hard-links inode mode
-
 Result modifiers:
  --context=N            List N lines around any line with a match
  --before-context=N     List N lines before any line with a match
@@ -80,6 +78,7 @@ Result modifiers:
  --passthru-context     List all lines if there is at least one match
  --passthru             List all lines always
  --count-only           Only return count of matches
+ --stats-only           Only return statistics of the search
  --files-with-matches   Only return filenames with matches
  --file-separator-null  Separate filenames with null bytes
  --matches-only         Only produce the actual matches
@@ -101,6 +100,7 @@ Listing modifiers:
  --output-file=filename      Send output to indicated file (default: STDOUT)
  --pager                     Pager to use (default: ACK_PAGER // none)
  --first-only[=N]            Show only the N results, N defaults to 1
+ --stats                     Also show statistics
 
 Content modifiers:
  --modify-files        Change content of files using the Callable pattern
