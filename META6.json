@@ -50,9 +50,10 @@
     "EDITOR",
     "FIND",
     "JSON",
-    "BLAME"
+    "BLAME",
+    "CSV"
   ],
   "test-depends": [
   ],
-  "version": "0.0.91"
+  "version": "0.0.92"
 }

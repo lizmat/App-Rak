@@ -91,6 +91,11 @@ SUPPORTED OPTIONS
 
 All options are optional. Any unexpected options, will cause an exception to be thrown with the unexpected options listed.
 
+--accessed
+----------
+
+If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The access time of the file (number of seconds since epoch, as a `Num` value) will be passed as the only argument. Note that many file systems do not actually support this reliably.
+
 --after-context=N
 -----------------
 
@@ -188,6 +193,11 @@ Indicate the number of lines that should be shown **around** any line that match
 ------------
 
 Flag. Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:files-with-matches` (or `files-without matches`) option is also specified with a `True` value, will just show total counts. See also `stats-only`.
+
+--created
+---------
+
+If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The creation time of the file (number of seconds since epoch, as a `Num` value) will be passed as the only argument.
 
 --csv-per-line
 --------------
@@ -616,6 +626,16 @@ Flag. If specified with a true value, will show all known extension groups and t
 
 Flag. Indicate whether only the matched pattern should be produced, rather than the line in which the pattern was found. Defaults to `False`. Frequently used in conjunction with `--per-file`. Will show separated by space if multiple matches are found on the same line.
 
+--max-matches-per-file
+----------------------
+
+Indicate the maximum number of matches that should be produced per file. By default, will produce **all** possible matches in a file.
+
+---meta-modified
+----------------
+
+If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The modification time of meta information of the file (number of seconds since epoch, as a `Num` value) will be passed as the only argument.
+
 --mode=condition
 ----------------
 
@@ -625,6 +645,11 @@ If specified, indicates the `Callable` that should return True to include a file
 # list files with sticky bit set
 $ rak --find --mode='{ $_ +& 0o1000 }'
 ```
+
+--modified
+----------
+
+If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The modification time of the file (number of seconds since epoch, as a `Num` value) will be passed as the only argument.
 
 --modify-files
 --------------

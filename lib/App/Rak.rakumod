@@ -7,6 +7,7 @@ use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
 use rak:ver<0.0.19>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
 
+# Known options in App::Rak
 #- start of available options --------------------------------------------------
 #- Generated on 2022-08-31T21:26:27+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
@@ -14,7 +15,11 @@ my str @options = <accessed after-context allow-loose-escapes allow-loose-quotes
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
+# Options of other programs that may be false friends
 my constant %falsies =
+# our own
+  changed          => 'modified',
+
 # from ack
   A                => 'after-context',
   B                => 'before-context',
@@ -66,6 +71,21 @@ my constant %falsies =
   unrestricted     => 'find-all',
 ;
 
+# Options that only make sense after one main option
+my constant %sub-options =
+  allow-loose-escapes => 'csv-per-line',
+  allow-loose-quotes  => 'csv-per-line',
+  allow-whitespace    => 'csv-per-line',
+  auto-diag           => 'csv-per-line',
+  eol                 => 'csv-per-line',
+  escape              => 'csv-per-line',
+  formula             => 'csv-per-line',
+  quote               => 'csv-per-line',
+  sep                 => 'csv-per-line',
+  strict              => 'csv-per-line',
+  keep-meta           => 'csv-per-line',
+;
+
 # Defaults for highlighting on terminals
 my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
@@ -105,29 +125,74 @@ my sub meh($message) is hidden-from-backtrace {
     exit note $message;
 }
 
+# Find one-line description of given name
+my sub description($name) {
+    my $key := " --$name";
+    if %?RESOURCES<help.txt>.lines.first(*.starts-with(" --$name")) -> $line {
+        $line.substr(1).split(/ \s+ /, 2).tail
+    }
+    else {
+        ""
+    }
+}
+
 # Quit if unexpected named arguments hash
 my sub meh-if-unexpected(%_) {
-    if %_ {
-        my @alternatives = %_.keys.map: -> $before {
-            $before => @options.map(-> $after {
-                my $distance := StrDistance.new(:$before, :$after).Int;
-                $after => $distance
-            }).sort(*.value).head(10);
+    return unless %_;
+
+    my str @text;
+    for %_.keys -> $option {
+        # Looks like an option from another program
+        if %falsies{$option} -> $alias {
+            @text.push: "Option --$option is called --$alias with 'rak'.";
         }
-dd @alternatives;
-        my $cutoff := @alternatives.head.value + 3;
-        @alternatives .= map: { .key if .value < $cutoff }
-        meh qq:to/MEH/;
-Unexpected option&s(%_.elems != 1): &as-cli-arguments(%_)
-Did you mean: @alternatives[]?
-Use --help for an overview of available options
-MEH
+
+        # Direct match of sub-option
+        elsif %sub-options{$option} -> $main-option {
+            @text.push: "The --$option option only makes sense with --$main-option.";
+        }
+
+        # Direct match
+        elsif description($option) -> $description {
+            @text.push: qq:to/TEXT/.chomp;
+The --$option option ($description)
+does not make sense in this context.  If you believe this to be incorrect,
+please report an issue with https://github.com/lizmat/App-Rak/issues/new .
+TEXT
+        }
+
+        # There are matches
+        elsif @options.map(-> $after {
+            $after => StrDistance.new(:before($option), :$after).Int
+        }).sort(*.value).head(5).List -> @alternatives {
+
+            @text.push: "Regarding unexpected option --$option, did you mean:";
+            my int $cutoff = $option.chars;
+            for @alternatives.grep(*.value <= $cutoff) -> (
+              :key($name), :value($steps)
+            ) {
+                if $name eq 'help' {
+                }
+                elsif description($name) -> $description {
+                    @text.push: " --$name: $description?";
+                }
+                elsif %sub-options{$name} -> $main {
+                    @text.push: " --$name: Must then include --$main then as well?";
+                }
+                else {
+                    @text.push: " --$name?";
+                }
+            }
+        }
     }
+
+    @text.push: "Use --help for an overview of available options.";
+    exit note @text.join("\n");
 }
 
 # Quit if module not installed
 my sub meh-not-installed($module, $param) {
-    meh qq:to/MEH/;
+    meh qq:to/MEH/.chomp;
 Must have the $module module installed to do --$param.
 You can do this by running 'zef install $module'.
 MEH
@@ -566,7 +631,15 @@ my sub setup-sources-selection(@specs, %n, %rak) {
     # Checking for epoch
     # %n<accessed created meta-modified modified> # for option parsing
     for <accessed created meta-modified modified> {
-        # TODO
+        if %n{$_}:delete -> $code {
+            my $compiled := convert-to-simple-Callable($code);
+            if Callable.ACCEPTS($compiled) {
+                %rak{$_} := $compiled;
+            }
+            else {
+                meh "Must specify an expression with --$_";
+            }
+        }
     }
 
     # Checking for user ID
@@ -1073,9 +1146,13 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
     setup-sources-selection(@specs, %n, %rak);
     setup-producers(@specs, %n, %rak);
 
-    # Only interested in filenames
     my $files-with-matches;
-    if %n<files-with-matches>:delete {
+    if %n<max-matches-per-file>:delete -> $max {
+        %rak<max-matches-per-source> := $max;
+    }
+
+    # Only interested in filenames
+    elsif %n<files-with-matches>:delete {
 
         # Only interested in number of files
         if %n<count-only>:delete {

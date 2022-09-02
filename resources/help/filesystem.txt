@@ -1,5 +1,7 @@
 Filesystem filters:
+ --accessed=expression  Check on epoch when file was last accessed
  --blocks               Number of filesystem blocks used by file
+ --created=expression   Check on epoch when file was created
  --device-number        Number of device on which file is located
  --filesize             Number of bytes of data used by file
  --hard-links           Number of hard-links to file on filesystem
@@ -22,6 +24,8 @@ Filesystem filters:
  --is-world-executable  File can (not) be executed by anybody
  --is-world-readable    File can (not) be read by anybody
  --is-world-writable    File can (not) be written to by anybody
+ --meta-modified=expr   Check on epoch when meta-info of file was last changed
  --mode                 The full mode value of the file
+ --modified=expression  Check on epoch when file was last changed
  --user=selector        File is owned by user names / expression
  --uid=expression       File is owned by given uid

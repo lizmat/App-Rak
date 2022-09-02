@@ -115,6 +115,14 @@ before.
 All options are optional.  Any unexpected options, will cause an exception
 to be thrown with the unexpected options listed.
 
+=head2 --accessed
+
+If specified, indicates the C<Callable> that should return True to include a
+file in the selection of files to be checked.  The access time of the file
+(number of seconds since epoch, as a C<Num> value) will be passed as the
+only argument.  Note that many file systems do not actually support this
+reliably.
+
 =head2 --after-context=N
 
 Indicate the number of lines that should be shown B<after> any line that
@@ -242,6 +250,13 @@ calculated.  When specified with a C<True> value, will show a "N matches
 in M files" by default, and if the C<:files-with-matches> (or
 C<files-without matches>) option is also specified with a C<True> value,
 will just show total counts.  See also C<stats-only>.
+
+=head2 --created
+
+If specified, indicates the C<Callable> that should return True to include a
+file in the selection of files to be checked.  The creation time of the file
+(number of seconds since epoch, as a C<Num> value) will be passed as the
+only argument.
 
 =head2 --csv-per-line
 
@@ -743,6 +758,18 @@ than the line in which the pattern was found.  Defaults to C<False>.
 Frequently used in conjunction with C<--per-file>.  Will show separated by
 space if multiple matches are found on the same line.
 
+=head2 --max-matches-per-file
+
+Indicate the maximum number of matches that should be produced per file.
+By default, will produce B<all> possible matches in a file.
+
+=head2 ---meta-modified
+
+If specified, indicates the C<Callable> that should return True to include a
+file in the selection of files to be checked.  The modification time of meta
+information of the file (number of seconds since epoch, as a C<Num> value)
+will be passed as the only argument.
+
 =head2 --mode=condition
 
 If specified, indicates the C<Callable> that should return True to include a
@@ -755,6 +782,13 @@ of the file on the filesystem, will be passed as the only argument.
 $ rak --find --mode='{ $_ +& 0o1000 }'
 
 =end code
+
+=head2 --modified
+
+If specified, indicates the C<Callable> that should return True to include a
+file in the selection of files to be checked.  The modification time of the
+file (number of seconds since epoch, as a C<Num> value) will be passed as the
+only argument.
 
 =head2 --modify-files
 

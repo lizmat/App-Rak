@@ -551,6 +551,47 @@ for '--per-file', q/--per-file=*.slurp/ {
 OK
 }
 
+query-ok <o --max-matches-per-file=2>, :head(2), ok => q:to/OK/;
+zero
+1:zero
+
+one
+1:zero
+2:one
+
+two
+1:zero
+2:one
+
+three
+1:zero
+2:one
+
+four
+1:zero
+2:one
+
+five
+1:zero
+2:one
+
+six
+1:zero
+2:one
+
+seven
+1:zero
+2:one
+
+eight
+1:zero
+2:one
+
+nine
+1:zero
+2:one
+OK
+
 done-testing;
 
 # vim: expandtab shiftwidth=4

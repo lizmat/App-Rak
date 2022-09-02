@@ -2,6 +2,11 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.92  2022-09-02T14:44:38+02:00
+     - Add --max-matches-per-file option
+     - Add --accessed, --created, --meta-modified, --modified options
+     - Add better error handling, including "Did you mean"
+
 0.0.91  2022-08-31T12:14:16+02:00
      - Make --find / --edit combination work
      - Document / Refine the --rak debugging option

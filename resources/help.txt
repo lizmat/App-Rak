@@ -43,7 +43,9 @@ Haystack specification:
  --find-all               Override --dir / --file defaults
 
 Filesystem filters:
+ --accessed=expression  Check on epoch when file was last accessed
  --blocks               Number of filesystem blocks used by file
+ --created=expression   Check on epoch when file was created
  --device-number        Number of device on which file is located
  --filesize             Number of bytes of data used by file
  --hard-links           Number of hard-links to file on filesystem
@@ -66,24 +68,27 @@ Filesystem filters:
  --is-world-executable  File can (not) be executed by anybody
  --is-world-readable    File can (not) be read by anybody
  --is-world-writable    File can (not) be written to by anybody
+ --meta-modified=expr   Check on epoch when meta-info of file was last changed
  --mode                 The full mode value of the file
+ --modified=expression  Check on epoch when file was last changed
  --user=selector        File is owned by user names / expression
  --uid=expression       File is owned by given uid
 
 Result modifiers:
- --context=N            List N lines around any line with a match
- --before-context=N     List N lines before any line with a match
- --after-context=N      List N lines after any line with a match
- --paragraph-context    List all lines in the same paragraph around a match
- --passthru-context     List all lines if there is at least one match
- --passthru             List all lines always
- --count-only           Only return count of matches
- --stats-only           Only return statistics of the search
- --files-with-matches   Only return filenames with matches
- --file-separator-null  Separate filenames with null bytes
- --matches-only         Only produce the actual matches
- --unique               Only return unique lines
- --frequencies          Only return lines and their frequencies
+ --context=N             List N lines around any line with a match
+ --before-context=N      List N lines before any line with a match
+ --after-context=N       List N lines after any line with a match
+ --paragraph-context     List all lines in the same paragraph around a match
+ --passthru-context      List all lines if there is at least one match
+ --passthru              List all lines always
+ --max-matches-per-file  Maximum number of matches per file, default: all
+ --count-only            Only return count of matches
+ --stats-only            Only return statistics of the search
+ --files-with-matches    Only return filenames with matches
+ --file-separator-null   Separate filenames with null bytes
+ --matches-only          Only produce the actual matches
+ --unique                Only return unique lines
+ --frequencies           Only return lines and their frequencies
 
 Listing modifiers:
  --human                     Force defaults as if a human is watching
@@ -108,8 +113,8 @@ Content modifiers:
  --dry-run             Don't actually make any changes, just run the process
 
 Resource usage:
- --batch=N   max number of files to process in a thread (default: 64)
- --degree=N  max number of threads to use for processing (default: cores - 1)
+ --batch=N   Max number of files to process in a thread (default: 64)
+ --degree=N  Max number of threads to use for processing (default: cores - 1)
 
 Special options:
  --edit[=editor]  Go edit the result in an editor, (default EDITOR or vim)
