@@ -1,4 +1,4 @@
-unit sub MAIN(:a($author));
+unit sub MAIN(:a($author) = ".git".IO.d);
 
 say run(<raku --version>, :out).out.slurp.chomp;
 say "Running on $*DISTRO.gist().\n";
