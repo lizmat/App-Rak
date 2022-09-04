@@ -47,7 +47,7 @@ while @lines {
     }
 
     # spurt the options
-    say "my str @options = <@options>;";
+    say "my str @options = <@options[]>;";
 
     # we're done for this role
     say "#- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE";
