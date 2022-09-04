@@ -4,21 +4,22 @@ use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use has-word:ver<0.0.3>:auth<zef:lizmat>;
 use highlighter:ver<0.0.14>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
-use rak:ver<0.0.19>:auth<zef:lizmat>;
+use rak:ver<0.0.20>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
 
 # Known options in App::Rak
 #- start of available options --------------------------------------------------
-#- Generated on 2022-08-31T21:26:27+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-09-04T13:29:26+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dryrun edit encoding eol escape extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep show-blame show-filename show-line-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unique user verbose version vimgrep with-line-endings>;
+my str @options = <@options>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
 # Options of other programs that may be false friends
 my constant %falsies =
 # our own
-  changed          => 'modified',
+  changed          => 'meta-modified',
+  run              => 'exec',
 
 # from ack
   A                => 'after-context',
@@ -86,6 +87,35 @@ my constant %sub-options =
   keep-meta           => 'csv-per-line',
 ;
 
+# The epoch value when process started
+my $init-epoch = $*INIT-INSTANT.to-posix.head;
+
+# IO subroutines convertining Instants to epoch transparently
+my sub accessed($io)      { $io.accessed.to-posix.head }
+my sub created($io)       { $io.created.to-posix.head  }
+my sub meta-modified($io) { $io.changed.to-posix.head  }
+my sub modified($io)      { $io.modified.to-posix.head }
+
+# Multiplication values for time based filtering
+my constant %mult =
+  s => 1,                 # seconds
+  m => 60,                # minutes
+  h => 60 * 60,           # hours
+  d => 24 * 60 * 60,      # days
+  w => 7 * 24 * 60 * 60,  # weeks
+;
+
+# Convert a time specification into number of seconds
+my sub seconds($format) {
+    my int $seconds;
+    for $format.split(
+      / <[smhdw]> /, :v, :skip-empty,
+    ) -> Int() $value, Str() $type = "d" {
+        $seconds += $value * %mult{$type};
+    }
+    $seconds
+}
+
 # Defaults for highlighting on terminals
 my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
@@ -117,7 +147,7 @@ my constant @known-extensions = %exts.values.flat.unique.sort;
 # Place to keep tagged configurations
 my $config-file := $*HOME.add('.rak-config.json');
 
-# Add "s" if number is not 1, for error messages
+# Return "s" if number is not 1, for error messages
 my sub s($elems) { $elems == 1 ?? "" !! "s" }
 
 # Sane way of quitting
@@ -631,7 +661,17 @@ my sub setup-sources-selection(@specs, %n, %rak) {
     # Checking for epoch
     # %n<accessed created meta-modified modified> # for option parsing
     for <accessed created meta-modified modified> {
-        if %n{$_}:delete -> $code {
+        if %n{$_}:delete -> $code is copy {
+            $code = $code
+              .subst( '.accessed',      '.&accessed',      :g)
+              .subst( '.created',       '.&created',       :g)
+              .subst( '.changed',       '.&meta-modified', :g)
+              .subst( '.meta-modified', '.&meta-modified', :g)
+              .subst( '.modified',      '.&modified',      :g)
+              .subst(/ <["']> <[0..9smhdw]>+ <["']> \. ago /, {
+                $init-epoch - seconds(.substr(1, *-5))
+            });
+
             my $compiled := convert-to-simple-Callable($code);
             if Callable.ACCEPTS($compiled) {
                 %rak{$_} := $compiled;
@@ -763,6 +803,12 @@ my sub setup-sources-selection(@specs, %n, %rak) {
                   !! meh "Problem compiling condition for '--$_': $code";
             }
         }
+    }
+
+    # Checking with external programs
+    # %n<exec shell> # option parser
+    for <exec shell> {
+        %rak{$_} := %n{$_}:delete if %n{$_}:exists;
     }
 }
 
@@ -1034,6 +1080,7 @@ my sub handle-checkout($pattern, %n, %rak) {
     %rak<sources>         := 'checkout';
     %rak<omit-item-number> = True;
     %rak<map-all>         := True;
+    %rak<dir file>:delete;  # XXX needs a better way to prevent leftovers
 
     my @branches;
     %rak<produce-many> := -> $ {
@@ -1048,12 +1095,20 @@ my sub handle-checkout($pattern, %n, %rak) {
                 run 'git', 'checkout', @matches.head;
                 Empty
             }
+
+            # one of the branches is an exact match
+            elsif $pattern (elem) @matches {
+                run 'git', 'checkout', $pattern;
+                Empty
+            }
             else {
                 sayer "Found @matches.elems() branches matching '"
                   ~ BON ~ $pattern ~ BOFF ~ "':";
                 @matches.Slip
             }
         }
+
+        # Special casing of master / main confusion
         elsif $pattern eq 'master' {
             run <git checkout main>;
             Empty

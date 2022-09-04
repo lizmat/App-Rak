@@ -123,6 +123,9 @@ file in the selection of files to be checked.  The access time of the file
 only argument.  Note that many file systems do not actually support this
 reliably.
 
+See "CHECKING TIMES ON FILES" for more information about features that
+can be used inside the C<Callable>.
+
 =head2 --after-context=N
 
 Indicate the number of lines that should be shown B<after> any line that
@@ -257,6 +260,9 @@ If specified, indicates the C<Callable> that should return True to include a
 file in the selection of files to be checked.  The creation time of the file
 (number of seconds since epoch, as a C<Num> value) will be passed as the
 only argument.
+
+See "CHECKING TIMES ON FILES" for more information about features that
+can be used inside the C<Callable>.
 
 =head2 --csv-per-line
 
@@ -770,6 +776,9 @@ file in the selection of files to be checked.  The modification time of meta
 information of the file (number of seconds since epoch, as a C<Num> value)
 will be passed as the only argument.
 
+See "CHECKING TIMES ON FILES" for more information about features that
+can be used inside the C<Callable>.
+
 =head2 --mode=condition
 
 If specified, indicates the C<Callable> that should return True to include a
@@ -789,6 +798,9 @@ If specified, indicates the C<Callable> that should return True to include a
 file in the selection of files to be checked.  The modification time of the
 file (number of seconds since epoch, as a C<Num> value) will be passed as the
 only argument.
+
+See "CHECKING TIMES ON FILES" for more information about features that
+can be used inside the C<Callable>.
 
 =head2 --modify-files
 
@@ -992,7 +1004,8 @@ of saving, as validity may depend on other options having been specified.
 One option can be marked as requiring a value to be specified (with "!")
 or have a default value (with "[default-value]").
 
-To remove a saved set of options, use C<--save> as the only option.
+To remove a saved set of options, use C<--save>=foo as the only option
+to remove the "foo" set of options.
 
 =head2 --sep=[,]
 
@@ -1014,7 +1027,7 @@ Flag.  Indicate whether filenames should be shown.  Defaults to C<True>.
 
 Flag.  Indicate whether line numbers should be shown.  Defaults to C<True>.
 
-=head1 --silently[=out,err]
+=head2 --silently[=out,err]
 
 Flag and option.  Only applicable if the pattern is a C<Callable>.  Indicates
 whether any output from the C<Callable> pattern should be caught.  Defaults
@@ -1132,8 +1145,62 @@ the system it is running on.
 =head2 --vimgrep
 
 Flag.  If specified with a true value, will output search results in the
-format "filename:linenumber:column:line".  This allows integration with the
-C<:grep> action in vim-like editors.
+format "filename:linenumber:column:line".  This allows integration with
+the C<:grep> action in vim-like editors.
+
+=head1 CHECKING TIMES ON FILES
+
+The C<--accessed>, C<--created>, C<--modified> and C<--meta-modified>
+options expect C<Callable> to perform the check to include a file in the
+search process.  It is passed the B<epoch> (number of seconds since
+1 January 1970 UTC) value of the file being checked for the indicated
+option, and it should return C<True> to include that file in any search.
+
+To facilitate checks, some extra features are activated for these
+C<Callable>s, allowing you to more easily craft your conditions.
+
+=head2 Automatic conversion to epoch
+
+In Raku, the C<.accessed>, C<.created>, C<.changed> and C<.modified>
+methods on the C<IO::Path> object return
+L<C<Instant>|https://docs.raku.org/type/Instant> objects, which are
+atomic time rather than epoch.  Within these special C<Callables>,
+these values are automatically converted to epoch values, to ease
+comparisons.
+
+=head2 Specifying some time ago
+
+Within these special C<Callable>s, one can also indicate an epoch
+value in the past by using the C<.ago> method in a specially formatted
+string.  This string is formatted similarly to time specifications of
+the Unix C<find> command: one of more digits followed by "s" for
+seconds, "m" for minutes, "h" for hours, "d" for days and "w" for weeks.
+"+" and "-" may also be used, but do not have any special meaning other
+than negating the value they apply to.
+
+=head2 On method naming
+
+For C<rak> it was decided to name the option for checking the meta
+information of a file as C<--meta-modified>.  In Raku, the associated
+method on the C<IO::Path> object is (probably for historical reasons)
+called C<.changed>.  To facilitate the creation of the C<Callable>s
+for these options, one can use both C<.meta-modified> as well as
+C<.changed> as methods.
+
+=head2 Examples
+
+=begin code :lang<bash>
+
+# all files that were modified later than an hour ago
+$ rak --find --modified='* > "1h".ago'
+
+# all files that were created before 2.5 hours ago
+$ rak --find --created='* < "2h30m".ago'
+
+# all files that were modified after "Changes" was created
+$ rak --find --modified='* > "Changes".IO.created'
+
+=end code
 
 =head1 AUTHOR
 

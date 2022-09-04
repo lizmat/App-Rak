@@ -14,14 +14,14 @@ my $end       = '#- end of available options';
 # slurp the whole file and set up writing to it
 my $filename = $?FILE.IO.parent.sibling("lib").add("App").add("Rak.rakumod");
 my $code := $filename.IO.slurp;
-my $options = (
+my @options = (
   <help version>.Slip,
   $code
     .match(/ '%n<' <( <-[>]>+ )> /, :g)
     .map(*.words.Slip)
     .unique
     .Slip
-  ).sort.join(' ');
+  ).sort;
 
 my @lines = $code.lines;
 $*OUT = $filename.IO.open(:w);
@@ -47,7 +47,7 @@ while @lines {
     }
 
     # spurt the options
-    say "my str @options = <$options>;";
+    say "my str @options = <@options>;";
 
     # we're done for this role
     say "#- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE";
@@ -56,5 +56,7 @@ while @lines {
 
 # close the file properly
 $*OUT.close;
+
+note "Found @options.elems() options";
 
 # vim: expandtab sw=4

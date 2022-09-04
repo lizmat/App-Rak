@@ -2,6 +2,5 @@ Ideas / Todo's
 ==============
 
 - run a raku program and interpret the execution error as an --edit
-- modified-after/before etc, instead of just modified etc.
 - expose mapper
 - create plugin structure

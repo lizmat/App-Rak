@@ -96,6 +96,8 @@ All options are optional. Any unexpected options, will cause an exception to be 
 
 If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The access time of the file (number of seconds since epoch, as a `Num` value) will be passed as the only argument. Note that many file systems do not actually support this reliably.
 
+See "CHECKING TIMES ON FILES" for more information about features that can be used inside the `Callable`.
+
 --after-context=N
 -----------------
 
@@ -198,6 +200,8 @@ Flag. Indicate whether just the number of lines with matches should be calculate
 ---------
 
 If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The creation time of the file (number of seconds since epoch, as a `Num` value) will be passed as the only argument.
+
+See "CHECKING TIMES ON FILES" for more information about features that can be used inside the `Callable`.
 
 --csv-per-line
 --------------
@@ -636,6 +640,8 @@ Indicate the maximum number of matches that should be produced per file. By defa
 
 If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The modification time of meta information of the file (number of seconds since epoch, as a `Num` value) will be passed as the only argument.
 
+See "CHECKING TIMES ON FILES" for more information about features that can be used inside the `Callable`.
+
 --mode=condition
 ----------------
 
@@ -650,6 +656,8 @@ $ rak --find --mode='{ $_ +& 0o1000 }'
 ----------
 
 If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The modification time of the file (number of seconds since epoch, as a `Num` value) will be passed as the only argument.
+
+See "CHECKING TIMES ON FILES" for more information about features that can be used inside the `Callable`.
 
 --modify-files
 --------------
@@ -815,7 +823,7 @@ Any options can be accessed as if it is a standard option. Please note that no v
 
 One option can be marked as requiring a value to be specified (with "!") or have a default value (with "[default-value]").
 
-To remove a saved set of options, use `--save` as the only option.
+To remove a saved set of options, use `--save`=foo as the only option to remove the "foo" set of options.
 
 --sep=[,]
 ---------
@@ -840,7 +848,7 @@ Flag. Indicate whether filenames should be shown. Defaults to `True`.
 Flag. Indicate whether line numbers should be shown. Defaults to `True`.
 
 --silently[=out,err]
-====================
+--------------------
 
 Flag and option. Only applicable if the pattern is a `Callable`. Indicates whether any output from the `Callable` pattern should be caught. Defaults to `False`. If specified as a flag, will catch both STDOUT as well as STDERR output from the pattern's execution. When specified as an option, will accept:
 
@@ -938,6 +946,42 @@ Flag. If the only argument, shows the name and version of the script, and the sy
 ---------
 
 Flag. If specified with a true value, will output search results in the format "filename:linenumber:column:line". This allows integration with the `:grep` action in vim-like editors.
+
+CHECKING TIMES ON FILES
+=======================
+
+The `--accessed`, `--created`, `--modified` and `--meta-modified` options expect `Callable` to perform the check to include a file in the search process. It is passed the **epoch** (number of seconds since 1 January 1970 UTC) value of the file being checked for the indicated option, and it should return `True` to include that file in any search.
+
+To facilitate checks, some extra features are activated for these `Callable`s, allowing you to more easily craft your conditions.
+
+Automatic conversion to epoch
+-----------------------------
+
+In Raku, the `.accessed`, `.created`, `.changed` and `.modified` methods on the `IO::Path` object return [`Instant`](https://docs.raku.org/type/Instant) objects, which are atomic time rather than epoch. Within these special `Callables`, these values are automatically converted to epoch values, to ease comparisons.
+
+Specifying some time ago
+------------------------
+
+Within these special `Callable`s, one can also indicate an epoch value in the past by using the `.ago` method in a specially formatted string. This string is formatted similarly to time specifications of the Unix `find` command: one of more digits followed by "s" for seconds, "m" for minutes, "h" for hours, "d" for days and "w" for weeks. "+" and "-" may also be used, but do not have any special meaning other than negating the value they apply to.
+
+On method naming
+----------------
+
+For `rak` it was decided to name the option for checking the meta information of a file as `--meta-modified`. In Raku, the associated method on the `IO::Path` object is (probably for historical reasons) called `.changed`. To facilitate the creation of the `Callable`s for these options, one can use both `.meta-modified` as well as `.changed` as methods.
+
+Examples
+--------
+
+```bash
+# all files that were modified later than an hour ago
+$ rak --find --modified='* > "1h".ago'
+
+# all files that were created before 2.5 hours ago
+$ rak --find --created='* < "2h30m".ago'
+
+# all files that were modified after "Changes" was created
+$ rak --find --modified='* > "Changes".IO.created'
+```
 
 AUTHOR
 ======

@@ -2,6 +2,17 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.93  2022-09-04T13:45:08+02:00
+     - Improve usability of the --accessed, --created, --modified
+       and --meta-modified options so that comparisons are done using
+       epoch values, and there's an easy way to indicate a moment in
+       the past to compare against.  Included extensive documentation
+       for these features
+     - Bump dependency on rak for :exec and :shell functionality
+     - Add support for --exec and --shell functionality
+     - Fix issue with --checkout having leftovers
+     - Fix issue with multiple alternatives but with an exact match
+
 0.0.92  2022-09-02T14:44:38+02:00
      - Add --max-matches-per-file option
      - Add --accessed, --created, --meta-modified, --modified options
