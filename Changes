@@ -2,6 +2,13 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.94  2022-09-04T23:26:02+02:00
+     - Fix issue with error reporting of unknown options
+     - Fix issue with reading from STDIN
+     - Fix issue with codification of extensions to allow
+     - Fix issue with --show-blame
+     - Bump dependency on rak for various fixes
+
 0.0.93  2022-09-04T13:45:08+02:00
      - Improve usability of the --accessed, --created, --modified
        and --meta-modified options so that comparisons are done using

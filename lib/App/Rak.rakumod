@@ -4,7 +4,7 @@ use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use has-word:ver<0.0.3>:auth<zef:lizmat>;
 use highlighter:ver<0.0.14>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
-use rak:ver<0.0.20>:auth<zef:lizmat>;
+use rak:ver<0.0.21>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
 
 # Known options in App::Rak
@@ -382,8 +382,14 @@ my sub drop-location-from-warning($warning) {
 }
 
 # Change list of conditions into a Callable for :file
-my sub codify-extensions(@extensions) {
-    -> $_ { !is-sha1($_) && extension($_) (elem) @extensions }
+my sub codify-extensions(*@extensions) {
+    if @extensions == 1 {
+        my $extension := @extensions.head;
+        -> $_ { !is-sha1($_) && extension($_) eq $extension }
+    }
+    else {
+        -> $_ { !is-sha1($_) && extension($_) (elem) @extensions }
+    }
 }
 
 # Set up the --help handler
@@ -833,7 +839,7 @@ my sub setup-producers(@specs, %n, %rak) {
     # Match JSON data
     elsif %n<json-per-file>:delete {
         %rak<produce-one> := -> $_ { from-json .slurp(:$enc) }
-        %rak<omit-item-number> = True;
+        %rak<omit-item-number> = True unless %n<files-with-matches>;
     }
     elsif %n<json-per-line>:delete {
         %rak<produce-many> := *.lines(:$enc).map: *.&from-json
@@ -882,10 +888,10 @@ my sub setup-producers(@specs, %n, %rak) {
         %rak<mapper> := -> $source, @matches {
             my @line-numbers = @matches.map: *.key;
             with Git::Blame::File.new($source, :@line-numbers) -> $blamer {
-                $blamer.lines.Slip
+                $source => $blamer.lines.Slip
             }
             else {
-                @matches.map({ .key ~ ':' ~ .value }).Slip
+                $source => @matches.map({ .key ~ ':' ~ .value }).Slip
             }
         }
     }
@@ -928,10 +934,10 @@ my sub make-highlighter($needle, %n, %rak) {
         %nameds<type> = $_ with $type;
 
         $trim
-          ?? -> $line {
+          ?? -> Str() $line {
                  highlighter $line.trim, $needle<>, $pre, $post, |%nameds
              }
-          !! -> $line {
+          !! -> Str() $line {
                  highlighter $line, $needle<>, $pre, $post, |%nameds
              }
     }
@@ -1377,7 +1383,7 @@ my multi sub MAIN(*@specs, *%n) {  # *%_ causes compilation issues
             # Looks like normal search result
             elsif Iterable.ACCEPTS($value) {
                 if $value -> @matches {
-                    my $source := $key.relative;
+                    my $source := $key.relative if IO::Path.ACCEPTS($key);
                     sayer $break if $has-break && $seen;
 
                     if PairContext.ACCEPTS(@matches.head) {
