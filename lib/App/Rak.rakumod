@@ -128,6 +128,8 @@ my constant %exts =
   '#c'        => <c h hdl>,
   '#c++'      => <cpp cxx hpp hxx>,
   '#csv'      => ('', <csv psv tsv>).flat.List,
+  '#cro'      => ('', 'crotmp'),
+  '#html'     => <htm html>,
   '#json'     => <json>,
   '#jsonl'    => <jsonl>,
   '#markdown' => <md markdown>,
@@ -361,18 +363,6 @@ my sub homify($from) {
       !! $from.subst(/^ '~' '/'? /, $home).IO.lines
     ).map:
       *.subst(/^ '~' '/'? /, $home)
-}
-
-# Check the given Callable for the named phaser, and run it if there is one
-my sub run-phaser(&code, str $name) {
-    if Block.ACCEPTS(&code) && &code.callable_for_phaser($name) -> &phaser {
-        phaser();
-    }
-}
-
-# Return the NEXT phaser for the given Callable if any
-my sub next-phaser(&code) {
-    Block.ACCEPTS(&code) && &code.callable_for_phaser('NEXT')
 }
 
 # Drop the "location" of the warning, as it serves no useful purpose here
