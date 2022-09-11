@@ -13,7 +13,7 @@
     "has-word:ver<0.0.3>:auth<zef:lizmat>",
     "highlighter:ver<0.0.14>:auth<zef:lizmat>",
     "JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>",
-    "rak:ver<0.0.21>:auth<zef:lizmat>",
+    "rak:ver<0.0.22>:auth<zef:lizmat>",
     "String::Utils:ver<0.0.8>:auth<zef:lizmat>",
     "META::constants:ver<0.0.2>:auth<zef:lizmat>"
   ],
@@ -22,7 +22,8 @@
   "name": "App::Rak",
   "perl": "6.d",
   "provides": {
-    "App::Rak": "lib/App/Rak.rakumod"
+    "App::Rak": "lib/App/Rak.rakumod",
+    "new": "lib/new.rakumod"
   },
   "resources": [
     "help.txt",
@@ -55,5 +56,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.0.94"
+  "version": "0.0.95"
 }

@@ -4,7 +4,7 @@ use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
 use has-word:ver<0.0.3>:auth<zef:lizmat>;
 use highlighter:ver<0.0.14>:auth<zef:lizmat>;
 use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
-use rak:ver<0.0.21>:auth<zef:lizmat>;
+use rak:ver<0.0.22>:auth<zef:lizmat>;
 use String::Utils:ver<0.0.8>:auth<zef:lizmat>;
 
 # Known options in App::Rak
@@ -606,7 +606,7 @@ my sub setup-sources-selection(@specs, %n, %rak) {
             my @unknown;
             if $extensions.split(',').map: {
                 if .starts-with('#') {
-                    if %exts{.substr(1)} -> @extensions {
+                    if %exts{$_} -> @extensions {
                         @extensions.Slip
                     }
                     else {

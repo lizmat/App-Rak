@@ -2,6 +2,10 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.0.95  2022-09-11T22:47:42+02:00
+     - Fix issue with specifying --extensions, finanalyst++ for spotting
+     - Bump dependency on rak for :eager support
+
 0.0.94  2022-09-04T23:26:02+02:00
      - Fix issue with error reporting of unknown options
      - Fix issue with reading from STDIN
