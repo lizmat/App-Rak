@@ -22,8 +22,7 @@
   "name": "App::Rak",
   "perl": "6.d",
   "provides": {
-    "App::Rak": "lib/App/Rak.rakumod",
-    "new": "lib/new.rakumod"
+    "App::Rak": "lib/App/Rak.rakumod"
   },
   "resources": [
     "help.txt",
@@ -56,5 +55,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.0.95"
+  "version": "0.0.96"
 }
