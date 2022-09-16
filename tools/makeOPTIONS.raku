@@ -6,6 +6,8 @@
 # always use highest version of Raku
 use v6.*;
 
+use String::Utils <between>;
+
 my $generator = $*PROGRAM-NAME;
 my $generated = DateTime.now.gist.subst(/\.\d+/,'');
 my $start     = '#- start of available options';
@@ -13,25 +15,17 @@ my $end       = '#- end of available options';
 
 # slurp the whole file and set up writing to it
 my $filename = $?FILE.IO.parent.sibling("lib").add("App").add("Rak.rakumod");
-my $code := $filename.IO.slurp;
-my @options = (
-  <help version>.Slip,
-  $code
-    .match(/ '%n<' <( <-[>]>+ )> /, :g)
-    .map(*.words.Slip)
-    .unique
-    .Slip
-  ).sort;
-
-my @lines = $code.lines;
+my @lines = $filename.IO.lines;
 $*OUT = $filename.IO.open(:w);
 
 # for all the lines in the source that don't need special handling
+my @options;
 while @lines {
     my $line := @lines.shift;
 
     # nothing to do yet
     unless $line.starts-with($start) {
+        @options.push: .Str with $line.match(/ 'my sub option-' <( <-[(]>+ /);
         say $line;
         next;
     }

@@ -1,13 +1,7 @@
 use Test;
 
-plan 3;
+plan 1;
 
-{
-    use App::Rak;
-    my @keys = MY::.keys;
-    for <&MAIN PairMatched PairContext> {
-        ok $_ (elem) @keys, "did $_ get exported";
-    }
-}
+use-ok 'App::Rak';
 
 # vim: expandtab shiftwidth=4
