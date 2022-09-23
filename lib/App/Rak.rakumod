@@ -495,7 +495,7 @@ my sub codify-extensions(*@extensions) {
 }
 
 # Set up the --help handler
-use META::constants:ver<0.0.2>:auth<zef:lizmat> $?DISTRIBUTION;
+use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
 my sub HELP($text, @keys, :$verbose) {
     my $SCRIPT := $*PROGRAM.basename;
     my $header := "$SCRIPT - " ~ DESCRIPTION;
@@ -1976,7 +1976,7 @@ my sub action-help(--> Nil) {
     activate-output-options;
     my proto sub MAIN(|) {*}
     use CLI::Help:ver<0.0.4>:auth<zef:lizmat> %?RESOURCES, &MAIN, &HELP, 'long';
-    MAIN(:help, :$verbose);  # XXX pattern ?  options ??
+    MAIN($pattern, |@positionals, :help, :$verbose);  # XXX pattern ?  options ??
 }
 
 my sub action-json-per-file(--> Nil) {
@@ -2198,7 +2198,7 @@ my sub action-version(--> Nil) {
 
     activate-output-options;
     my proto sub MAIN(|) {*}
-    use CLI::Version:ver<0.0.7>:auth<zef:lizmat> $?DISTRIBUTION, &MAIN, 'long';
+    use CLI::Version:ver<0.0.8>:auth<zef:lizmat> $?DISTRIBUTION, &MAIN, 'long';
     MAIN(:version, :$verbose);
 }
 

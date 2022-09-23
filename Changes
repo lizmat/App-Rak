@@ -18,6 +18,8 @@ Revision history for App-Rak
      - Change dependency from JSON::Fast to JSON::Fast::Hyper to allow
        for hypering --json-per-elem
      - Fix issue with using a regex and --edit
+     - Bump dependency on META::constants for more resiliency
+     - Bump dependency on CLI::Version for more resiliency
 
 0.0.96  2022-09-12T12:07:41+02:00
      - Fix snafu with argument parsing rework bleeding into the distribution
