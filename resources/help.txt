@@ -16,8 +16,9 @@ String search pattern modifiers:
 
 Input selection:
  --find            Interprete selected paths as the lines to inspect
- --json-per-file   Call Raku code with parsed JSON if file contains JSON
- --json-per-line   Call Raku code with parsed JSON if line contains JSON
+ --json-per-file   Call Raku code with parsed JSON
+ --json-per-elem   Call Raku code with top elements of parsed JSON
+ --json-per-line   Call Raku code with parsed JSON
  --blame-per-file  Call Raku code with Git::Blame::File objects if possible
  --blame-per-line  Call Raku code with Git::Blame::Line objects if possible
  --csv-per-line    Interpret file as CSV and produce rows
@@ -75,32 +76,36 @@ Filesystem filters:
  --uid=expression       File is owned by given uid
 
 Result modifiers:
- --context=N             List N lines around any line with a match
- --before-context=N      List N lines before any line with a match
- --after-context=N       List N lines after any line with a match
- --paragraph-context     List all lines in the same paragraph around a match
- --passthru-context      List all lines if there is at least one match
- --passthru              List all lines always
- --max-matches-per-file  Maximum number of matches per file, default: all
- --count-only            Only return count of matches
- --stats-only            Only return statistics of the search
- --files-with-matches    Only return filenames with matches
- --file-separator-null   Separate filenames with null bytes
- --matches-only          Only produce the actual matches
- --unique                Only return unique lines
- --frequencies           Only return lines and their frequencies
+ --context=N               List N lines around any line with a match
+ --before-context=N        List N lines before any line with a match
+ --after-context=N         List N lines after any line with a match
+ --paragraph-context       List all lines in the same paragraph around a match
+ --passthru-context        List all lines if there is at least one match
+ --passthru                List all lines always
+ --invert-match            Select lines that do **not** match
+ --max-matches-per-file=N  Maximum number of matches per file, default: all
+ --count-only              Only return count of matches
+ --stats-only              Only return statistics of the search
+ --files-with-matches      Only return filenames with matches
+ --files-without-matches   Only return filenames without matches
+ --matches-only            Only produce the actual matches
+ --unique                  Only return unique lines
+ --frequencies             Only return lines and their frequencies
 
 Listing modifiers:
+ --human                     Force defaults as if a human is watching
  --break[=string]            String to show between different files
  --group-matches             Show filename only once on a separate line
  --show-blame                Show git blame information if possible
  --show-filename             Show the filename in which match occurred
+ --file-separator-null       Separate filenames with null bytes
  --show-line-number          Show the line number in which match occurred
  --summary-if-larger-than=N  Summarize matching line if longer than N chars
  --trim                      Remove whitespace, true if no context
  --highlight                 Highlight matches if possible
  --highlight-before=xxx      String to put before match
  --highlight-after=yyy       String to put after match
+ --proximate[=N]             Grouping of matched lines
  --output-file=filename      Send output to indicated file (default: STDOUT)
  --pager                     Pager to use (default: ACK_PAGER // none)
  --first-only[=N]            Show only the N results, N defaults to 1

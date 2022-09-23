@@ -528,6 +528,14 @@ a line.  Specifying implies C<--highlight>ing implicitly.  If C<highlight>
 is explicitely specified with a trueish value, will default to the terminal
 code to start B<bold>.
 
+=head2 --human
+
+Flag.  Indicate that search results should be presented in a human readable
+manner.  This means: filenames shown on a separate line, line numbers
+shown, and highlighting performed.  Defaults to C<True> if C<STDOUT> is
+a TTY (aka, someone is actually watching the search results), otherwise
+defaults to C<False>.
+
 =head2 --ignorecase
 
 Flag.  If specified with a trueish value, indicates that any matching should
@@ -659,6 +667,25 @@ files that can B<not> be written to by anybody.
 Flag. If specified with a trueish value, will only select files that can be
 written to by the current user.  Use negation C<--/is-writable> to only select
 files that can B<not> be written to by the current user.
+
+=head2 --json-per-elem
+
+Flag.  Only makes sense if the pattern is a C<Callable>.  If specified with
+a C<True> value, indicates that each selected file will be interpreted
+as JSON, and if valid, will then produce all elements of the outermost
+data structure to the pattern for introspection.  If the data structure
+is a hash, then key/value C<Pair>s will be produced.
+
+If the Callable returns a true value, the element will be shown.  If
+the returned value is a string, that string will be mentioned.  For example
+when searching the list of modules in the zef ecosystem (which consists of
+an array of hashes):
+
+=begin code :lang<bash>
+
+$ rak '{ $_ with .<auth> }' META.json --json-per-elem
+
+=end code
 
 =head2 --json-per-file
 
@@ -918,6 +945,13 @@ conjunction with C<--matches-only> and/or C<count-only>.
 $ rak foo --per-file='*.lines(:!chomp).head(10).join'
 
 =end code
+
+==head2 --proximate=[N]
+
+Indicates whether matched lines should be grouped together that are within
+N lines of each other. This is useful for visually picking out matches that
+appear close to other matches.  If specified as a flag, indicates a
+proximation of B<1>.  Defaults to B<0>, indication no proximation.
 
 =head2 --quietly
 

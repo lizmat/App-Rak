@@ -11,6 +11,12 @@ Attempt to parse the whole file as JSON.  If successful, pass this to the
 pattern Callable.  Only files with the .json extension will be tried, unless
 overridden by any explicit extension specification.
 
+--json-per-elem
+
+Attempt to parse the whole files as JSON.  If successful, pass each top-level
+element to the pattern Callable.  Only files with the .json extension will be
+tried, unless overridden by any explicit extension specification.
+
 --json-per-line
 
 Attempt to parse each line in the file as JSON.  If successful, pass this to

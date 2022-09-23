@@ -2,7 +2,9 @@ Revision history for App-Rak
 
 {{$NEXT}}
      - Add extensions groups for #cro and #html
+     - Bump dependency on rak to get better --under-version-control semantics
      - Bump dependency on String::Utils to get selective importing
+     - Bump dependency on as-cli-arguments to get Pair support
      - Complete rewrite of argument handling.  Instead of feeding the
        command line arguments into Capture to call MAIN with, process
        all command line arguments in order and group them into areas
@@ -10,6 +12,12 @@ Revision history for App-Rak
        checks that need to be made to figure out what to do, and makes
        it possible to produce better error reports with regards to the
        options specified on the command line.
+     - Add support for --proximate
+     - Add support for --human back in
+     - Add support for --json-per-elem
+     - Change dependency from JSON::Fast to JSON::Fast::Hyper to allow
+       for hypering --json-per-elem
+     - Fix issue with using a regex and --edit
 
 0.0.96  2022-09-12T12:07:41+02:00
      - Fix snafu with argument parsing rework bleeding into the distribution

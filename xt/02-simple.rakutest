@@ -44,8 +44,8 @@ my sub query-ok(
   :$ok is copy,    # the expected result
   :$head = 1,      # whether to do the --only-first test with this number
 ) is test-assertion {
-    my @args = $*EXECUTABLE.absolute, "-I$dot", $rak, "--paths-from=$paths",
-      @query.Slip, '--degree=1';
+    my @args = $*EXECUTABLE.absolute, "-I$dot", $rak, '--human',
+      "--paths-from=$paths", @query.Slip, '--degree=1';
     $ok .= chomp;
 
     # Logic to run the query
@@ -96,7 +96,8 @@ OK
 
 # Check without highlighting
 for @ine {
-    query-ok .Slip, <--show-filename --show-line-number --group-matches>,
+    query-ok .Slip,
+      <--show-filename --show-line-number --group-matches --/highlight>,
       :head(2), ok => q:to/OK/;
 nine
 10:nine
@@ -115,7 +116,8 @@ for (
     query-ok .Slip, '--highlight', :ok("\n");
 }
 
-query-ok <six --smartcase --no-group-matches --/show-line-number>,
+query-ok "six",
+  <--smartcase --/group-matches --/show-line-number --/highlight --/break>,
   ok => q:to/OK/;
 six:SIX
 seven:SIX
@@ -123,7 +125,7 @@ eight:SIX
 nine:SIX
 OK
 
-query-ok <seven --type=words --highlight>, :head(2), ok => qq:to/OK/;
+query-ok <seven --type=words>, :head(2), ok => qq:to/OK/;
 seven
 8:{BON}seven{BOFF}
 
@@ -134,7 +136,7 @@ nine
 8:{BON}seven{BOFF}
 OK
 
-query-ok </o$/ --find --highlight>, ok => qq:to/OK/;
+query-ok </o$/ --find>, ok => qq:to/OK/;
 {$dira}tw{BON}o{BOFF}
 {$dira}zer{BON}o{BOFF}
 OK
@@ -159,7 +161,7 @@ nine
 5:FOUR
 OK
 
-query-ok q/{.uc if .contains("v")}/, '--/group-matches',
+query-ok q/{.uc if .contains("v")}/, <--/group-matches --/break>,
   ok => q:to/OK/;
 five:6:FIVE
 six:6:FIVE
@@ -278,7 +280,7 @@ query-ok 'zero', '--count-only', :!head, ok => qq:to/OK/;
 10 matches in 10 files
 OK
 
-query-ok 'eight', '--stats', :!head, ok => qq:to/OK/;
+query-ok 'eight', <--stats --/highlight>, :!head, ok => qq:to/OK/;
 eight
 9:eight
 
@@ -306,69 +308,76 @@ Statistics for 'eight':
   Number of matches: 2
 OK
 
-query-ok 'seven', :head(2), ok => q:to/OK/;
+query-ok 'seven', :head(2), ok => qq:to/OK/;
 seven
-8:seven
+8:{BON}seven{BOFF}
 
 eight
-8:seven
+8:{BON}seven{BOFF}
 
 nine
-8:seven
+8:{BON}seven{BOFF}
 OK
 
-query-ok <even --no-group-matches --/show-line-number>, ok => q:to/OK/;
-seven:seven
-eight:seven
-nine:seven
+query-ok <even --no-group-matches --/show-line-number>, ok => qq:to/OK/;
+seven:s{BON}even{BOFF}
+
+eight:s{BON}even{BOFF}
+
+nine:s{BON}even{BOFF}
 OK
 
-query-ok <eve --/show-filename>, ok => q:to/OK/;
-8:seven
-8:seven
-8:seven
+query-ok <eve --/show-filename>, ok => qq:to/OK/;
+8:s{BON}eve{BOFF}n
+
+8:s{BON}eve{BOFF}n
+
+8:s{BON}eve{BOFF}n
 OK
 
-query-ok <ev --/group-matches>, ok => q:to/OK/;
-seven:8:seven
-eight:8:seven
-nine:8:seven
+query-ok <ev --/group-matches --/break>, ok => qq:to/OK/;
+seven:8:s{BON}ev{BOFF}en
+eight:8:s{BON}ev{BOFF}en
+nine:8:s{BON}ev{BOFF}en
 OK
 
 query-ok <ven --highlight-before=* --/show-filename --/show-line-number>,
   ok => q:to/OK/;
 se*ven*
+
 se*ven*
+
 se*ven*
 OK
 
 query-ok <eig --highlight-before=* --highlight-after=## --/show-filename>,
   ok => q:to/OK/;
 9:*eig##ht
+
 9:*eig##ht
 OK
 
-query-ok <seven --context=2>, :head(2), ok => q:to/OK/;
+query-ok <seven --context=2>, :head(2), ok => qq:to/OK/;
 seven
 6:five
 7:SIX
-8:seven
+8:{BON}seven{BOFF}
 
 eight
 6:five
 7:SIX
-8:seven
+8:{BON}seven{BOFF}
 9:eight
 
 nine
 6:five
 7:SIX
-8:seven
+8:{BON}seven{BOFF}
 9:eight
 10:nine
 OK
 
-query-ok <seven --before-context=2>, :head(2), ok => q:to/OK/;
+query-ok <seven --before-context=2 --/highlight>, :head(2), ok => q:to/OK/;
 seven
 6:five
 7:SIX
@@ -385,7 +394,7 @@ nine
 8:seven
 OK
 
-query-ok <seven --after-context=2>, :head(2), ok => q:to/OK/;
+query-ok <seven --after-context=2 --/highlight>, :head(2), ok => q:to/OK/;
 seven
 8:seven
 
@@ -413,15 +422,15 @@ nine
 10:{BON}nine{BOFF}
 OK
 
-query-ok 'zero', q/--filesize=*>30/, :head(2), ok => q:to/OK/;
+query-ok 'zero', q/--filesize=*>30/, :head(2), ok => qq:to/OK/;
 seven
-1:zero
+1:{BON}zero{BOFF}
 
 eight
-1:zero
+1:{BON}zero{BOFF}
 
 nine
-1:zero
+1:{BON}zero{BOFF}
 OK
 
 my $user := ~$*USER;
@@ -499,7 +508,7 @@ for (
 }
 
 for '--per-file', q/--per-file=*.slurp/ {
-    query-ok <nine --/group-matches>, $_, :!head, ok => q:to/OK/;
+    query-ok <nine --/group-matches>, $_, :!head, ok => qq:to/OK/;
 nine:zero
 one
 two
@@ -509,8 +518,7 @@ five
 SIX
 seven
 eight
-nine
-
+{BON}nine{BOFF}
 OK
 }
 
@@ -551,45 +559,45 @@ for '--per-file', q/--per-file=*.slurp/ {
 OK
 }
 
-query-ok <o --max-matches-per-file=2>, :head(2), ok => q:to/OK/;
+query-ok <o --max-matches-per-file=2>, :head(2), ok => qq:to/OK/;
 zero
-1:zero
+1:zer{BON}o{BOFF}
 
 one
-1:zero
-2:one
+1:zer{BON}o{BOFF}
+2:{BON}o{BOFF}ne
 
 two
-1:zero
-2:one
+1:zer{BON}o{BOFF}
+2:{BON}o{BOFF}ne
 
 three
-1:zero
-2:one
+1:zer{BON}o{BOFF}
+2:{BON}o{BOFF}ne
 
 four
-1:zero
-2:one
+1:zer{BON}o{BOFF}
+2:{BON}o{BOFF}ne
 
 five
-1:zero
-2:one
+1:zer{BON}o{BOFF}
+2:{BON}o{BOFF}ne
 
 six
-1:zero
-2:one
+1:zer{BON}o{BOFF}
+2:{BON}o{BOFF}ne
 
 seven
-1:zero
-2:one
+1:zer{BON}o{BOFF}
+2:{BON}o{BOFF}ne
 
 eight
-1:zero
-2:one
+1:zer{BON}o{BOFF}
+2:{BON}o{BOFF}ne
 
 nine
-1:zero
-2:one
+1:zer{BON}o{BOFF}
+2:{BON}o{BOFF}ne
 OK
 
 done-testing;

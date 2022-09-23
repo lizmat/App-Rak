@@ -1,11 +1,11 @@
 # The modules that we need here, with their full identities
-use as-cli-arguments:ver<0.0.4>:auth<zef:lizmat>;
-use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;
-use has-word:ver<0.0.3>:auth<zef:lizmat>;
-use highlighter:ver<0.0.14>:auth<zef:lizmat>;
-use JSON::Fast:ver<0.17>:auth<cpan:TIMOTIMO>;
-use rak:ver<0.0.22>:auth<zef:lizmat>;
-use String::Utils:ver<0.0.10>:auth<zef:lizmat> <after before between is-sha1>;
+use as-cli-arguments:ver<0.0.6>:auth<zef:lizmat>;  # as-cli-arguments
+use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;       # edit-files
+use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
+use highlighter:ver<0.0.14>:auth<zef:lizmat>;      # columns highlighter matches
+use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
+use rak:ver<0.0.24>:auth<zef:lizmat>;              # rak
+use String::Utils:ver<0.0.12>:auth<zef:lizmat> <after before between is-sha1>;
 
 # The epoch value when process started
 my $init-epoch = $*INIT-INSTANT.to-posix.head;
@@ -13,6 +13,13 @@ my $init-epoch = $*INIT-INSTANT.to-posix.head;
 # Defaults for highlighting on terminals
 my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
+
+#- start of available options --------------------------------------------------
+#- Generated on 2022-09-22T19:43:49+02:00 by tools/makeOPTIONS.raku
+#- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
+my str @options = <accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dryrun edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-line-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unique user verbose version vimgrep with-line-endings>;
+#- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
+#- end of available options ----------------------------------------------------
 
 # Options of other programs that may be false friends
 my constant %falsies =
@@ -50,6 +57,8 @@ my constant %falsies =
   max-count        => 'max-matches-per-file',
   man              => 'help',
   o                => 'matches-only',
+  p                => 'proximate',
+  P                => 'proximate',
   output           => 'pattern',
   print0           => 'file-separator-null',
   S                => 'smartcase',
@@ -141,27 +150,198 @@ my constant @known-extensions = %exts.values.flat.unique.sort;
 # Place to keep tagged configurations
 my $config-file := $*HOME.add('.rak-config.json');
 
+# Variables for grouping options given
+my $verbose;      # process verbose
+my $pager;        # process pager if defined
+my $output-file;  # process output file if defined
+my $debug-rak;    # process show rak args
+
+my $pattern;     # the pattern specified (if any)
+my $ignorecase;  # --ignorecase
+my $ignoremark;  # --ignoremark
+my $type;        # --type
+
+my @modules;  # list of modules to -use-
+my @repos;    # list of repositories to include with -use lib-
+
+my $source-for;  # name of option providing sources
+my $source;      # associated value (if any)
+
+my $action-for;  # name of option to perform
+my $action;      # associated value (if any)
+
+my %global;      # global arguments
+my %filesystem;  # filesystem selection args
+my %result;      # result modifier options specified
+my %listing;     # listing options specified
+my %csv;         # arguments needed for --csv-per-line
+my %modify;      # arguments needed for --modify-files
+
+my $needle;  # Callable needle for rak
+my %rak;     # arguments to be sent to rak()
+my $rak;     # the result of calling rak()
+
+# For now, the routine for outputting anything
+my &sayer = do {
+    my $out := $*OUT;
+    -> $_ { $out.say($_) }
+}
+
+# Fetch and normalize any config, we only do List of Pairs nowadays
+my %config := do {
+    if $config-file.e {
+        my %hash := from-json($config-file.slurp);
+        for %hash.values { $_ = .pairs.List if Map.ACCEPTS($_) }
+        %hash
+    }
+    else {
+        { }
+    }
+}
+
+my @positionals; # Positional arguments
+my @unexpected;  # Pairs of unexpected arguments and their value
+
+#--------------------------------------------------------------------------------
+# Actually set up all variables from the arguments specified and run.
+# Theory of operation:
+#
+# 1. Loop over all of the strings in @ARGS
+#     - does it NOT start with "-"?  -> positional argument
+#     - named argument: call "set-$name" with the given value
+#     - add to unexpected if sub doesn't exist
+# 2. See of an action name has been set, of not: assume 'per-line'
+# 3. Run the "action-$name" sub
+# 4. Close STDOUT if a pager was used
+
+my sub main(@ARGS) is export {
+
+    # Do the actual argument parsing
+    for @ARGS {
+
+        # looks like an option
+        if .starts-with('-') {
+
+            # Allow -j2 as an alternative to --j=2, aka :numeric-suffix-as-value
+            $_ = "-$_.substr(0,2)=$/" if .match: /^ '-' <.alpha> <( \d+ $/;
+
+            if .starts-with('--/') {
+                my ($before,$after) = .substr(3).split('=',2);
+                named $before, $after // False;
+            }
+            elsif .starts-with('--no-') {
+                my ($before,$after) = .substr(5).split('=',2);
+                named $before, $after // False;
+            }
+            elsif .starts-with('--') {
+                my ($before,$after) = .substr(2).split('=',2);
+                named $before, $after // True;
+            }
+            elsif .starts-with('-/') {
+                my ($before,$after) = .substr(2).split('=',2);
+                if $before.chars == 1 {
+                    named $before, $after // False;
+                }
+                elsif $after.defined {
+                    named $_, $after for $before.comb;
+                }
+                else {
+                    named $_, False for $before.comb;
+                }
+            }
+
+            # a bare - considered to be a positional
+            elsif $_ eq '-' {
+                @positionals.push: $_;
+            }
+
+            else {  # .starts-with('-')
+                my ($before,$after) = .substr(1).split('=',2);
+                if $before.chars == 1 {
+                    named $before, $after // True;
+                }
+                elsif $after.defined {
+                    named $_, $after for $before.comb;
+                }
+                else {
+                    named $_, True for $before.comb;
+                }
+            }
+        }
+
+        # not an option
+        else {
+            @positionals.push: $_;
+        }
+    }
+
+    # huh?
+    meh-unexpected if @unexpected;
+
+    # Set up the pattern
+    $pattern := @positionals.shift if !$pattern.defined && @positionals;
+
+    # Save current setting
+    if %global<save>:delete -> $save {
+        my @options := as-options;
+
+        @options
+          ?? (%config{$save} := @options)
+          !! (%config{$save}:delete);
+
+        $config-file.spurt: to-json %config, :!pretty, :sorted-keys;
+
+        say @options
+          ?? "Saved '&as-cli-arguments(@options)' as: -$save"
+          !! "Removed custom option '--$save'";
+        exit;
+    }
+
+    elsif %global<list-expanded-options>:delete {
+        if $verbose {
+            for as-options() {
+                if description(.key) -> $description {
+                    say "&as-cli-arguments($_): $description";
+                }
+                else {
+                    say as-cli-arguments($_);
+                }
+            }
+        }
+        else {
+            say as-cli-arguments as-options;
+        }
+        exit;
+    }
+
+    # Perform the actual action
+    $action-for ?? ::("&action-$action-for")() !! action-per-line();
+    $*OUT.close if $pager;
+}
+
+# no mainline code from here
+#-------------------------------------------------------------------------------
+
 # Return "s" if number is not 1, for error messages
 my sub s($elems) { $elems == 1 ?? "" !! "s" }
 
+# Return '--a, --b' for one or more names
+my sub mm(@names) { @names.map({"--$_"}).join(', ') }
+
 # Sane way of quitting
 my sub meh($message) is hidden-from-backtrace {
-    exit note $message;
+    exit note $message.ends-with('.' | '?')
+      ?? $message
+      !! "$message.";
 }
 
 # Quit if module not installed
-my sub meh-not-installed($module, $param) {
+my sub meh-not-installed($module, $param) is hidden-from-backtrace {
     meh qq:to/MEH/.chomp;
 Must have the $module module installed to do --$param.
 You can do this by running 'zef install $module'.
 MEH
 }
-
-# Is a pattern a simple Callable?
-my $is-simple-Callable;
-
-# Can the pattern have phasers
-my $can-have-phasers;
 
 # Return string before marker, or string if no marker
 my sub before-or-string(str $string, str $marker) {
@@ -194,39 +374,33 @@ my sub named-args(%args, *%wanted) {
     }
 }
 
-# Return prelude from --repository and --module parameters
-my sub prelude(%n) {
-    my $prelude = "";
-    if %n<repository>:delete -> \libs {
-        $prelude = libs.map({"use lib '$_'; "}).join;
-    }
-    if %n<module>:delete -> \modules {
-        $prelude ~= modules.map({"use $_; "}).join;
-    }
-    $prelude
-}
-
 # Convert a string to code if possible
-my sub codify(Str:D $code, %_?) {
+my sub codify(Str:D $code) {
     CATCH {
         meh "Could not compile '$code':\n$_.message()";
     }
-    $code.starts-with('/') && $code.ends-with('/')
-      ?? regexify($code, %_)
-      !! $code.starts-with('{') && $code.ends-with('}')
-        ?? (prelude(%_) ~ 'my $ := -> $_ ' ~ $code).EVAL
-        !! $code.starts-with('-> $') && $code.ends-with('}')
-          ?? (prelude(%_) ~ 'my $ := ' ~ $code).EVAL
-          !! $code.starts-with('*')
-            ?? (prelude(%_) ~ 'my $ := ' ~ $code).EVAL
-            !! $code
+
+    # Return prelude from --repository and --module parameters
+    my sub prelude() {
+        @repos.map({"use lib '$_'; "}).join ~ @modules.map({"use $_; "}).join
+    }
+
+    $code eq '*.defined'
+      ?? &defined
+      !! $code.starts-with('/') && $code.ends-with('/')
+        ?? regexify($code)
+        !! $code.starts-with('{') && $code.ends-with('}')
+          ?? (prelude() ~ 'my $ := -> $_ ' ~ $code).EVAL
+          !! $code.starts-with('-> $') && $code.ends-with('}')
+            ?? (prelude() ~ 'my $ := ' ~ $code).EVAL
+            !! $code.starts-with('*')
+              ?? (prelude() ~ 'my $ := ' ~ $code).EVAL
+              !! $code
 }
 
 # Pre-process literal strings looking like a regex
-my sub regexify($code, %_) {
-    my $i := %_<ignorecase> ?? ':i ' !! '';
-    my $m := %_<ignoremark> ?? ':m ' !! '';
-    "/$i$m$code.substr(1)".EVAL
+my sub regexify($code) {
+    "/{ ':i ' if $ignorecase }{ ':m ' if $ignoremark }$code.substr(1)".EVAL
 }
 
 # Convert a string to code, fail if not possible
@@ -254,31 +428,42 @@ my sub convert-to-simple-Callable(Str:D $code) {
 }
 
 # Return Callable for a pattern that is not supposed to be code
-my sub needleify($pattern, %_) {
-    my $i := %_<ignorecase>;
-    my $m := %_<ignoremark>;
-    my $type := %_<type> //= 'contains';
-
-    if $type eq 'words' {
-        $i
-          ?? $m
+my sub needleify($pattern) {
+    if !$type || $type eq 'contains' {
+        $ignorecase
+          ?? $ignoremark
+            ?? *.contains($pattern, :i, :m)
+            !! *.contains($pattern, :i)
+          !! $ignoremark
+            ?? *.contains($pattern, :m)
+            !! *.contains($pattern)
+    }
+    elsif $type eq 'words' {
+        $ignorecase
+          ?? $ignoremark
             ?? *.&has-word($pattern, :i, :m)
             !! *.&has-word($pattern, :i)
-          !! $m
+          !! $ignoremark
             ?? *.&has-word($pattern, :m)
             !! *.&has-word($pattern)
     }
-    elsif $type eq 'contains' | 'starts-with' | 'ends-with' {
-        $i
-          ?? $m
-            ?? *."$type"($pattern, :i, :m)
-            !! *."$type"($pattern, :i)
-          !! $m
-            ?? *."$type"($pattern, :m)
-            !! *."$type"($pattern)
+    elsif $type eq 'starts-with' {
+        $ignorecase
+          ?? $ignoremark
+            ?? *.starts-with($pattern, :i, :m)
+            !! *.starts-with($pattern, :i)
+          !! $ignoremark
+            ?? *.starts-with($pattern, :m)
+            !! *.starts-with($pattern)
     }
-    else {
-        die "Don't know how to handle type: $type";
+    else {  # $type eq 'ends-with' {
+        $ignorecase
+          ?? $ignoremark
+            ?? *.ends-with($pattern, :i, :m)
+            !! *.ends-with($pattern, :i)
+          !! $ignoremark
+            ?? *.ends-with($pattern, :m)
+            !! *.ends-with($pattern)
     }
 }
 
@@ -331,56 +516,20 @@ my sub HELP($text, @keys, :$verbose) {
 }
 
 #-------------------------------------------------------------------------------
-# Variables for grouping options given
-
-my $verbose;      # process verbose
-my $pager;        # process pager if defined
-my $output-file;  # process output file if defined
-my $debug-rak;    # process show rak args
-my $save;         # process save options under name
-my @modules;      # list of modules to -use-
-my @repos;        # list of repositories to include with -use lib-
-
-my $source-for;  # name of option providing sources
-my $source;      # associated value (if any)
-
-my $action-for;  # name of option to perform
-my $action;      # associated value (if any)
-
-my %global;      # global arguments
-my %filesystem;  # filesystem selection args
-my %csv;         # arguments needed for --csv-per-line
-my %highlight;   # highlighting options specified
-my %listing;     # listing options specified
-my %modify;      # modify options specified
-
-my $pattern;     # the pattern that was given
-my $needle;      # what to actually look for
-my %rak;         # arguments to be sent to rak()
-my $rak;         # the result of calling rak()
-
-# For now, the routine for outputting anything
-my &sayer = do {
-    my $out := $*OUT;
-    -> $_ { $out.say($_) }
-}
-
-# Fetch and normalize any config, we only do List of Pairs nowadays
-my %config := do {
-    if $config-file.e {
-        my %hash := from-json($config-file.slurp);
-        for %hash.values { $_ = .pairs.List if Map.ACCEPTS($_) }
-        %hash
-    }
-    else {
-        { }
-    }
-}
 
 # Run the query
 my sub run-rak(:$eagerly) {
     if $debug-rak {
         note .key ~ ': ' ~ .value.raku for %rak.sort(*.key);
+    }
+    if (
+      %global.keys, %result.keys, %csv.keys, %modify.keys
+    ).flat -> @unhandled {
+        note qq:to/TEXT/;
+The &mm(@unhandled) option&s(@unhandled) {@unhandled == 1 ?? "is" !! "are"} not being handled and will be ignored.
+If you believe this to be incorrect, please report an issue with
+https://github.com/lizmat/App-Rak/issues/new .
+TEXT
     }
 
     %rak<eager> := True if $eagerly;
@@ -392,14 +541,73 @@ my sub run-rak(:$eagerly) {
 # Show the results
 my sub rak-results() {
 
-    my $break              := %listing<break>:delete;
-    my $files-with-matches := %listing<files-with-matches>:delete;
-    my $group-matches      := %listing<group-matches>:delete;
-    my $has-break          := $break.defined;
-    my int $only-first      = %listing<only-first>:delete // 0;
-    my $show-filename      := %listing<show-filename>:delete;
+    my $human         := %listing<human>:delete // $isa-tty;
+    my $show-filename := %listing<show-filename>:delete // True;
+    my $break         := %listing<break>:delete;
+    my $group-matches := %listing<group-matches>:delete;
+    my $highlight     := %listing<highlight>:delete;
+    my $trim          := %listing<trim>:delete;
+    my $only-first    := %listing<only-first>:delete;
+    my $proximate     := %listing<proximate>:delete;
 
-    my &line-post-proc;
+    # Set up human defaults
+    if $human {
+        $break         := ""    unless $break.defined;
+        $group-matches := True  unless $group-matches.defined;
+        $highlight     := True  unless $highlight.defined;
+        $trim          := True  unless $trim.defined;
+        $only-first    := 10000 unless $only-first.defined;
+        $proximate     := 1 if !$proximate.defined && $group-matches;
+    }
+    my $has-break := %listing<has-break>:delete // $break.defined;
+    # Switch to really large values if not specified
+    my uint $skip-ok    = $proximate  || 0x7fff_ffff_ffff_ffff;
+    my uint $stop-after = $only-first || 0x7fff_ffff_ffff_ffff;
+
+    # Set up highlighting
+    my $highlight-before;
+    my $highlight-after;
+    with %listing<highlight-before>:delete {
+        $highlight-before := $_;
+        $highlight        := True;
+    }
+    with %listing<highlight-after>:delete {
+        $highlight-after := $_;
+        $highlight       := True;
+    }
+    else {
+        $highlight-after := $highlight-before;
+    }
+
+    my &line-post-proc := do if $highlight {
+        my Str() $pre = my Str() $post = $_ with $highlight-before;
+        $post                          = $_ with $highlight-after;
+        $pre  = BON  without $pre;
+        $post = BOFF without $post;
+
+        my %nameds =
+          (:$ignorecase if $ignorecase),
+          (:$ignoremark if $ignoremark),
+          (:$type       if $type),
+          (:summary-if-larger-than($_)
+            with %listing<summary-if-larger-than>:delete),
+        ;
+
+        my $target := Regex.ACCEPTS($needle) ?? $needle !! $pattern;
+
+        $trim
+          ?? -> Str() $line {
+                 highlighter $line.trim, $target, $pre, $post, |%nameds
+             }
+          !! -> Str() $line {
+                 highlighter $line, $target, $pre, $post, |%nameds
+             }
+    }
+
+    # No highlighting wanted, abuse highlighter logic anyway
+    else {
+        $trim ?? *.Str.trim !! *.Str
+    }
 
     # show the results!
     my int $seen;
@@ -426,39 +634,50 @@ my sub rak-results() {
                     sayer $break if $has-break && $seen;
 
                     if PairContext.ACCEPTS(@matches.head) {
+                        my uint $last-linenr = @matches.head.key - 1;
+
                         if $group-matches {
                             sayer $source if $show-filename;
                             for @matches.map({ $_ if .value.elems }) {
-                                sayer .key ~ ':' ~ (.matched
+                                my uint $linenr = .key;
+                                sayer "" if $linenr - $last-linenr > $skip-ok;
+                                sayer $linenr ~ ':' ~ (.matched
                                   ?? line-post-proc .value
                                   !! .value.Str
                                 );
-                                last RESULT if ++$seen == $only-first;
+                                last RESULT if ++$seen == $stop-after;
+                                $last-linenr = $linenr;
                             }
                         }
 
                         # Not grouping
                         elsif $show-filename {
                             for @matches.map({ $_ if .value.elems }) {
+                                my uint $linenr = .key;
+                                sayer "" if $linenr - $last-linenr > $skip-ok;
                                 sayer $source
-                                  ~ ':' ~ .key
+                                  ~ ':' ~ $linenr
                                   ~ ':' ~ (.matched
                                   ?? line-post-proc .value
                                   !! .value.Str
                                 );
-                                last RESULT if ++$seen == $only-first;
+                                last RESULT if ++$seen == $stop-after;
+                                $last-linenr = $linenr;
                             }
                         }
 
                         # Not grouping and don't want to know the filename
                         else {
                             for @matches.map({ $_ if .value.elems }) {
-                                sayer .key
+                                my uint $linenr = .key;
+                                sayer "" if $linenr - $last-linenr > $skip-ok;
+                                sayer $linenr
                                   ~ ':' ~ (.matched
                                   ?? line-post-proc .value
                                   !! .value.Str
                                 );
-                                last RESULT if ++$seen == $only-first;
+                                last RESULT if ++$seen == $stop-after;
+                                $last-linenr = $linenr;
                             }
                         }
                     }
@@ -468,7 +687,7 @@ my sub rak-results() {
                         sayer $source if $show-filename;
                         for @matches {
                             sayer line-post-proc $_;
-                            last RESULT if ++$seen == $only-first;
+                            last RESULT if ++$seen == $stop-after;
                         }
                     }
 
@@ -476,7 +695,7 @@ my sub rak-results() {
                     elsif $show-filename {
                         for @matches {
                             sayer $source ~ ':' ~ line-post-proc $_;
-                            last RESULT if ++$seen == $only-first;
+                            last RESULT if ++$seen == $stop-after;
                         }
                     }
                 }
@@ -485,12 +704,12 @@ my sub rak-results() {
             # looks like frequencies output
             else {
                 sayer $outer.value ~ ':' ~ $outer.key;
-                last RESULT if ++$seen == $only-first;
+                last RESULT if ++$seen == $stop-after;
             }
         }
 
-        # Only want filename, so show its relative path
-        elsif $files-with-matches {
+        # Only got filename, so show its relative path
+        elsif IO::Path.ACCEPTS($outer) {
             sayer $outer.relative;
             last RESULT if ++$seen == $only-first;
         }
@@ -498,7 +717,7 @@ my sub rak-results() {
         # Probably --unique
         else {
             sayer $outer.Str;
-            last RESULT if ++$seen == $only-first;
+            last RESULT if ++$seen == $stop-after;
         }
     }
 }
@@ -542,7 +761,7 @@ my sub rak-stats(:$count-only) {
 # Helper subroutines for setting up data structures from option handling
 
 # Indicate the action to be performed
-my sub set-source(str $name, $value --> Int) {
+my sub set-source(str $name, $value --> Nil) {
     meh "Can only have one source at a time:\n'--$_' was specified before '--$name'"
       with $source-for;
     $source-for := $name;
@@ -702,48 +921,64 @@ my sub set-csv-flag(str $name, $value --> Nil) {
       !! meh("'--$name' can only be specified as a flag");
 }
 
-# Set up highlighting boolean option
+# Set highlight options
 my sub set-highlight-flag(str $name, $value --> Nil) {
     Bool.ACCEPTS($value)
-      ?? (%highlight{$name} := $value)
+      ?? (%listing{$name} := $value)
       !! meh("'--$name' can only be specified as a flag");
 }
-
-# Set up highlighting integer option
 my sub set-highlight-Int(str $name, $value --> Nil) {
     my $integer := $value.Int;
     Int.ACCEPTS($integer)
-      ?? (%highlight{$name} := $integer)
+      ?? (%listing{$name} := $integer)
       !! meh "'--$name' can only be an integer value, not '$value'";
 }
-
-# Set up highlighting string option
 my sub set-highlight-Str(str $name, $value --> Nil) {
     Bool.ACCEPTS($value)
       ?? meh "'--$name' must be specified with a string"
-      !! (%highlight{$name} := $value);
+      !! (%listing{$name} := $value);
 }
 
-# Set up listing boolean option
+# Set result options
+my sub set-result-flag(str $name, $value --> Nil) {
+    Bool.ACCEPTS($value)
+      ?? (%result{$name} := $value)
+      !! meh("'--$name' can only be specified as a flag");
+}
+my sub set-result-Int(str $name, $value --> Nil) {
+    meh "'--$name' can *not* be specified as a flag"
+      if Bool.ACCEPTS($value);
+
+    my $integer := $value.Int;
+    Int.ACCEPTS($integer)
+      ?? (%result{$name} := $integer)
+      !! meh "'--$name' can only be an integer value, not '$value'";
+}
+
+# Set listing options
 my sub set-listing-flag(str $name, $value --> Nil) {
     Bool.ACCEPTS($value)
       ?? (%listing{$name} := $value)
       !! meh("'--$name' can only be specified as a flag");
 }
-
-# Set up listing integer option
 my sub set-listing-Int(str $name, $value --> Nil) {
     my $integer := $value.Int;
     Int.ACCEPTS($integer)
       ?? (%listing{$name} := $integer)
       !! meh "'--$name' can only be an integer value, not '$value'";
 }
-
-# Set up listing string option
 my sub set-listing-Str(str $name, $value --> Nil) {
     Bool.ACCEPTS($value)
       ?? meh "'--$name' must be specified with a string"
       !! (%listing{$name} := $value);
+}
+my sub set-listing-flag-or-Int(str $name, $value --> Nil) {
+    with $value.Int {
+        %listing{$name} := $_;
+    }
+    else {
+        meh "'--$name' must either be an integer or a flag";
+    }
 }
 
 #-------------------------------------------------------------------------------
@@ -758,7 +993,7 @@ my sub option-accessed($value --> Nil) {
 }
 
 my sub option-after-context($value --> Nil) {
-    set-listing-Int('after-context', $value);
+    set-result-Int('after-context', $value);
 }
 
 my sub option-allow-loose-escapes($value --> Nil) {
@@ -791,7 +1026,7 @@ my sub option-batch($value --> Nil) {
 }
 
 my sub option-before-context($value --> Nil) {
-    set-listing-Int('before-context', $value);
+    set-result-Int('before-context', $value);
 }
 
 my sub option-blame-per-file($value --> Nil) {
@@ -812,7 +1047,9 @@ my sub option-blocks($value --> Nil) {
 
 my sub option-break($value --> Nil) {
     if Bool.ACCEPTS($value) {
-        set-listing-Str('break', "") if $value;
+        $value
+          ?? set-listing-Str('break', "")
+          !! (%listing<has-break> := False);
     }
     else {
         set-listing-Str('break', $value);
@@ -824,11 +1061,11 @@ my sub option-checkout($value --> Nil) {
 }
 
 my sub option-context($value --> Nil) {
-    set-listing-Int('context', $value);
+    set-result-Int('context', $value);
 }
 
 my sub option-count-only($value --> Nil) {
-    set-action('count-only', $value);
+    set-result-flag('count-only', $value);
 }
 
 my sub option-created($value --> Nil) {
@@ -909,8 +1146,8 @@ my sub option-extensions($value --> Nil) {
     my @unknown;
     if $value.split(',').map: {
         if .starts-with('#') {
-            if %exts{.substr(1)} -> @extensions {
-                @extensions.Slip
+            if %exts{$_} -> \extensions {
+                extensions.Slip
             }
             else {
                 @unknown.push: $_;
@@ -921,9 +1158,9 @@ my sub option-extensions($value --> Nil) {
             $_
         }
     } -> @extensions {
-        meh "No extension&s(@unknown) known for '@unknown[]'"
-          if @unknown;
-        %filesystem<extensions> := @extensions;
+        @unknown
+          ?? meh("No extension&s(@unknown) known for '@unknown[]'")
+          !! (%filesystem<extensions> := codify-extensions @extensions);
     }
 }
 
@@ -934,7 +1171,7 @@ my sub option-file($value --> Nil) {
 }
 
 my sub option-file-separator-null($value --> Nil) {
-    set-listing-flag('file-separator-null', $value);
+    set-result-flag('file-separator-null', $value);
 }
 
 my sub option-files-from($value --> Nil) {
@@ -944,11 +1181,11 @@ my sub option-files-from($value --> Nil) {
 }
 
 my sub option-files-with-matches($value --> Nil) {
-    set-listing-flag('files-with-matches', $value);
+    set-result-flag('files-with-matches', $value);
 }
 
 my sub option-files-without-matches($value --> Nil) {
-    set-listing-flag('files-without-matches', $value);
+    set-result-flag('files-without-matches', $value);
 }
 
 my sub option-filesize($value --> Nil) {
@@ -956,7 +1193,7 @@ my sub option-filesize($value --> Nil) {
 }
 
 my sub option-find($value --> Nil) {
-    set-global-flag('find', $value);
+    set-result-flag('find', $value);
 }
 
 my sub option-find-all($value --> Nil) {
@@ -968,7 +1205,7 @@ my sub option-formula($value --> Nil) {
 }
 
 my sub option-frequencies($value --> Nil) {
-    set-listing-flag('frequencies', $value);
+    set-result-flag('frequencies', $value);
 }
 
 my sub option-gid($value --> Nil) {
@@ -1000,23 +1237,31 @@ my sub option-help($value --> Nil) {
 }
 
 my sub option-highlight($value --> Nil) {
-    set-highlight-flag('highlight', $value);
+    set-listing-flag('highlight', $value);
 }
 
 my sub option-highlight-after($value --> Nil) {
-    set-highlight-Str('highlight-after', $value);
+    set-listing-Str('highlight-after', $value);
 }
 
 my sub option-highlight-before($value --> Nil) {
-    set-highlight-Str('highlight-before', $value);
+    set-listing-Str('highlight-before', $value);
+}
+
+my sub option-human($value --> Nil) {
+    set-listing-flag('human', $value);
 }
 
 my sub option-ignorecase($value --> Nil) {
-    set-rak-flag('ignorecase', $value);
+    Bool.ACCEPTS($value)
+      ?? ($ignorecase := $value)
+      !! meh "'--ignorecase' must be specified as a flag";
 }
 
 my sub option-ignoremark($value --> Nil) {
-    set-rak-flag('ignoremark', $value);
+    Bool.ACCEPTS($value)
+      ?? ($ignoremark := $value)
+      !! meh "'--ignoremark' must be specified as a flag";
 }
 
 my sub option-inode($value --> Nil) {
@@ -1024,7 +1269,7 @@ my sub option-inode($value --> Nil) {
 }
 
 my sub option-invert-match($value --> Nil) {
-    set-rak-flag('invert-match', $value);
+    set-result-flag('invert-match', $value);
 }
 
 my sub option-is-empty($value --> Nil) {
@@ -1095,17 +1340,16 @@ my sub option-is-writable($value --> Nil) {
     set-filesystem-flag('is-writable', $value);
 }
 
+my sub option-json-per-elem($value --> Nil) {
+    set-action('json-per-elem', $value);
+}
+
 my sub option-json-per-file($value --> Nil) {
     set-action('json-per-file', $value);
 }
 
 my sub option-json-per-line($value --> Nil) {
     set-action('json-per-line', $value);
-##    setup-producer 'json-per-line', 'produce-many', -> $_ {
-#        %rak<file> := codify-extensions %exts<#json>
-#          unless %rak<file>;
-#        *.lines(:enc(%rak<encoding> // 'utf8-c8'),map: *.&from-json
-#    }
 }
 
 my sub option-keep-meta($value --> Nil) {
@@ -1115,7 +1359,8 @@ my sub option-keep-meta($value --> Nil) {
 my sub option-known-extensions($value --> Nil) {
     meh "'--known-extensions' can only be specified as a flag"
       unless Bool.ACCEPTS($value);
-    %filesystem<extensions> := @known-extensions if $value;
+    %filesystem<known-extensions> := codify-extensions @known-extensions
+      if $value;
 }
 
 my sub option-list-custom-options($value --> Nil) {
@@ -1123,7 +1368,7 @@ my sub option-list-custom-options($value --> Nil) {
 }
 
 my sub option-list-expanded-options($value --> Nil) {
-    set-action('list-expanded-options', $value);
+    set-global-flag('list-expanded-options', $value);
 }
 
 my sub option-list-known-extensions($value --> Nil) {
@@ -1131,11 +1376,11 @@ my sub option-list-known-extensions($value --> Nil) {
 }
 
 my sub option-matches-only($value --> Nil) {
-    set-highlight-flag('matches-only', $value);
+    set-result-flag('matches-only', $value);
 }
 
 my sub option-max-matches-per-file($value --> Nil) {
-    set-listing-Int('max-matches-per-file', $value);
+    set-result-Int('max-matches-per-file', $value);
 }
 
 my sub option-meta-modified($value --> Nil) {
@@ -1161,7 +1406,7 @@ my sub option-module($value --> Nil) {
 }
 
 my sub option-only-first($value --> Nil) {
-    set-listing-Int('only-first', $value.Int) if $value;
+    set-listing-flag-or-Int('only-first', $value);
 }
 
 my sub option-output-file($value --> Nil) {
@@ -1177,15 +1422,15 @@ my sub option-pager($value --> Nil) {
 }
 
 my sub option-paragraph-context($value --> Nil) {
-    set-listing-flag('paragraph-context', $value);
+    set-result-flag('paragraph-context', $value);
 }
 
 my sub option-passthru($value --> Nil) {
-    set-listing-flag('passthru', $value);
+    set-result-flag('passthru', $value);
 }
 
 my sub option-passthru-context($value --> Nil) {
-    set-listing-flag('pass-thru-context', $value);
+    set-result-flag('passthru-context', $value);
 }
 
 my sub option-paths($value --> Nil) {
@@ -1203,19 +1448,23 @@ my sub option-paths-from($value --> Nil) {
 my sub option-pattern($value --> Nil) {
     Bool.ACCEPTS($value)
       ?? meh "'--pattern' must be a pattern specification, not a flag"
-      !! (%global<pattern> := $value);
+      !! ($pattern := $value);
 }
 
 my sub option-per-file($value --> Nil) {
-    Bool.ACCEPTS($value)
-      ?? set-action('per-file', $value)
-      !! meh "'--per-file' must be specified as a flag"
+    set-action 'per-file', Bool.ACCEPTS($value)
+      ?? $value
+      !! convert-to-simple-Callable($value);
 }
 
 my sub option-per-line($value --> Nil) {
     Bool.ACCEPTS($value)
       ?? set-action('per-line', $value)
-      !! meh "'--per-line' must be specified as a flag"
+      !! meh "'--per-line' must be specified as a flag";
+}
+
+my sub option-proximate($value --> Nil) {
+    set-listing-flag-or-Int('proximate', $value);
 }
 
 my sub option-quietly($value --> Nil) {
@@ -1249,7 +1498,7 @@ my sub option-repository($value --> Nil) {
 my sub option-save($value --> Nil) {
     Bool.ACCEPTS($value) || !$value
       ?? meh "'--save' must be contain name to save for"
-      !! ($save := $value);
+      !! (%global<save> := $value);
 }
 
 my sub option-sayer($value --> Nil) {
@@ -1267,7 +1516,7 @@ my sub option-shell($value --> Nil) {
 my sub option-show-blame($value --> Nil) {
     CATCH { meh-not-installed 'Git::Blame::File', 'show-blame' }
     require Git::Blame::File;
-    set-highlight-flag('show-blame', $value);
+    set-listing-flag('show-blame', $value);
 #
 #   setup-mapper 'show-blame', -> $source, @matches {
 #        my @line-numbers = @matches.map: *.key;
@@ -1285,7 +1534,7 @@ my sub option-show-filename($value --> Nil) {
 }
 
 my sub option-show-line-number($value --> Nil) {
-    set-listing-flag('show-line-number', $value);
+    set-result-flag('show-line-number', $value);
 }
 
 my sub option-silently($value --> Nil) {
@@ -1301,7 +1550,7 @@ my sub option-stats($value --> Nil) {
 }
 
 my sub option-stats-only($value --> Nil) {
-    set-action('stats-only', $value);
+    set-result-flag('stats-only', $value);
 }
 
 my sub option-strict($value --> Nil) {
@@ -1309,18 +1558,18 @@ my sub option-strict($value --> Nil) {
 }
 
 my sub option-summary-if-larger-than($value --> Nil) {
-    set-highlight-Int('summary-if-larger-than', $value);
+    set-listing-Int('summary-if-larger-than', $value);
 }
 
 my sub option-trim($value --> Nil) {
-    set-highlight-flag('trim', $value);
+    set-listing-flag('trim', $value);
 }
 
 my sub option-type($value --> Nil) {
     Bool.ACCEPTS($value)
       ?? meh "'--type' must be specified with a string"
       !! $value eq 'contains' | 'words' | 'starts-with' | 'ends-with'
-        ?? set-highlight-Str('type', $value)
+        ?? ($type := $value)
         !! meh "'$value' is not an expected --type";
 }
 
@@ -1329,11 +1578,11 @@ my sub option-uid($value --> Nil) {
 }
 
 my sub option-under-version-control($value --> Nil) {
-    set-global-flag('under-version-control', $value);
+    set-filesystem-flag('under-version-control', $value);
 }
 
 my sub option-unique($value --> Nil) {
-    set-listing-flag('unique', $value);
+    set-result-flag('unique', $value);
 }
 
 my sub option-user($value --> Nil) {
@@ -1358,67 +1607,205 @@ my sub option-with-line-endings($value --> Nil) {
     set-rak-flag('with-line-endings', $value);
 }
 
-#- start of available options --------------------------------------------------
-#- Generated on 2022-09-09T12:13:40+02:00 by tools/makeOPTIONS.raku
-#- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dryrun edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-line-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unique user verbose version vimgrep with-line-endings>;
-#- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
-#- end of available options ----------------------------------------------------
-
 #-------------------------------------------------------------------------------
 # Subroutines checking applicability of groups of options specified
 
-my sub meh-output-file($name --> Nil) {
+my sub meh-output-file($name --> Nil) is hidden-from-backtrace {
     meh "Specifying --output-file is incompatible with --$name" if $output-file;
 }
 
-my sub meh-pager($name --> Nil) {
+my sub meh-pager($name --> Nil) is hidden-from-backtrace {
     meh "Using a pager is incompatible with --$name" if $pager;
 }
 
-my sub meh-what($name, %hash, $description --> Nil) {
+my sub meh-what($name, %hash, $description --> Nil) is hidden-from-backtrace {
     meh qq:to/MEH/ if %hash;
 These $description options are incompatible with --$name:
 %hash.keys.sort.map({"--$_"})
 MEH
 }
 
-my sub meh-csv($name --> Nil) {
+my sub meh-csv($name --> Nil) is hidden-from-backtrace {
     meh-what($name, %csv, 'CSV')
 }
 
-my sub meh-listing($name --> Nil) {
+my sub meh-listing($name --> Nil) is hidden-from-backtrace {
     meh-what($name, %listing, 'listing')
 }
 
-my sub meh-filesystem($name --> Nil) {
+my sub meh-filesystem($name --> Nil) is hidden-from-backtrace {
     meh-what($name, %filesystem, 'filesystem');
 }
 
-my sub meh-only($name --> Nil) {
+my sub meh-result($name --> Nil) is hidden-from-backtrace {
+    meh-what($name, %result, 'result');
+}
+
+my sub meh-only($name --> Nil) is hidden-from-backtrace {
     meh "'--$name' must be the only option"
       if %filesystem
+      || %listing
       || %global
       || %csv;
 }
 
-my sub move-filesystem-options-to-rak(--> Nil) {
-    %rak{$_} := %filesystem{$_} for %filesystem.keys;
-    %filesystem = ();
+my sub meh-for($option, *@mehs) is hidden-from-backtrace {
+    ::("&meh-$_")($option) for @mehs;
 }
 
-my sub move-listing-options-to-rak(--> Nil) {
-    %rak{$_} := %listing{$_} for %listing.keys;
-    %listing = ();
+my sub maybe-meh-together(*@keys) is hidden-from-backtrace {
+    if @keys > 1 {
+        meh "Cannot specify &mm(@keys.skip) with --@keys.head()";
+    }
+}
+
+my sub move-filesystem-options-to-rak(--> Nil) {
+    if %filesystem {
+        if %filesystem<under-version-control> {
+            maybe-meh-together 'under-version-control', %filesystem<
+              dir file recurse-symlinked-dir recurse-unmatched-dir
+            >:k;
+        }
+        elsif %filesystem<file>:delete -> $file {
+            maybe-meh-together 'file', %filesystem<
+              extensions known-extensions
+            >:k;
+            %rak<file> := $file;
+        }
+        elsif %filesystem<known-extensions>:delete -> $known {
+            maybe-meh-together 'known-extensions', %filesystem<extensions>:k;
+            %rak<file> := $known;
+        }
+        elsif %filesystem<extensions>:delete -> $seen {
+            %rak<file> := $seen;
+        }
+
+        if %filesystem<user>:delete -> $uid {
+            maybe-meh-together %filesystem<user uid>:k;
+            maybe-meh-together 'user', %filesystem<uid>:k;
+            %rak<uid> := $uid;
+        }
+
+        if %filesystem<group>:delete -> $gid {
+            maybe-meh-together 'group', %filesystem<gid>:k;
+            %rak<gid> := $gid;
+        }
+
+        %rak ,= %filesystem;
+        %filesystem = ();
+    }
+    else {
+        %rak<file> := codify-extensions @known-extensions;
+    }
+}
+
+my sub move-result-options-to-rak(--> Nil) {
+
+    if %result {
+        if %result<
+          context after-context before-context
+          paragraph-context passthru-context
+        >:k -> @contexts {
+            maybe-meh-together @contexts
+              unless @contexts (==) <after-context before-context>;
+            %listing<trim> := False if %listing<trim>:!exists;
+        }
+
+        maybe-meh-together %result<unique frequencies>:k;
+        maybe-meh-together %result<count-only stats-only>:k;
+
+        # Seem to only want file infromation
+        if %result<files-with-matches files-without-matches>:k -> @keys {
+            maybe-meh-together @keys;
+            maybe-meh-together @keys, %result<
+              max-matches-per-file frequencies unique
+            >:k;
+            maybe-meh-together @keys, %result<invert-match>:k;
+
+            my $with := do if %result<files-with-matches>:delete {
+                %rak<sources-only> := True;
+                'with'
+            }
+            elsif %result<files-without-matches>:delete {
+                %rak<sources-without-only> := True;
+                'without'
+            }
+
+            # Only interested in number of files
+            if %result<count-only>:delete {
+                my int $seen;
+                %rak<eager>  := True;
+                %rak<mapper> := -> $_ --> Empty {
+                    LAST sayer $seen == 0
+                      ?? "No files $with matches"
+                      !! $seen == 1
+                        ?? "One file $with matches"
+                        !! "$seen files $with matches";
+                    ++$seen;
+                }
+            }
+
+            # Need to separate files with a null-byte
+            elsif %result<file-separator-null>:delete {
+                my str @files;
+                %rak<eager>  := True;
+                %rak<mapper> := -> $_ --> Empty {
+                    LAST sayer @files.join("\0");
+                    @files.push: .relative;
+                }
+            }
+        }
+
+        else {
+            if %result<max-matches-per-file>:delete -> $max {
+                %rak<max-matches-per-source> := $max;
+            }
+
+            with %result<show-line-number>:delete {
+                %rak<omit-item-number> := True unless $_;
+            }
+
+            if %result<find>:delete {
+                %rak<find>             := True;
+                %rak<omit-item-number> := True;
+            }
+
+            # Only interested in number of matches / files
+            if %result<count-only>:delete {
+                my @files;
+                %rak<eager>  := True;
+                %rak<mapper> := -> $io, @matches --> Empty {
+                    LAST {
+                        if @files == 0 {
+                            sayer "No files with matches";
+                        }
+                        elsif $verbose {
+                            sayer "$_.key() has $_.value() match{"es" if .value > 1}"
+                              for @files;
+                        }
+                        else {
+                            sayer "@files.map(*.value).sum() matches in @files.elems() files";
+                        }
+                    }
+                    @files.push: Pair.new: $io.relative, @matches.elems;
+                }
+            }
+        }
+
+        %rak ,= %result;
+        %result = ();
+    }
 }
 
 my sub activate-output-options() {
+    $pager := %*ENV<RAK_PAGER> unless $pager.defined;
     if $pager {
-        meh "Cannot specify a pager and an output-file" if $output-file;
+        meh "Cannot specify a pager and an output-file"
+          if $output-file && $output-file ne '-';
         $*OUT = (run $pager.words, :in).in;
     }
     elsif $output-file {
-        $*OUT = open($output-file, :w) if $output-file ne "-";
+        $*OUT = open($output-file, :w) if $output-file ne '-';
     }
 }
 
@@ -1428,18 +1815,15 @@ my sub activate-output-options() {
 # up during option processing.
 
 my sub action-blame-per-file(--> Nil) {
-    meh-csv('blame-per-file');
+    meh-for 'blame-per-file', <csv>;
 
-    if %global<under-version-control>:delete {
-        meh-filesystem('under-version-control');
-        %rak<under-version-control> := True;
+    prepare-needle;
+    move-filesystem-options-to-rak;
+
+    %rak<batch>       := 1;
+    %rak<produce-one> := -> $io {
+        try Git::Blame::File.new($io)
     }
-    else {
-        move-filesystem-options-to-rak;
-    }
-    %rak<omit-item-number> := True;
-    %rak<batch>            := 1;
-    %rak<produce-one>      := -> $io { Git::Blame::File.new($io) }
 
     activate-output-options;
     run-rak;
@@ -1448,18 +1832,15 @@ my sub action-blame-per-file(--> Nil) {
 }
 
 my sub action-blame-per-line(--> Nil) {
-    meh-csv('blame-per-file');
+    meh-for 'blame-per-line', <csv>;
 
-    if %global<under-version-control>:delete {
-        meh-filesystem('under-version-control');
-        %rak<under-version-control> := True;
+    prepare-needle;
+    move-filesystem-options-to-rak;
+
+    %rak<batch>        := 1;
+    %rak<produce-many> := -> $io {
+        (try Git::Blame::File.new($io).lines) // Empty
     }
-    else {
-        move-filesystem-options-to-rak;
-    }
-    %rak<omit-item-number> := True;
-    %rak<batch>            := 1;
-    %rak<produce-many>     := -> $io { Git::Blame::File.new($io).lines }
 
     activate-output-options;
     run-rak;
@@ -1468,10 +1849,9 @@ my sub action-blame-per-line(--> Nil) {
 }
 
 my sub action-checkout(--> Nil) {
-    meh-output-file('checkout');
-    meh-pager('checkout');
-    meh-filesystem('checkout');
-    meh-csv('checkout');
+    meh-for 'checkout', <output-file pager filesystem csv>;
+
+    prepare-needle;
 
     %rak<sources>          := 'checkout';
     %rak<omit-item-number> := True;
@@ -1525,17 +1905,11 @@ my sub action-checkout(--> Nil) {
     rak-stats;
 }
 
-my sub action-count-only(--> Nil) {
-    meh-csv('count-only');
-
-    %rak<count-only> := True;
-
-    run-rak(:eagerly);
-    rak-stats(:count-only);
-}
-
 my sub action-csv-per-line(--> Nil) {
-    %rak<file> := %filesystem<file>:delete // codify-extensions %exts<#csv>;
+
+    prepare-needle;
+    %filesystem<file> //= codify-extensions %exts<#csv>;
+    move-filesystem-options-to-rak;
 
     if %listing<show-line-number>:delete {
         # no action needed
@@ -1551,45 +1925,43 @@ my sub action-csv-per-line(--> Nil) {
     my $csv := Text::CSV.new(|%csv);
     %rak<produce-many> := -> $io { $csv.getline-all($io.open) }
 
+    activate-output-options;
     run-rak;
     rak-results;
     rak-stats;
 }
 
 my sub action-edit(--> Nil) {
-    meh-output-file('edit');
-    meh-pager('edit');
-    meh-csv('edit');
+    %rak<max-matches-per-source> := $_
+      with %result<max-matches-per-file>:delete;
+
+    meh-for 'edit', <output-file pager result csv>;
+
+    prepare-needle;
+    move-filesystem-options-to-rak;
+    my $editor := Bool.ACCEPTS($action) ?? Any !! $action;
 
     # find filenames to edit
-    if %global<find>:delete {
-        %rak<find>            := True;
-        %rak<omit-item-number> = True;
-        %rak<mapper> := -> $, @files --> Empty {
-            edit-files
-              @files,
-              :editor(Bool.ACCEPTS($action) ?? Any !! $action)
+    if %result<find>:delete {
+        my str @files;
+        %rak<sources-only> := True;
+        %rak<mapper>       := -> $io --> Empty {
+            LAST edit-files @files, :$editor;
+            @files.push: $io.relative;
         }
     }
 
     # Look for locations in files to edit
     else {
         my @files;
-        my $ignorecase := %rak<ignorecase> // False;
-        my $ignoremark := %rak<ignoremark> // False;
-        my $type       := %rak<type>       // 'contains';
-
         %rak<mapper> := -> $source, @matches --> Empty {
-            LAST {
-                edit-files
-                  @files,
-                  :editor(Bool.ACCEPTS($action) ?? Any !! $action)
-            }
+            LAST edit-files @files, :$editor;
 
             my $path := $source.relative;
             @files.append: @matches.map: {
                 $path => .key => columns(
-                  .value, $pattern, :$ignorecase, :$ignoremark, :$type
+                  .value, $pattern,
+                  :$ignorecase, :$ignoremark, |(:$type if $type)
                ).head
             }
         }
@@ -1608,9 +1980,11 @@ my sub action-help(--> Nil) {
 }
 
 my sub action-json-per-file(--> Nil) {
-    meh-csv('json-per-file');
+    meh-for 'json-per-file', <csv>;
 
-    %rak<file> := %filesystem<file>:delete // codify-extensions %exts<#json>;
+    prepare-needle;
+    %filesystem<file> //= codify-extensions %exts<#json>;
+    move-filesystem-options-to-rak;
 
     if %listing<show-line-number>:delete {
         # no action needed
@@ -1623,17 +1997,50 @@ my sub action-json-per-file(--> Nil) {
     }
 
     my $enc := %rak<encoding>:delete // 'utf8-c8';
-    %rak<produce-one> := -> $io { from-json $io.slurp(:$enc) }
+    %rak<produce-one> := -> $io { try from-json $io.slurp(:$enc) }
 
+    activate-output-options;
+    run-rak;
+    rak-results;
+    rak-stats;
+}
+
+my sub action-json-per-elem(--> Nil) {
+    meh-for 'json-per-elem', <csv>;
+
+    prepare-needle;
+    %filesystem<file> //= codify-extensions %exts<#json>;
+    move-filesystem-options-to-rak;
+
+    if %listing<show-line-number>:delete {
+        # no action needed
+    }
+    elsif %listing<files-with-matches>:delete {
+        %rak<files-with-matches> := True;
+    }
+    else {
+        %rak<omit-item-number> := True;
+    }
+
+    my $enc := %rak<encoding>:delete // 'utf8-c8';
+    %rak<produce-many> := -> $io {
+        with try from-json $io.slurp(:$enc) -> \data {
+            Seq.new: data.iterator
+        }
+    }
+
+    activate-output-options;
     run-rak;
     rak-results;
     rak-stats;
 }
 
 my sub action-json-per-line(--> Nil) {
-    meh-csv('json-per-line');
+    meh-for 'json-per-line', <csv>;
 
-    %rak<file> := %filesystem<file>:delete // codify-extensions %exts<#jsonl>;
+    prepare-needle;
+    %filesystem<file> //= codify-extensions %exts<#jsonl>;
+    move-filesystem-options-to-rak;
 
     if %listing<show-line-number>:delete {
         # no action needed
@@ -1646,28 +2053,20 @@ my sub action-json-per-line(--> Nil) {
     }
 
     my $enc := %rak<encoding>:delete // 'utf8-c8';
-    %rak<produce-many> := *.lines(:$enc).map: *.&from-json;
+    %rak<produce-many> := -> $io {
+        with try $io.lines(:$enc) -> $seq {
+            $seq.map: { (try from-json($_)) // Empty }
+        }
+    }
 
+    activate-output-options;
     run-rak;
     rak-results;
     rak-stats;
 }
 
-my sub action-list-expanded-options(--> Nil) {
-    activate-output-options;
-
-    my %args = |%csv, |%filesystem, |%listing, |%global, |%rak,
-      (output-file => $output-file if $output-file),
-      (pager       => $pager       if $pager),
-      (:$verbose                   if $verbose.defined),
-    ;
-    say as-cli-arguments(%args);
-}
-
 my sub action-list-custom-options(--> Nil) {
-    meh-filesystem('list-custom-options');
-    meh-csv('list-custom-options');
-    meh-listing('list-custom-options');
+    meh-for 'list-custom-options', <filesystem listing csv>;
 
     activate-output-options;
     my $format := '%' ~ %config.keys>>.chars.max ~ 's: %s';
@@ -1677,9 +2076,7 @@ my sub action-list-custom-options(--> Nil) {
 }
 
 my sub action-list-known-extensions(--> Nil) {
-    meh-filesystem('list-known-extensions');
-    meh-csv('list-known-extensions');
-    meh-listing('list-known-extensions');
+    meh-for 'list-known-extensions', <filesystem listing csv>;
 
     activate-output-options;
     printf("%9s: %s\n", .key, .value.map({$_ || '(none)'}).Str)
@@ -1687,10 +2084,10 @@ my sub action-list-known-extensions(--> Nil) {
 }
 
 my sub action-modify-files(--> Nil) {
-    meh-output-file('modify-files');
-    meh-pager('modify-files');
-    meh-csv('modify-files');
-    meh-listing('modify-files');
+    meh-for 'modify-files', <output-file pager listing csv>;
+
+    prepare-needle;
+    move-filesystem-options-to-rak;
 
     my $dryrun := %modify<dryrun>:delete;
     my $backup  = %modify<backup>:delete;
@@ -1768,6 +2165,34 @@ my sub action-modify-files(--> Nil) {
     rak-stats;
 }
 
+my sub action-per-file(--> Nil) {
+    meh-for 'per-file', <csv>;
+
+    prepare-needle;
+    move-filesystem-options-to-rak;
+    move-result-options-to-rak;
+
+    %rak<produce-one> := $action<> =:= True
+      ?? *.slurp(:enc(%rak<encoding> // 'utf8-c8'))
+      !! $action;
+
+    run-rak;
+    rak-results;
+    rak-stats;
+}
+
+my sub action-per-line(--> Nil) {
+    meh-for 'per-line', <csv>;
+
+    prepare-needle;
+    move-filesystem-options-to-rak;
+    move-result-options-to-rak;
+
+    run-rak;
+    rak-results;
+    rak-stats;
+}
+
 my sub action-version(--> Nil) {
     meh-only('version');
 
@@ -1778,14 +2203,13 @@ my sub action-version(--> Nil) {
 }
 
 my sub action-vimgrep(--> Nil) {
-    meh-csv('vimgrep');
+    %rak<max-matches-per-source> := $_
+      with %result<max-matches-per-file>:delete;
 
-    activate-output-options;
+    meh-for 'vimgrep', <result csv>;
+
+    prepare-needle;
     move-filesystem-options-to-rak;
-
-    my $ignorecase := %rak<ignorecase>;
-    my $ignoremark := %rak<ignoremark>;
-    my $type       := %rak<type>;
 
     %rak<mapper> := -> $source, @matches --> Empty {
         my $path := $source.relative;
@@ -1793,32 +2217,19 @@ my sub action-vimgrep(--> Nil) {
         sayer $path
           ~ ':' ~ .key
           ~ ':' ~ columns(
-                    .value, $pattern, :$ignorecase, :$ignoremark, :$type
+                    .value, $pattern,
+                    :$ignorecase, :$ignoremark, |(:$type if $type)
                   ).head
           ~ ':' ~ .value
           for @matches;
     }
+    activate-output-options;
 
     run-rak(:eagerly);
     rak-stats;
 }
 
-#--------------------------------------------------------------------------------
-# Actually set up all variables from the arguments specified and run.
-# Theory of operation:
-#
-# 1. Loop over all of the strings in @*ARGS
-#     - does it NOT start with "-"?  -> positional argument
-#     - named argument: call "set-$name" with the given value
-#     - add to unexpected if sub doesn't exist
-# 2. See of an action name has been set, of not: assume 'per-line'
-# 3. Run the "action-$name" sub
-# 4. Close STDOUT if a pager was used
-
-# Positional arguments
-my @positionals;
-# Pairs of unexpected arguments and their value
-my @unexpected;
+#-------------------------------------------------------------------------------
 
 # Helper sub to recursively handle named arguments
 my sub named($original-name, $original-value, :$recurse = True) {
@@ -1870,63 +2281,12 @@ my sub named($original-name, $original-value, :$recurse = True) {
     }
 }
 
-# Do the actual argument parsing
-for @*ARGS {
-
-    # looks like an option
-    if .starts-with('-') {
-
-        # Allow -j2 as an alternative to --j=2, aka :numeric-suffix-as-value
-        $_ = "-$_.substr(0,2)=$/" if .match: /^ '-' <.alpha> <( \d+ $/;
-
-        if .starts-with('--/') {
-            my ($before,$after) = .substr(3).split('=',2);
-            named $before, $after // False;
-        }
-        elsif .starts-with('--no-') {
-            my ($before,$after) = .substr(5).split('=',2);
-            named $before, $after // False;
-        }
-        elsif .starts-with('--') {
-            my ($before,$after) = .substr(2).split('=',2);
-            named $before, $after // True;
-        }
-        elsif .starts-with('-/') {
-            my ($before,$after) = .substr(2).split('=',2);
-            if $before.chars == 1 {
-                named $before, $after // False;
-            }
-            elsif $after.defined {
-                named $_, $after for $before.comb;
-            }
-            else {
-                named $_, False for $before.comb;
-            }
-        }
-        else {  # .starts-with('-')
-            my ($before,$after) = .substr(1).split('=',2);
-            if $before.chars == 1 {
-                named $before, $after // True;
-            }
-            elsif $after.defined {
-                named $_, $after for $before.comb;
-            }
-            else {
-                named $_, True for $before.comb;
-            }
-        }
-    }
-
-    # not an option
-    else {
-        @positionals.push: $_;
-    }
-}
-
 # Find one-line description of given name
 my sub description($name) {
-    my $key := " --$name";
-    if %?RESOURCES<help.txt>.lines.first(*.starts-with(" --$name")) -> $line {
+    if $name eq 'help' | 'foo' | 'no-foo' {
+        ""
+    }
+    elsif %?RESOURCES<help.txt>.lines.first(*.starts-with(" --$name")) -> $line {
         $line.substr(1).split(/ \s+ /, 2).tail
     }
     else {
@@ -1938,6 +2298,7 @@ my sub description($name) {
 my sub meh-unexpected() {
 
     my str @text;
+    my str @no-match;
     for @unexpected -> (:key($option), :$value) {
         # Looks like an option from another program
         if %falsies{$option} -> $alias {
@@ -1959,42 +2320,123 @@ TEXT
         }
 
         # There are matches
-        elsif @options.map(-> $after {
-            $after => StrDistance.new(:before($option), :$after).Int
-        }).sort(*.value).head(5).List -> @alternatives {
+        else {
+            my int $cutoff = ($option.chars / 2).Int;
 
-            @text.push: "Regarding unexpected option --$option, did you mean:";
-            my int $cutoff = $option.chars;
-            for @alternatives.grep(*.value <= $cutoff) -> (
-              :key($name), :value($steps)
-            ) {
-                if $name eq 'help' {
+            if @options.map(-> $after {
+                my $distance := StrDistance.new(:before($option), :$after).Int;
+                Pair.new($after, $distance) if $distance <= $cutoff
+            }).sort(*.value).head(5).List -> @suggestions {
+
+                @text.push: "Regarding unexpected option --$option, did you mean:";
+                for @suggestions -> (
+                  :key($name), :value($steps)
+                ) {
+                    my $score := $verbose ?? " ($steps)" !! "";
+                    if $name eq 'help' {
+                        # noop
+                    }
+                    elsif description($name) -> $description {
+                        @text.push: " --$name: $description?$score";
+                    }
+                    elsif %sub-options{$name} -> $main {
+                        @text.push: " --$name: May need to include --$main then as well?$score";
+                    }
+                    else {
+                        @text.push: " --$name?$score";
+                    }
                 }
-                elsif description($name) -> $description {
-                    @text.push: " --$name: $description?";
-                }
-                elsif %sub-options{$name} -> $main {
-                    @text.push: " --$name: Must then include --$main then as well?";
-                }
-                else {
-                    @text.push: " --$name?";
-                }
+            }
+            else {
+                @no-match.push: $option;
             }
         }
     }
+
+    # no falsies and no suggestions
+    @text.push: "Unexpected option{
+        's' if @no-match > 1
+    }: @no-match.map({"--$_"})."
+      if @no-match;
 
     @text.push: "Use --help for an overview of available options.";
     exit note @text.join("\n");
 }
 
-#--------------------------------------------------------------------------------
-# Perform the appropriate action if possible
+# Prepare the executable needle
+my sub prepare-needle(:$allow-matches-only = True) {
 
+    if $pattern {
+        if %global<smartcase>:delete {
+            $ignorecase.defined
+              ?? meh "Cannot specify --smartcase when --ignorecase is also specified"
+              !! ($ignorecase := !$pattern.contains(/ <:upper> /));
+        }
+    }
+    elsif %result<find> {         # no explicit pattern, but using find
+        $pattern := '*.defined';  # put in a basic noop
+    }
+    else {
+        meh "Must at least specify a pattern";
+    }
 
+    # first attempt at codifying pattern
+    $needle := codify($pattern);
 
-meh-unexpected if @unexpected;
+    # already executable
+    if Callable.ACCEPTS($needle) {
+        if Regex.ACCEPTS($needle) {
+            if $allow-matches-only && (%result<matches-only>:delete) {
+                my $old-needle := $needle;
+                $needle := *.&matches($old-needle)
+            }
+        }
+    }
 
-# Done
-$*OUT.close if $pager;
+    # non-executable
+    elsif $allow-matches-only && (%result<matches-only>:delete) {
+        # Note that we if we want matches only and we didn't have
+        # a regex yet, we must use the highlighter.matches method
+        # to generate the matches from the string pattern.  If we
+        # would first convert to a Callable, we wouldn't be able
+        # to find the matches anymore, as a Callable can only say
+        # whether there was a match, not where.
+        $needle := *.&matches:
+          $pattern, :$ignorecase, :$ignoremark, |(:$type if $type)
+    }
+
+    # convert string to Callable
+    else {
+        $needle := needleify($pattern)
+    }
+
+    if $source-for {
+        @positionals
+          ?? meh("Specified path&s(@positionals) '@positionals[]' with --$source-for")
+          !! (%rak{$source-for} := $source);
+    }
+    elsif @positionals {
+        %rak<paths> := @positionals.splice;
+    }
+}
+
+# Return all options as a list of Pairs
+my sub as-options() {
+    my @options;
+    my sub add($name, $value) { @options.push: Pair.new: $name, $value }
+
+    add('pattern', $pattern)             if $pattern;
+    add('ignorecase', $ignorecase)       if $ignorecase;
+    add('ignoremark', $ignoremark)       if $ignoremark;
+    add('type', $type)                   if $type;
+    add('paths', @positionals.join(',')) if @positionals;
+    add($action-for, $action)            if $action-for;
+
+    @options.append: $_ for
+      %global, %filesystem, %csv, %listing, %modify;
+
+    add('verbose', $verbose) if $verbose;
+    @options
+}
 
 # vim: expandtab shiftwidth=4

@@ -1,14 +1,17 @@
 Listing modifiers:
+ --human                     Force defaults as if a human is watching
  --break[=string]            String to show between different files
  --group-matches             Show filename only once on a separate line
  --show-blame                Show git blame information if possible
  --show-filename             Show the filename in which match occurred
+ --file-separator-null       Separate filenames with null bytes
  --show-line-number          Show the line number in which match occurred
  --summary-if-larger-than=N  Summarize matching line if longer than N chars
  --trim                      Remove whitespace, true if no context
  --highlight                 Highlight matches if possible
  --highlight-before=xxx      String to put before match
  --highlight-after=yyy       String to put after match
+ --proximate[=N]             Grouping of matched lines
  --output-file=filename      Send output to indicated file (default: STDOUT)
  --pager                     Pager to use (default: ACK_PAGER // none)
  --first-only[=N]            Show only the N results, N defaults to 1

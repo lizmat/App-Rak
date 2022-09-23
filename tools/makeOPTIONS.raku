@@ -18,14 +18,17 @@ my $filename = $?FILE.IO.parent.sibling("lib").add("App").add("Rak.rakumod");
 my @lines = $filename.IO.lines;
 $*OUT = $filename.IO.open(:w);
 
+# Find the options
+my @options = @lines.map: {
+    .Str with .match(/ 'my sub option-' <( <-[(]>+ /)
+}
+
 # for all the lines in the source that don't need special handling
-my @options;
 while @lines {
     my $line := @lines.shift;
 
     # nothing to do yet
     unless $line.starts-with($start) {
-        @options.push: .Str with $line.match(/ 'my sub option-' <( <-[(]>+ /);
         say $line;
         next;
     }
