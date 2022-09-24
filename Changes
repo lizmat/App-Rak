@@ -1,8 +1,10 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.0.97  2022-09-24T20:30:23+02:00
      - Add extensions groups for #cro and #html
-     - Bump dependency on rak to get better --under-version-control semantics
+     - Bump dependency on rak for various fixes
      - Bump dependency on String::Utils to get selective importing
      - Bump dependency on as-cli-arguments to get Pair support
      - Complete rewrite of argument handling.  Instead of feeding the
@@ -15,11 +17,14 @@ Revision history for App-Rak
      - Add support for --proximate
      - Add support for --human back in
      - Add support for --json-per-elem
+     - Add support for --dont-catch
      - Change dependency from JSON::Fast to JSON::Fast::Hyper to allow
        for hypering --json-per-elem
      - Fix issue with using a regex and --edit
      - Bump dependency on META::constants for more resiliency
      - Bump dependency on CLI::Version for more resiliency
+     - Document the --exec and --shell options
+     - Document --only-first properly (instead of as --first-only)
 
 0.0.96  2022-09-12T12:07:41+02:00
      - Fix snafu with argument parsing rework bleeding into the distribution

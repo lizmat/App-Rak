@@ -196,8 +196,8 @@ Indicate the number of lines that should be shown **around** any line that match
 
 Flag. Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:files-with-matches` (or `files-without matches`) option is also specified with a `True` value, will just show total counts. See also `stats-only`.
 
---created
----------
+--created=condition
+-------------------
 
 If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The creation time of the file (number of seconds since epoch, as a `Num` value) will be passed as the only argument.
 
@@ -227,6 +227,11 @@ If specified, indicates the `Callable` that should return True to include a file
 
 If specified, indicates the `Callable` that should return True to have a directory be included for further recursions in file selection. The basename of the directory will be passed as the only argument. Defaults to all directories that do not start with a period. Can specify as a flag to include **all** directories for recursion.
 
+--dont-catch
+------------
+
+Flag. If specified with a trueish value, will **not** catch any error during processing, but will throw any error again. Defaults to `False`, making sure that errors **will** be caught. Mainly intended for debugging and error reporting.
+
 --dryrun
 --------
 
@@ -247,16 +252,21 @@ Only applicable if `--csv-per-line` has been specified. Indicate a line ending d
 
 Only applicable if `--csv-per-line` has been specified. Indicates the escape character to be used to escape characters in a field. Defaults to **double quote**.
 
+--exec=invocation
+-----------------
+
+If specified, indicates the name of a program and its arguments to be executed. Any `$_` in the invocation string will be replaced by the file being checked. The file will be included if the program runs to a successful conclusion.
+
 --extensions=spec
 -----------------
 
 Indicate the extensions of the filenames that should be inspected. By default, no limitation on filename extensions will be done.
 
-Extensions can be specified as a comma-separated list, or one of the predefined groups, indicated by `#name`.
+Extensions can be specified as a comma-separated list of either a a predefined group of extensions (indicated by `#name`), or a single extension.
 
 ```bash
-# inspect files with extensions used by Raku
-$ rak foo --extensions=#raku
+# inspect files with extensions used by Raku and Perl
+$ rak foo --extensions=#raku,#perl
 
 # inspect files with Markdown content
 $ rak foo --extensions=md,markdown
@@ -265,7 +275,9 @@ $ rak foo --extensions=md,markdown
 $ rak foo --extensions=
 ```
 
-Predefined groups are `#raku`, `#perl`, `#c`, `#c++`, `#yaml`, <#ruby> `#python`, `#markdown` and `#text`.
+Predefined groups are `#raku`, `#perl`, `#cro`, `#text` `#c`, `#c++`, `#yaml`, `#ruby`, `#python`, `#html`, `#markdown`, `#json`, `#jsonl`, `#csv`, `#config` and `#text`.
+
+The `--list-known-extensions` argument can be used to see which predefined groups of extensions are supported, and which extensions they cover.
 
 --file=condition
 ----------------
@@ -312,10 +324,10 @@ Flag. If specified with a true value, will **not** look at the contents of the s
 
 Flag. If specified with a true value, will override any file or directory filter settings and include all possible files for inspection.
 
---first-only[=N]
+--only-first[=N]
 ----------------
 
-Indicate the number of matches to show. If specified without a value, will default to **1**. Defaults to show all possible matches.
+Indicate the **overall** number of matches to show. If specified without a value, will default to **1**. Defaults to **1000** if a human is watching, otherwise defaults to returning all possible matches.
 
 --formula=[none]
 ----------------
@@ -348,6 +360,8 @@ $ rak --find --gid='* > 20'
 $ rak --find --gid=20
 ```
 
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
 --group=condition
 -----------------
 
@@ -368,6 +382,8 @@ $ rak --find --group=staff
 $ rak --find --group='!staff'
 ```
 
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
 --group-matches
 ---------------
 
@@ -383,10 +399,14 @@ If specified, indicates the `Callable` that should return True to include a file
 
 Flag. If specified with a trueish value, will only select files that do have the SETGID bit set in their attributes. Use negation `--/has-setgid` to only select files that do **not** have the SETGID bit set.
 
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
 --has-setuid
 ------------
 
 Flag. If specified with a trueish value, will only select files that do have the SETUID bit set in their attributes. Use negation `--/has-setuid` to only select files that do **not** have the SETUID bit set.
+
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --help [area-of-interest]
 -------------------------
@@ -436,6 +456,11 @@ Indicate the string that should be used at the end of the pattern found in a lin
 
 Indicate the string that should be used at the end of the pattern found in a line. Specifying implies `--highlight`ing implicitly. If `highlight` is explicitely specified with a trueish value, will default to the terminal code to start **bold**.
 
+--human
+-------
+
+Flag. Indicate that search results should be presented in a human readable manner. This means: filenames shown on a separate line, line numbers shown, and highlighting performed. Defaults to `True` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `False`.
+
 --ignorecase
 ------------
 
@@ -450,6 +475,8 @@ Flag. If specified with a trueish value, indicates that any matching should be d
 -----------------
 
 If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The inode number of the file on the filesystem, will be passed as the only argument.
+
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --invert-match
 --------------
@@ -474,45 +501,63 @@ Flag. If specified with a trueish value, will only select files that do not cont
 
 Flag. If specified with a trueish value, will only select files that can be executed by the current user. Use negation `--/is-executable` to only select files that are **not** executable by the current user.
 
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
 --is-group-executable
 ---------------------
 
 Flag. If specified with a trueish value, will only select files that can be executed by members of the group of the owner. Use negation `--/is-group-executable` to only select files that are **not** executable by the members of the group of the owner.
+
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-group-readable
 -------------------
 
 Flag. If specified with a trueish value, will only select files that can be read by members of the group of the owner. Use negation `--/is-group-readable` to only select files that are **not** readable by the members of the group of the owner.
 
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
 --is-group-writable
 -------------------
 
 Flag. If specified with a trueish value, will only select files that can be written to by members of the group of the owner. Use negation `--/is-group-writable` to only select files that are **not** writable by the members of the group of the owner.
+
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-owned-by-group
 -------------------
 
 Flag. If specified with a trueish value, will only select files that are owned by the group of the current user. Use negation `--/is-owned-by-group` to only select files that are **not** owned by the group of the current user.
 
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
 --is-owned-by-user
 ------------------
 
 Flag. If specified with a trueish value, will only select files that are owned by current user. Use negation `--/is-owned-by-user` to only select files that are **not** owned by the current user.
+
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-owner-executable
 ---------------------
 
 Flag. If specified with a trueish value, will only select files that can be executed by the owner. Use negation `--/is-owner-executable` to only select files that are **not** executable by the owner.
 
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
 --is-owner-readable
 -------------------
 
 Flag. If specified with a trueish value, will only select files that can be read by the owner. Use negation `--/is-owner-readable` to only select files that are **not** readable by the owner.
 
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
 --is-owner-writable
 -------------------
 
 Flag. If specified with a trueish value, will only select files that can be written to by the owner. Use negation `--/is-owner-writable` to only select files that are **not** writable by the owner.
+
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-readable
 -------------
@@ -524,30 +569,51 @@ Flag. If specified with a trueish value, will only select files that can be read
 
 Flag. If specified with a trueish value, will only select files that do have the STICKY bit set in their attributes. Use negation `--/is-sticky` to only select files that do **not** have the STICKY bit set.
 
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
 --is-symbolic-link
 ------------------
 
 Flag. If specified with a trueish value, will only select files that are symbolic links. Use negation `--/is-symbolic-link` to only select files that are **not** symbolic links.
+
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-world-executable
 ---------------------
 
 Flag. If specified with a trueish value, will only select files that can be executed by anybody. Use negation `--/is-group-executable` to only select files that are **not** executable by anybody.
 
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
 --is-world-readable
 -------------------
 
 Flag. If specified with a trueish value, will only select files that can be read by anybody. Use negation `--/is-world-readable` to only select files that are **not** readable by anybody.
+
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-world-writable
 -------------------
 
 Flag. If specified with a trueish value, will only select files that can be written to by anybody. Use negation `--/is-world-writable` to only select files that can **not** be written to by anybody.
 
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
 --is-writable
 -------------
 
 Flag. If specified with a trueish value, will only select files that can be written to by the current user. Use negation `--/is-writable` to only select files that can **not** be written to by the current user.
+
+--json-per-elem
+---------------
+
+Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each selected file will be interpreted as JSON, and if valid, will then produce all elements of the outermost data structure to the pattern for introspection. If the data structure is a hash, then key/value `Pair`s will be produced.
+
+If the Callable returns a true value, the element will be shown. If the returned value is a string, that string will be mentioned. For example when searching the list of modules in the zef ecosystem (which consists of an array of hashes):
+
+```bash
+$ rak '{ $_ with .<auth> }' META.json --json-per-elem
+```
 
 --json-per-file
 ---------------
@@ -630,17 +696,19 @@ Flag. If specified with a true value, will show all known extension groups and t
 
 Flag. Indicate whether only the matched pattern should be produced, rather than the line in which the pattern was found. Defaults to `False`. Frequently used in conjunction with `--per-file`. Will show separated by space if multiple matches are found on the same line.
 
---max-matches-per-file
-----------------------
+--max-matches-per-file[=N]
+--------------------------
 
-Indicate the maximum number of matches that should be produced per file. By default, will produce **all** possible matches in a file.
+Indicate the maximum number of matches that should be produced per file. If specified as a flag, will assume **1** for its value. By default, will produce **all** possible matches in a file.
 
----meta-modified
-----------------
+---meta-modified=condition
+--------------------------
 
 If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The modification time of meta information of the file (number of seconds since epoch, as a `Num` value) will be passed as the only argument.
 
 See "CHECKING TIMES ON FILES" for more information about features that can be used inside the `Callable`.
+
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --mode=condition
 ----------------
@@ -652,8 +720,10 @@ If specified, indicates the `Callable` that should return True to include a file
 $ rak --find --mode='{ $_ +& 0o1000 }'
 ```
 
---modified
-----------
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
+--modified=condition
+--------------------
 
 If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The modification time of the file (number of seconds since epoch, as a `Num` value) will be passed as the only argument.
 
@@ -686,7 +756,7 @@ $ rak '{ .subst("foo","bar") if .starts-with("#") }' --modify-files
 
 Inserts this value in the file instead of the given line. The value can either be a string, or a list of strings.
 
---module=foo
+--module=Foo
 ------------
 
 Indicate the Raku module that should be loaded. Only makes sense if the pattern is executable code.
@@ -696,8 +766,8 @@ Indicate the Raku module that should be loaded. Only makes sense if the pattern 
 
 Indicate the path of the file in which the result of the search should be placed. Defaults to `STDOUT`.
 
---pager
--------
+--pager=name
+------------
 
 Indicate the name (and arguments) of a pager program to be used to page through the generated output. Defaults to the `RAK_PAGER` environment variable. If that isn't specified either, then no pager program will be run.
 
@@ -752,6 +822,11 @@ Indicate whether matching should be done per file, rather than per line. If spec
 $ rak foo --per-file='*.lines(:!chomp).head(10).join'
 ```
 
+--proximate=[N]
+---------------
+
+Indicates whether matched lines should be grouped together that are within N lines of each other. This is useful for visually picking out matches that appear close to other matches. If specified as a flag, indicates a proximation of **1**. Defaults to **0**, indication no proximation.
+
 --quietly
 ---------
 
@@ -776,6 +851,8 @@ Flag. Indicate whether directories that didn't match the `--dir` specification, 
 -----------------------
 
 Flag. Indicate whether directories that are actually symbolic links, should be recursed into. Defaults to `False`.
+
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --repository=dir
 ----------------
@@ -847,6 +924,11 @@ Flag. Indicate whether filenames should be shown. Defaults to `True`.
 
 Flag. Indicate whether line numbers should be shown. Defaults to `True`.
 
+--shell=invocation
+------------------
+
+If specified, indicates the command(s) to be executed in a shell. Any `$_` in the invocation string will be replaced by the file being checked. The file will be included if the shell command(s) run to a successful conclusion.
+
 --silently[=out,err]
 --------------------
 
@@ -885,7 +967,7 @@ Only applicable if `--csv-per-line` has been specified. Flag. If specified with 
 
 Indicate the maximum size a line may have before it will be summarized. Defaults to `160` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `Inf` effectively (indicating no summarization will ever occur).
 
-  * --type[=words|starts-with|ends-with|contains]
+  * --type=words|starts-with|ends-with|contains
 
 Only makes sense if the pattern is a string. With `words` specified, will look for pattern as a word in a line, with `starts-with` will look for the pattern at the beginning of a line, with `ends-with` will look for the pattern at the end of a line, with `contains` will look for the pattern at any position in a line.
 
@@ -906,6 +988,8 @@ $ rak --find --uid='* > 500'
 # show files of which the numeric user id is 501
 $ rak --find --uid=501
 ```
+
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --under-version-control[=git]
 -----------------------------
@@ -937,10 +1021,12 @@ $ rak --find --user=liz,wendy
 $ rak --find --user='!liz,wendy'
 ```
 
+NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
 --version
 ---------
 
-Flag. If the only argument, shows the name and version of the script, and the system it is running on.
+Flag. If the only argument, shows the name and version of the script, and the system it is running on. Additionally specify `--verbose` to see more information.
 
 --vimgrep
 ---------

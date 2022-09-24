@@ -48,6 +48,7 @@ Filesystem filters:
  --blocks               Number of filesystem blocks used by file
  --created=expression   Check on epoch when file was created
  --device-number        Number of device on which file is located
+ --exec                 Run program, include if successful
  --filesize             Number of bytes of data used by file
  --hard-links           Number of hard-links to file on filesystem
  --inode                Inode number of file on filesystem
@@ -72,6 +73,7 @@ Filesystem filters:
  --meta-modified=expr   Check on epoch when meta-info of file was last changed
  --mode                 The full mode value of the file
  --modified=expression  Check on epoch when file was last changed
+ --shell                Run shell command, include if successful
  --user=selector        File is owned by user names / expression
  --uid=expression       File is owned by given uid
 
@@ -106,9 +108,9 @@ Listing modifiers:
  --highlight-before=xxx      String to put before match
  --highlight-after=yyy       String to put after match
  --proximate[=N]             Grouping of matched lines
+ --only-first[=N]            Show only the N results, N defaults to 1
  --output-file=filename      Send output to indicated file (default: STDOUT)
  --pager                     Pager to use (default: ACK_PAGER // none)
- --first-only[=N]            Show only the N results, N defaults to 1
  --stats                     Also show statistics
 
 Content modifiers:
@@ -137,6 +139,7 @@ General options:
                pattern | string   | code    | haystack | result  | listing
                content | resource | special | option   | general | philosophy
                examples
+ --dont-catch             Let code exceptions be thrown with backtrace
  --list-known-extensions  Show all known extensions and their groups
  --version                Show version information
  --verbose                Be more verbose, if applicable

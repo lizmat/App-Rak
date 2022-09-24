@@ -3,6 +3,7 @@ Filesystem filters:
  --blocks               Number of filesystem blocks used by file
  --created=expression   Check on epoch when file was created
  --device-number        Number of device on which file is located
+ --exec                 Run program, include if successful
  --filesize             Number of bytes of data used by file
  --hard-links           Number of hard-links to file on filesystem
  --inode                Inode number of file on filesystem
@@ -27,5 +28,6 @@ Filesystem filters:
  --meta-modified=expr   Check on epoch when meta-info of file was last changed
  --mode                 The full mode value of the file
  --modified=expression  Check on epoch when file was last changed
+ --shell                Run shell command, include if successful
  --user=selector        File is owned by user names / expression
  --uid=expression       File is owned by given uid

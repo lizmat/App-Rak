@@ -1,10 +1,11 @@
+
 # The modules that we need here, with their full identities
 use as-cli-arguments:ver<0.0.6>:auth<zef:lizmat>;  # as-cli-arguments
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;       # edit-files
 use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.14>:auth<zef:lizmat>;      # columns highlighter matches
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
-use rak:ver<0.0.24>:auth<zef:lizmat>;              # rak
+use rak:ver<0.0.25>:auth<zef:lizmat>;              # rak
 use String::Utils:ver<0.0.12>:auth<zef:lizmat> <after before between is-sha1>;
 
 # The epoch value when process started
@@ -15,9 +16,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-09-22T19:43:49+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-09-24T19:33:44+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dryrun edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-line-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unique user verbose version vimgrep with-line-endings>;
+my str @options = <accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dont-catch dryrun edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-line-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -26,6 +27,7 @@ my constant %falsies =
 # our own
   changed          => 'meta-modified',
   run              => 'exec',
+  first-only       => 'only-first',
 
 # from ack
   A                => 'after-context',
@@ -122,7 +124,8 @@ my sub seconds($format) {
 }
 
 # Make sure we remember if there's a human watching (terminal connected)
-my $isa-tty := $*OUT.t;
+my $reading-from-stdin := !$*IN.t;
+my $writing-to-stdout  := $*OUT.t;
 
 # Set up default extension sets
 my constant %exts =
@@ -149,6 +152,10 @@ my constant @known-extensions = %exts.values.flat.unique.sort;
 
 # Place to keep tagged configurations
 my $config-file := $*HOME.add('.rak-config.json');
+
+# Links to optional classes
+my $GitBlameFile;
+my $TextCSV;
 
 # Variables for grouping options given
 my $verbose;      # process verbose
@@ -312,6 +319,21 @@ my sub main(@ARGS) is export {
             say as-cli-arguments as-options;
         }
         exit;
+    }
+
+    # STDIN sanity checking
+    if @positionals && @positionals.head eq '-' {
+        if $reading-from-stdin {
+            @positionals.shift;
+            meh "Cannot specify additional paths when reading from STDIN"
+              if @positionals;
+        }
+        else {
+            $reading-from-stdin := True;
+        }
+    }
+    elsif @positionals == 1 && @positionals.head.IO.f {
+        %listing<show-filename> := False if %result<show-filename>:!exists;
     }
 
     # Perform the actual action
@@ -501,7 +523,7 @@ my sub HELP($text, @keys, :$verbose) {
     my $header := "$SCRIPT - " ~ DESCRIPTION;
     say $header;
     say "-" x $header.chars;
-    say $isa-tty
+    say $writing-to-stdout
       ?? $text.lines.map({
               !.starts-with(" ") && .ends-with(":") ?? BON ~ $_ ~ BOFF !! $_
          }).join("\n")
@@ -541,7 +563,7 @@ TEXT
 # Show the results
 my sub rak-results() {
 
-    my $human         := %listing<human>:delete // $isa-tty;
+    my $human         := %listing<human>:delete // $writing-to-stdout;
     my $show-filename := %listing<show-filename>:delete // True;
     my $break         := %listing<break>:delete;
     my $group-matches := %listing<group-matches>:delete;
@@ -552,11 +574,11 @@ my sub rak-results() {
 
     # Set up human defaults
     if $human {
-        $break         := ""    unless $break.defined;
-        $group-matches := True  unless $group-matches.defined;
-        $highlight     := True  unless $highlight.defined;
-        $trim          := True  unless $trim.defined;
-        $only-first    := 10000 unless $only-first.defined;
+        $break         := ""   unless $break.defined;
+        $group-matches := True unless $group-matches.defined;
+        $highlight     := True unless $highlight.defined;
+        $trim          := True unless $trim.defined;
+        $only-first    := 1000 unless $only-first.defined;
         $proximate     := 1 if !$proximate.defined && $group-matches;
     }
     my $has-break := %listing<has-break>:delete // $break.defined;
@@ -914,8 +936,28 @@ my sub external-execution(str $name, $value --> Nil) {
       !! (%filesystem{$name} := $value);
 }
 
+# check Text::CSV availability
+my sub check-TextCSV(str $name) {
+    unless $TextCSV {
+        CATCH { meh-not-installed 'Text::CSV', $name }
+        require Text::CSV;
+        $TextCSV := Text::CSV;
+    }
+}
+
+# check Git::Blame::File availability
+my sub check-GitBlameFile(str $name) {
+    unless $GitBlameFile {
+        CATCH { meh-not-installed 'Git::Blame::File', $name }
+        require Git::Blame::File;
+        $GitBlameFile := Git::Blame::File;
+    }
+}
+
 # handle additional CSV parameters
 my sub set-csv-flag(str $name, $value --> Nil) {
+    check-TextCSV($name);
+
     Bool.ACCEPTS($value)
       ?? (%csv{$name} := $value)
       !! meh("'--$name' can only be specified as a flag");
@@ -953,6 +995,14 @@ my sub set-result-Int(str $name, $value --> Nil) {
     Int.ACCEPTS($integer)
       ?? (%result{$name} := $integer)
       !! meh "'--$name' can only be an integer value, not '$value'";
+}
+my sub set-result-flag-or-Int(str $name, $value --> Nil) {
+    with $value.Int {
+        %result{$name} := $_;
+    }
+    else {
+        meh "'--$name' must either be an integer or a flag";
+    }
 }
 
 # Set listing options
@@ -1030,14 +1080,12 @@ my sub option-before-context($value --> Nil) {
 }
 
 my sub option-blame-per-file($value --> Nil) {
-    CATCH { meh-not-installed 'Git::Blame::File', 'blame-per-file' }
-    require Git::Blame::File;
+    check-GitBlameFile('blame-per-file');
     set-action('blame-per-file', $value);
 }
 
 my sub option-blame-per-line($value --> Nil) {
-    CATCH { meh-not-installed 'Git::Blame::File', 'blame-per-line' }
-    require Git::Blame::File;
+    check-GitBlameFile('blame-per-line');
     set-action('blame-per-line', $value);
 }
 
@@ -1073,18 +1121,8 @@ my sub option-created($value --> Nil) {
 }
 
 my sub option-csv-per-line($value --> Nil) {
-    CATCH { meh-not-installed 'Text::CSV', 'csv-per-line' }
-    require Text::CSV;
+    check-TextCSV('csv-per-line');
     set-action('csv-per-line', $value);
-#
-#    setup-producer 'csv-per-line', 'produce-many', {
-#        %args<auto-diag> //= True;
-#        my $csv := Text::CSV.new(|%csv);
-#
-#        %rak<file> := codify-extensions %exts<#csv>
-#          unless %rak<file>;
-#        -> $io { $csv.getline-all($io.open) }
-#    }
 }
 
 my sub option-degree($value --> Nil) {
@@ -1099,6 +1137,10 @@ my sub option-dir($value --> Nil) {
     %filesystem<dir> := Bool.ACCEPTS($value)
       ?? $value
       !! convert-to-matcher($value);
+}
+
+my sub option-dont-catch($value --> Nil) {
+    set-rak-flag('dont-catch', $value);
 }
 
 my sub option-dryrun($value --> Nil) {
@@ -1118,8 +1160,7 @@ my sub option-encoding($value --> Nil) {
 }
 
 my sub option-eol($value --> Nil) {
-    CATCH { meh-not-installed 'Text::CSV', 'eol' }
-    require Text::CSV;
+    check-TextCSV('eol');
 
     my constant %line-endings =
       lf   => "\n",
@@ -1380,7 +1421,7 @@ my sub option-matches-only($value --> Nil) {
 }
 
 my sub option-max-matches-per-file($value --> Nil) {
-    set-result-Int('max-matches-per-file', $value);
+    set-result-flag-or-Int('max-matches-per-file', $value);
 }
 
 my sub option-meta-modified($value --> Nil) {
@@ -1514,19 +1555,8 @@ my sub option-shell($value --> Nil) {
 }
 
 my sub option-show-blame($value --> Nil) {
-    CATCH { meh-not-installed 'Git::Blame::File', 'show-blame' }
-    require Git::Blame::File;
-    set-listing-flag('show-blame', $value);
-#
-#   setup-mapper 'show-blame', -> $source, @matches {
-#        my @line-numbers = @matches.map: *.key;
-#        with Git::Blame::File.new($source, :@line-numbers) -> $blamer {
-#            $source => $blamer.lines.Slip
-#        }
-#        else {
-#            $source => @matches.map({ .key ~ ':' ~ .value }).Slip
-#        }
-#    }
+    check-GitBlameFile('show-blame');
+    set-result-flag('show-blame', $value);
 }
 
 my sub option-show-filename($value --> Nil) {
@@ -1637,6 +1667,10 @@ my sub meh-filesystem($name --> Nil) is hidden-from-backtrace {
     meh-what($name, %filesystem, 'filesystem');
 }
 
+my sub meh-modify($name --> Nil) is hidden-from-backtrace {
+    meh-what($name, %modify, 'modify')
+}
+
 my sub meh-result($name --> Nil) is hidden-from-backtrace {
     meh-what($name, %result, 'result');
 }
@@ -1660,7 +1694,12 @@ my sub maybe-meh-together(*@keys) is hidden-from-backtrace {
 }
 
 my sub move-filesystem-options-to-rak(--> Nil) {
-    if %filesystem {
+    if $reading-from-stdin {
+        meh "Cannot use &mm(%filesystem.keys.sort) when reading from STDIN"
+          if %filesystem;
+        %listing<show-filename> := False;
+    }
+    elsif %filesystem {
         if %filesystem<under-version-control> {
             maybe-meh-together 'under-version-control', %filesystem<
               dir file recurse-symlinked-dir recurse-unmatched-dir
@@ -1768,10 +1807,24 @@ my sub move-result-options-to-rak(--> Nil) {
             if %result<find>:delete {
                 %rak<find>             := True;
                 %rak<omit-item-number> := True;
+
+                # Only interested in number of files
+                if %result<count-only>:delete {
+                    my int $seen;
+                    %rak<eager>  := True;
+                    %rak<mapper> := -> $, @files --> Empty {
+                        LAST sayer $seen == 0
+                          ?? "No files"
+                          !! $seen == 1
+                            ?? "One file"
+                            !! "$seen files";
+                        $seen = @files.elems;
+                    }
+                }
             }
 
             # Only interested in number of matches / files
-            if %result<count-only>:delete {
+            elsif %result<count-only>:delete {
                 my @files;
                 %rak<eager>  := True;
                 %rak<mapper> := -> $io, @matches --> Empty {
@@ -1788,6 +1841,19 @@ my sub move-result-options-to-rak(--> Nil) {
                         }
                     }
                     @files.push: Pair.new: $io.relative, @matches.elems;
+                }
+            }
+
+            # Wanna blame
+            elsif %result<show-blame>:delete {
+                %rak<mapper> := -> $io, @matches {
+                    my @line-numbers = @matches.map: *.key;
+                    with $GitBlameFile.new($io, :@line-numbers) -> $blamer {
+                        $io => $blamer.lines.Slip
+                    }
+                    else {
+                        $io => @matches.map({ .key ~ ':' ~ .value }).Slip
+                    }
                 }
             }
         }
@@ -1815,15 +1881,17 @@ my sub activate-output-options() {
 # up during option processing.
 
 my sub action-blame-per-file(--> Nil) {
-    meh-for 'blame-per-file', <csv>;
+    meh-for 'blame-per-file', <csv modify>;
 
     prepare-needle;
+    %filesystem<under-version-control> := True;
     move-filesystem-options-to-rak;
 
-    %rak<batch>       := 1;
-    %rak<produce-one> := -> $io {
-        try Git::Blame::File.new($io)
-    }
+    %listing<group-matches> := False if %listing<group-matches>:!exists;
+    %listing<has-break>     := False if %listing<has-break>:!exists;
+
+    %rak<batch>        := 1;
+    %rak<produce-one>  := -> $io { $GitBlameFile.new($io) }
 
     activate-output-options;
     run-rak;
@@ -1832,15 +1900,15 @@ my sub action-blame-per-file(--> Nil) {
 }
 
 my sub action-blame-per-line(--> Nil) {
-    meh-for 'blame-per-line', <csv>;
+    meh-for 'blame-per-line', <csv modify>;
 
     prepare-needle;
+    %filesystem<under-version-control> := True;
     move-filesystem-options-to-rak;
 
-    %rak<batch>        := 1;
-    %rak<produce-many> := -> $io {
-        (try Git::Blame::File.new($io).lines) // Empty
-    }
+    %rak<batch>            := 1;
+    %rak<omit-item-number> := True;
+    %rak<produce-many>     := -> $io { $GitBlameFile.new($io).lines }
 
     activate-output-options;
     run-rak;
@@ -1849,7 +1917,7 @@ my sub action-blame-per-line(--> Nil) {
 }
 
 my sub action-checkout(--> Nil) {
-    meh-for 'checkout', <output-file pager filesystem csv>;
+    meh-for 'checkout', <output-file pager filesystem modify csv>;
 
     prepare-needle;
 
@@ -1906,23 +1974,16 @@ my sub action-checkout(--> Nil) {
 }
 
 my sub action-csv-per-line(--> Nil) {
+    meh-for 'csv-per-line', <modify>;
 
     prepare-needle;
-    %filesystem<file> //= codify-extensions %exts<#csv>;
+    %filesystem<file> //= codify-extensions %exts<#csv>
+      unless $reading-from-stdin;
     move-filesystem-options-to-rak;
 
-    if %listing<show-line-number>:delete {
-        # no action needed
-    }
-    elsif %listing<files-with-matches>:delete {
-        %rak<files-with-matches> := True;
-    }
-    else {
-        %rak<omit-item-number> := True;
-    }
-
     %csv<auto-diag> := True unless %csv<auto-diag>:exists;
-    my $csv := Text::CSV.new(|%csv);
+    my $csv := $TextCSV.new(|%csv);
+    %csv = ();
     %rak<produce-many> := -> $io { $csv.getline-all($io.open) }
 
     activate-output-options;
@@ -1935,7 +1996,7 @@ my sub action-edit(--> Nil) {
     %rak<max-matches-per-source> := $_
       with %result<max-matches-per-file>:delete;
 
-    meh-for 'edit', <output-file pager result csv>;
+    meh-for 'edit', <output-file pager result modify csv>;
 
     prepare-needle;
     move-filesystem-options-to-rak;
@@ -1957,12 +2018,14 @@ my sub action-edit(--> Nil) {
         %rak<mapper> := -> $source, @matches --> Empty {
             LAST edit-files @files, :$editor;
 
-            my $path := $source.relative;
+            my $path   := $source.relative;
+            my $target := Regex.ACCEPTS($needle) ?? $needle !! $pattern;
+
             @files.append: @matches.map: {
-                $path => .key => columns(
-                  .value, $pattern,
+                $path => .key => (columns(
+                  .value, $target,
                   :$ignorecase, :$ignoremark, |(:$type if $type)
-               ).head
+               ).head // 0)
             }
         }
     }
@@ -1980,21 +2043,12 @@ my sub action-help(--> Nil) {
 }
 
 my sub action-json-per-file(--> Nil) {
-    meh-for 'json-per-file', <csv>;
+    meh-for 'json-per-file', <csv modify>;
 
     prepare-needle;
-    %filesystem<file> //= codify-extensions %exts<#json>;
+    %filesystem<file> //= codify-extensions %exts<#json>
+      unless $reading-from-stdin;
     move-filesystem-options-to-rak;
-
-    if %listing<show-line-number>:delete {
-        # no action needed
-    }
-    elsif %listing<files-with-matches>:delete {
-        %rak<files-with-matches> := True;
-    }
-    else {
-        %rak<omit-item-number> := True;
-    }
 
     my $enc := %rak<encoding>:delete // 'utf8-c8';
     %rak<produce-one> := -> $io { try from-json $io.slurp(:$enc) }
@@ -2006,17 +2060,24 @@ my sub action-json-per-file(--> Nil) {
 }
 
 my sub action-json-per-elem(--> Nil) {
-    meh-for 'json-per-elem', <csv>;
+    meh-for 'json-per-elem', <csv modify>;
 
     prepare-needle;
-    %filesystem<file> //= codify-extensions %exts<#json>;
+    %filesystem<file> //= codify-extensions %exts<#json>
+      unless $reading-from-stdin;
     move-filesystem-options-to-rak;
 
     if %listing<show-line-number>:delete {
         # no action needed
     }
     elsif %listing<files-with-matches>:delete {
-        %rak<files-with-matches> := True;
+        %rak<sources-only> := True;
+    }
+    elsif %result<unique>:delete {
+        %rak<unique> := True;
+    }
+    elsif %result<frequencies>:delete {
+        %rak<frequencies> := True;
     }
     else {
         %rak<omit-item-number> := True;
@@ -2036,17 +2097,24 @@ my sub action-json-per-elem(--> Nil) {
 }
 
 my sub action-json-per-line(--> Nil) {
-    meh-for 'json-per-line', <csv>;
+    meh-for 'json-per-line', <csv modify>;
 
     prepare-needle;
-    %filesystem<file> //= codify-extensions %exts<#jsonl>;
+    %filesystem<file> //= codify-extensions %exts<#jsonl>
+      unless $reading-from-stdin;
     move-filesystem-options-to-rak;
 
     if %listing<show-line-number>:delete {
         # no action needed
     }
     elsif %listing<files-with-matches>:delete {
-        %rak<files-with-matches> := True;
+        %rak<sources-only> := True;
+    }
+    elsif %result<unique>:delete {
+        %rak<unique> := True;
+    }
+    elsif %result<frequencies>:delete {
+        %rak<frequencies> := True;
     }
     else {
         %rak<omit-item-number> := True;
@@ -2066,7 +2134,7 @@ my sub action-json-per-line(--> Nil) {
 }
 
 my sub action-list-custom-options(--> Nil) {
-    meh-for 'list-custom-options', <filesystem listing csv>;
+    meh-for 'list-custom-options', <filesystem listing modify csv>;
 
     activate-output-options;
     my $format := '%' ~ %config.keys>>.chars.max ~ 's: %s';
@@ -2076,7 +2144,7 @@ my sub action-list-custom-options(--> Nil) {
 }
 
 my sub action-list-known-extensions(--> Nil) {
-    meh-for 'list-known-extensions', <filesystem listing csv>;
+    meh-for 'list-known-extensions', <filesystem listing modify csv>;
 
     activate-output-options;
     printf("%9s: %s\n", .key, .value.map({$_ || '(none)'}).Str)
@@ -2166,7 +2234,7 @@ my sub action-modify-files(--> Nil) {
 }
 
 my sub action-per-file(--> Nil) {
-    meh-for 'per-file', <csv>;
+    meh-for 'per-file', <csv modify>;
 
     prepare-needle;
     move-filesystem-options-to-rak;
@@ -2182,7 +2250,7 @@ my sub action-per-file(--> Nil) {
 }
 
 my sub action-per-line(--> Nil) {
-    meh-for 'per-line', <csv>;
+    meh-for 'per-line', <csv modify>;
 
     prepare-needle;
     move-filesystem-options-to-rak;
@@ -2206,20 +2274,21 @@ my sub action-vimgrep(--> Nil) {
     %rak<max-matches-per-source> := $_
       with %result<max-matches-per-file>:delete;
 
-    meh-for 'vimgrep', <result csv>;
+    meh-for 'vimgrep', <result modify csv>;
 
     prepare-needle;
     move-filesystem-options-to-rak;
 
     %rak<mapper> := -> $source, @matches --> Empty {
-        my $path := $source.relative;
+        my $path   := $source.relative;
+        my $target := Regex.ACCEPTS($needle) ?? $needle !! $pattern;
 
         sayer $path
           ~ ':' ~ .key
-          ~ ':' ~ columns(
-                    .value, $pattern,
+          ~ ':' ~ (columns(
+                    .value, $target,
                     :$ignorecase, :$ignoremark, |(:$type if $type)
-                  ).head
+                  ).head // "0")
           ~ ':' ~ .value
           for @matches;
     }
