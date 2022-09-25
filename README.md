@@ -235,7 +235,7 @@ Flag. If specified with a trueish value, will **not** catch any error during pro
 --dryrun
 --------
 
-Flag. Indicate to **not** actually make any changes to any content modification if specified with a `True` value. Only makes sense together with the `--modify-files` option.
+Flag. Indicate to **not** actually make any changes to any content modification if specified with a `True` value. Only makes sense together with the `--modify-files` and the `--rename-files` option.
 
 --edit[=editor]
 ---------------
@@ -744,6 +744,10 @@ Remove this line from the file. NOTE: this means the exact `False` value.
 
 Keep this line unchanged the file. NOTE: this means the exact `True` value.
 
+### Nil
+
+Keep this line unchanged the file. NOTE: this means the exact `Nil` value.
+
 ### Empty
 
 Keep this line unchanged the file. NOTE: this means the exact `Empty` value. This is typically returned as the result of a failed condition. For example, only change the string "foo" into "bar" if the line starts with "#":
@@ -853,6 +857,41 @@ Flag. Indicate whether directories that didn't match the `--dir` specification, 
 Flag. Indicate whether directories that are actually symbolic links, should be recursed into. Defaults to `False`.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
+--rename-files
+--------------
+
+Flag. Only makes sense if the specified pattern is a `Callable`. Feeds all selected files as `IO::Path` to the pattern, and uses the result (if different from the original) as the new name of the file.
+
+The `--dryrun` argument can be used to run through the whole process **except** doing actually any renaming.
+
+The `--verbose` argument can be used to get more verbose feedback on the operation.
+
+The `Callable` will be called for each line, giving the line (**including** its line ending). It is then up to the `Callable` to return:
+
+### False
+
+Don't change the name of the file NOTE: this means the exact `False` value.
+
+### True
+
+Don't change the name of the file. NOTE: this means the exact `True` value.
+
+### Nil
+
+Don't change the name of the file. NOTE: this means the exact `Nil` value.
+
+### Empty
+
+Don't change the name of the file. NOTE: this means the exact `Empty` value. This is typically returned as the result of a failed condition.
+
+### any other value
+
+Use this value as the new name of the file. It can either be a string or an `IO::Path` object. For example: rename all files with the `.t` extension to the `.rakutest` extension.
+
+```bash
+$ rak '*.subst(/ \.t $/,".rakutest")' --rename-files
+```
 
 --repository=dir
 ----------------

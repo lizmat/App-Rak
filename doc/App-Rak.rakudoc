@@ -308,7 +308,7 @@ and error reporting.
 
 Flag.  Indicate to B<not> actually make any changes to any content
 modification if specified with a C<True> value.  Only makes sense together
-with the C<--modify-files> option.
+with the C<--modify-files> and the C<--rename-files> option.
 
 =head2 --edit[=editor]
 
@@ -930,6 +930,10 @@ Remove this line from the file.  NOTE: this means the exact C<False> value.
 
 Keep this line unchanged the file.  NOTE: this means the exact C<True> value.
 
+=head3 Nil
+
+Keep this line unchanged the file.  NOTE: this means the exact C<Nil> value.
+
 =head3 Empty
 
 Keep this line unchanged the file.  NOTE: this means the exact C<Empty> value.
@@ -1068,6 +1072,50 @@ should be recursed into.  Defaults to C<False>.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
+
+=head2 --rename-files
+
+Flag.  Only makes sense if the specified pattern is a C<Callable>.
+Feeds all selected files as C<IO::Path> to the pattern, and uses the
+result (if different from the original) as the new name of the file.
+
+The C<--dryrun> argument can be used to run through the whole process
+B<except> doing actually any renaming.
+
+The C<--verbose> argument can be used to get more verbose feedback on
+the operation.
+
+The C<Callable> will be called for each line, giving the line (B<including>
+its line ending).  It is then up to the C<Callable> to return:
+
+=head3 False
+
+Don't change the name of the file  NOTE: this means the exact C<False> value.
+
+=head3 True
+
+Don't change the name of the file.  NOTE: this means the exact C<True> value.
+
+=head3 Nil
+
+Don't change the name of the file.  NOTE: this means the exact C<Nil> value.
+
+=head3 Empty
+
+Don't change the name of  the file.  NOTE: this means the exact C<Empty> value.
+This is typically returned as the result of a failed condition.
+
+=head3 any other value
+
+Use this value as the new name of the file.  It can either be a string or an
+C<IO::Path> object.  For example: rename all files with the C<.t> extension
+to the C<.rakutest> extension.
+
+=begin code :lang<bash>
+
+$ rak '*.subst(/ \.t $/,".rakutest")' --rename-files
+
+=end code
 
 =head2 --repository=dir
 
