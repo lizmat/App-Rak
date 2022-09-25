@@ -1,0 +1,4 @@
+Debugging options:
+ --dont-catch             Let code exceptions be thrown with backtrace
+ --list-expanded-options  List all options given after having been expanded
+ --rak                    Show arguments to "rak" plumbing before running

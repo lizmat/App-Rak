@@ -91,8 +91,8 @@ SUPPORTED OPTIONS
 
 All options are optional. Any unexpected options, will cause an exception to be thrown with the unexpected options listed.
 
---accessed
-----------
+--accessed=condition
+--------------------
 
 If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The access time of the file (number of seconds since epoch, as a `Num` value) will be passed as the only argument. Note that many file systems do not actually support this reliably.
 

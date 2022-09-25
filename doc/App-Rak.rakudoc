@@ -115,7 +115,7 @@ before.
 All options are optional.  Any unexpected options, will cause an exception
 to be thrown with the unexpected options listed.
 
-=head2 --accessed
+=head2 --accessed=condition
 
 If specified, indicates the C<Callable> that should return True to include a
 file in the selection of files to be checked.  The access time of the file

@@ -4,7 +4,6 @@ General options:
                pattern | string | code | haystack | result | listing
                content | resource | edit | option | general | philosophy
                examples
- --dont-catch             Let code exceptions be thrown with backtrace
  --list-known-extensions  Show all known extensions and their groups
  --version                Show version information
  --verbose                Be more verbose, if applicable

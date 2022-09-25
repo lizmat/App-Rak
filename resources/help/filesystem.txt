@@ -1,14 +1,14 @@
 Filesystem filters:
- --accessed=expression  Check on epoch when file was last accessed
+ --accessed=condition   Check on epoch when file was last accessed
  --blocks               Number of filesystem blocks used by file
- --created=expression   Check on epoch when file was created
+ --created=condition    Check on epoch when file was created
  --device-number        Number of device on which file is located
  --exec                 Run program, include if successful
  --filesize             Number of bytes of data used by file
  --hard-links           Number of hard-links to file on filesystem
  --inode                Inode number of file on filesystem
  --group=selector       File is owned by group names / expression
- --gid=expression       File is owned by given gid
+ --gid=condition        File is owned by given gid
  --has-setgid           Has SETGID bit set in attributes
  --has-setuid           Has SETUID bit set in attributes
  --is-empty             File does (not) contain any data
@@ -25,9 +25,9 @@ Filesystem filters:
  --is-world-executable  File can (not) be executed by anybody
  --is-world-readable    File can (not) be read by anybody
  --is-world-writable    File can (not) be written to by anybody
- --meta-modified=expr   Check on epoch when meta-info of file was last changed
+ --meta-modified=cond   Check on epoch when meta-info of file was last changed
  --mode                 The full mode value of the file
- --modified=expression  Check on epoch when file was last changed
+ --modified=condition   Check on epoch when file was last changed
  --shell                Run shell command, include if successful
  --user=selector        File is owned by user names / expression
  --uid=expression       File is owned by given uid

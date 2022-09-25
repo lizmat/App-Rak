@@ -1,11 +1,10 @@
-
 # The modules that we need here, with their full identities
 use as-cli-arguments:ver<0.0.6>:auth<zef:lizmat>;  # as-cli-arguments
 use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;       # edit-files
 use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.14>:auth<zef:lizmat>;      # columns highlighter matches
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
-use rak:ver<0.0.25>:auth<zef:lizmat>;              # rak
+use rak:ver<0.0.26>:auth<zef:lizmat>;              # rak
 use String::Utils:ver<0.0.12>:auth<zef:lizmat> <after before between is-sha1>;
 
 # The epoch value when process started
@@ -16,9 +15,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-09-24T19:33:44+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-09-25T00:14:43+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dont-catch dryrun edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-line-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unique user verbose version vimgrep with-line-endings>;
+my str @options = <accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dont-catch dryrun edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-line-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -1508,6 +1507,10 @@ my sub option-proximate($value --> Nil) {
     set-listing-flag-or-Int('proximate', $value);
 }
 
+my sub option-rename-files($value --> Nil) {
+    set-action('rename-files', $value);
+}
+
 my sub option-quietly($value --> Nil) {
     set-rak-flag('quietly', $value);
 }
@@ -2258,6 +2261,75 @@ my sub action-per-line(--> Nil) {
 
     run-rak;
     rak-results;
+    rak-stats;
+}
+
+my sub action-rename-files(--> Nil) {
+    my $dryrun := %modify<dryrun>:delete;
+    my $uvc    := %listing<under-version-control>;
+    meh-for 'rename-files', <output-file pager listing modify csv>;
+
+    prepare-needle;
+    move-filesystem-options-to-rak;
+
+    # Activate the appropriate renaming logic
+    my sub git-mv($from, $to) { dd; run <git mv>, $from, $to }
+    my &rename-it := $uvc ?? &git-mv !! &rename;
+
+    # Make sure the needle returns an IO::Path object to make it easier
+    # for the user should they forget to add an .IO at the end
+    my &needle := $needle;
+    $needle := -> $old {
+        my $new := needle($old);
+        Bool.ACCEPTS($new) || $new =:= Empty || $new =:= Nil
+          ?? $new
+          !! $new.IO
+    }
+
+    %rak<find>             := True;
+    %rak<omit-item-number> := True;
+    %rak<map-all>          := True;
+    %rak<old-new>          := True;
+    %rak<mapper> := -> $, @files --> Empty {
+        my @existed;
+        my @done;
+        for @files {
+            my $destination := .value.IO;
+            if $destination.e {
+                @existed.push: Pair.new: .key.relative, $destination.relative;
+            }
+            else {
+                rename-it .key, $destination unless $dryrun;
+                @done.push: Pair.new: .key.relative, $destination.relative;
+            }
+        }
+        my str @fb;
+        if $verbose {
+            if @existed {
+                @fb.push: "Refused to rename @existed.elems() file&s(@existed):";
+                @fb.push: "  $_.key() -> $_.value()" for @existed;
+                @fb.push: "" if @done;
+            }
+            if @done {
+                @fb.push: "Renamed @done.elems() file&s(@done):";
+                @fb.push: "  $_.key() -> $_.value()" for @done;
+            }
+        }
+        else {
+            @fb.push: "Did not rename @existed.elems() file&s(@existed) because destination already existed."
+              if @existed;
+            @fb.push: "Renamed @done.elems() file&s(@done)."
+              if @done;
+        }
+        @fb.push: "No files were selected for renaming."
+          unless @files;
+        @fb.push: "*** no files were renamed because of --dryrun ***"
+          if $dryrun and @done;
+
+        sayer @fb.join("\n");
+    }
+
+    run-rak(:eagerly);
     rak-stats;
 }
 
