@@ -98,6 +98,11 @@ If specified, indicates the `Callable` that should return True to include a file
 
 See "CHECKING TIMES ON FILES" for more information about features that can be used inside the `Callable`.
 
+--absolute
+----------
+
+Flag. If specified with a trueish value indicates that whenever paths are shown, they will be shown as absolute paths. Defaults to `False`, which will cause paths to be shown as paths relative to the current directory.
+
 --after-context=N
 -----------------
 
@@ -867,7 +872,7 @@ The `--dryrun` argument can be used to run through the whole process **except** 
 
 The `--verbose` argument can be used to get more verbose feedback on the operation.
 
-The `Callable` will be called for each line, giving the line (**including** its line ending). It is then up to the `Callable` to return:
+The `Callable` will be called for each line, giving the file as an `IO::Path` object. It is then up to the `Callable` to return:
 
 ### False
 
@@ -887,11 +892,15 @@ Don't change the name of the file. NOTE: this means the exact `Empty` value. Thi
 
 ### any other value
 
-Use this value as the new name of the file. It can either be a string or an `IO::Path` object. For example: rename all files with the `.t` extension to the `.rakutest` extension.
+Use this value as the new name of the file. It can either be a string or an `IO::Path` object. Only when the returned value is different from the given value, will a rename actually be attempted. To make this easier on the user, any `Str` returned, will be automatically converted to an `IO::Path` object before being compared using `eqv`.
+
+Example: rename all files with the `.t` extension to the `.rakutest` extension.
 
 ```bash
 $ rak '*.subst(/ \.t $/,".rakutest")' --rename-files
 ```
+
+Note that files that are under git revision control will be renamed using `git mv`: if that fails for any reason, a normal rename will be performed.
 
 --repository=dir
 ----------------

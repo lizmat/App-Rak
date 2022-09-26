@@ -96,6 +96,7 @@ Result modifiers:
 
 Listing modifiers:
  --human                     Force defaults as if a human is watching
+ --absolute                  Show paths as absolute paths
  --break[=string]            String to show between different files
  --group-matches             Show filename only once on a separate line
  --show-blame                Show git blame information if possible

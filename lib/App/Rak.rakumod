@@ -15,9 +15,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-09-25T00:14:43+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-09-26T18:30:25+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dont-catch dryrun edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-line-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dont-catch dryrun edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-line-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -564,6 +564,7 @@ my sub rak-results() {
 
     my $human         := %listing<human>:delete // $writing-to-stdout;
     my $show-filename := %listing<show-filename>:delete // True;
+    my $absolute      := %listing<absolute>:delete;
     my $break         := %listing<break>:delete;
     my $group-matches := %listing<group-matches>:delete;
     my $highlight     := %listing<highlight>:delete;
@@ -630,6 +631,10 @@ my sub rak-results() {
         $trim ?? *.Str.trim !! *.Str
     }
 
+    # Set way to stringify paths
+    my &stringify :=
+      IO::Path.^find_method($absolute ?? "absolute" !! "relative");
+
     # show the results!
     my int $seen;
     RESULT:
@@ -642,7 +647,7 @@ my sub rak-results() {
             if $key eq '<find>' {
                 for @$value.sort(*.fc) {
                     sayer IO::Path.ACCEPTS($_)
-                      ?? line-post-proc .absolute
+                      ?? line-post-proc stringify($_)
                       !! $_;
                     last RESULT if ++$seen == $only-first;
                 }
@@ -651,7 +656,7 @@ my sub rak-results() {
             # Looks like normal search result
             elsif Iterable.ACCEPTS($value) {
                 if $value -> @matches {
-                    my $source := $key.relative if IO::Path.ACCEPTS($key);
+                    my $source := stringify($key) if IO::Path.ACCEPTS($key);
                     sayer $break if $has-break && $seen;
 
                     if PairContext.ACCEPTS(@matches.head) {
@@ -729,9 +734,9 @@ my sub rak-results() {
             }
         }
 
-        # Only got filename, so show its relative path
+        # Only got filename, so show its path
         elsif IO::Path.ACCEPTS($outer) {
-            sayer $outer.relative;
+            sayer stringify($outer);
             last RESULT if ++$seen == $only-first;
         }
 
@@ -1036,6 +1041,10 @@ my sub set-listing-flag-or-Int(str $name, $value --> Nil) {
 # anything.  Existence of "&option-foo" means the option exists and is
 # supported.  These subroutines are **only** called if the associated option
 # is actually specified (after any expansion).
+
+my sub option-absolute($value --> Nil) {
+    set-listing-flag('absolute', $value)
+}
 
 my sub option-accessed($value --> Nil) {
     set-filesystem-Instant('accessed', $value)
@@ -1789,11 +1798,18 @@ my sub move-result-options-to-rak(--> Nil) {
 
             # Need to separate files with a null-byte
             elsif %result<file-separator-null>:delete {
+                # Set way to stringify paths
+                my &stringify :=
+                  IO::Path.^find_method(%listing<absolute>:delete
+                    ?? "absolute"
+                    !! "relative"
+                  );
+
                 my str @files;
                 %rak<eager>  := True;
                 %rak<mapper> := -> $_ --> Empty {
                     LAST sayer @files.join("\0");
-                    @files.push: .relative;
+                    @files.push: stringify($_);
                 }
             }
         }
@@ -1828,6 +1844,13 @@ my sub move-result-options-to-rak(--> Nil) {
 
             # Only interested in number of matches / files
             elsif %result<count-only>:delete {
+                # Set way to stringify paths
+                my &stringify :=
+                  IO::Path.^find_method(%listing<absolute>:delete
+                    ?? "absolute"
+                    !! "relative"
+                  );
+
                 my @files;
                 %rak<eager>  := True;
                 %rak<mapper> := -> $io, @matches --> Empty {
@@ -1843,7 +1866,7 @@ my sub move-result-options-to-rak(--> Nil) {
                             sayer "@files.map(*.value).sum() matches in @files.elems() files";
                         }
                     }
-                    @files.push: Pair.new: $io.relative, @matches.elems;
+                    @files.push: Pair.new: stringify($io), @matches.elems;
                 }
             }
 
@@ -2266,16 +2289,24 @@ my sub action-per-line(--> Nil) {
 }
 
 my sub action-rename-files(--> Nil) {
-    my $dryrun := %modify<dryrun>:delete;
-    my $uvc    := %listing<under-version-control>;
+    my $dryrun   := %modify<dryrun>:delete;
+    my $absolute := %listing<absolute>:delete;
     meh-for 'rename-files', <output-file pager listing modify csv>;
 
     prepare-needle;
     move-filesystem-options-to-rak;
 
-    # Activate the appropriate renaming logic
-    my sub git-mv($from, $to) { dd; run <git mv>, $from, $to }
-    my &rename-it := $uvc ?? &git-mv !! &rename;
+    # First try to do a "git mv", if that failed, try an ordinary rename
+    my sub rename-it($from, $to) {
+        my $proc := run <git mv>, $from, $to, :err;
+        rename $from, $to if $proc.err.slurp(:close);
+    }
+
+    # Set way to stringify paths
+    my &stringify := IO::Path.^find_method($absolute
+      ?? "absolute"
+      !! "relative"
+    );
 
     # Make sure the needle returns an IO::Path object to make it easier
     # for the user should they forget to add an .IO at the end
@@ -2297,11 +2328,11 @@ my sub action-rename-files(--> Nil) {
         for @files {
             my $destination := .value.IO;
             if $destination.e {
-                @existed.push: Pair.new: .key.relative, $destination.relative;
+                @existed.push: Pair.new: stringify(.key), stringify($destination);
             }
             else {
                 rename-it .key, $destination unless $dryrun;
-                @done.push: Pair.new: .key.relative, $destination.relative;
+                @done.push: Pair.new: stringify(.key), stringify($destination);
             }
         }
         my str @fb;

@@ -52,9 +52,10 @@
     "FIND",
     "JSON",
     "BLAME",
-    "CSV"
+    "CSV",
+    "GIT"
   ],
   "test-depends": [
   ],
-  "version": "0.0.97"
+  "version": "0.0.98"
 }

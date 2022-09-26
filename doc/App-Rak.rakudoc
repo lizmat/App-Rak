@@ -126,6 +126,13 @@ reliably.
 See "CHECKING TIMES ON FILES" for more information about features that
 can be used inside the C<Callable>.
 
+=head2 --absolute
+
+Flag.  If specified with a trueish value indicates that whenever paths
+are shown, they will be shown as absolute paths.  Defaults to C<False>,
+which will cause paths to be shown as paths relative to the current
+directory.
+
 =head2 --after-context=N
 
 Indicate the number of lines that should be shown B<after> any line that
@@ -1085,8 +1092,8 @@ B<except> doing actually any renaming.
 The C<--verbose> argument can be used to get more verbose feedback on
 the operation.
 
-The C<Callable> will be called for each line, giving the line (B<including>
-its line ending).  It is then up to the C<Callable> to return:
+The C<Callable> will be called for each line, giving the file as an
+C<IO::Path> object.  It is then up to the C<Callable> to return:
 
 =head3 False
 
@@ -1107,15 +1114,23 @@ This is typically returned as the result of a failed condition.
 
 =head3 any other value
 
-Use this value as the new name of the file.  It can either be a string or an
-C<IO::Path> object.  For example: rename all files with the C<.t> extension
-to the C<.rakutest> extension.
+Use this value as the new name of the file.  It can either be a string
+or an C<IO::Path> object.  Only when the returned value is different from
+the given value, will a rename actually be attempted.  To make this easier
+on the user, any C<Str> returned, will be automatically converted to an
+C<IO::Path> object before being compared using C<eqv>.
+
+Example: rename all files with the C<.t> extension to the C<.rakutest>
+extension.
 
 =begin code :lang<bash>
 
 $ rak '*.subst(/ \.t $/,".rakutest")' --rename-files
 
 =end code
+
+Note that files that are under git revision control will be renamed using
+C<git mv>: if that fails for any reason, a normal rename will be performed.
 
 =head2 --repository=dir
 

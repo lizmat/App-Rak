@@ -136,7 +136,7 @@ nine
 8:{BON}seven{BOFF}
 OK
 
-query-ok </o$/ --find>, ok => qq:to/OK/;
+query-ok </o$/ --find --absolute>, ok => qq:to/OK/;
 {$dira}tw{BON}o{BOFF}
 {$dira}zer{BON}o{BOFF}
 OK
@@ -438,16 +438,16 @@ my $uid  := +$*USER;
 for "--user=$user", qq/--user=*eq"$user"/, "--user=$user,$user",
     "--uid=$uid", "--uid=*==$uid" {
     query-ok '--find', $_, ok => qq:to/OK/;
-{$dira}eight
-{$dira}five
-{$dira}four
-{$dira}nine
-{$dira}one
-{$dira}seven
-{$dira}six
-{$dira}three
-{$dira}two
-{$dira}zero
+eight
+five
+four
+nine
+one
+seven
+six
+three
+two
+zero
 OK
 }
 
@@ -461,16 +461,16 @@ my $gid   := +$*GROUP;
 for "--group=$group", qq/--group=*eq"$group"/, "--group=$group,$group",
     "--gid=$gid", "--gid=*==$gid" {
     query-ok '--find', $_, ok => qq:to/OK/;
-{$dira}eight
-{$dira}five
-{$dira}four
-{$dira}nine
-{$dira}one
-{$dira}seven
-{$dira}six
-{$dira}three
-{$dira}two
-{$dira}zero
+eight
+five
+four
+nine
+one
+seven
+six
+three
+two
+zero
 OK
 }
 
