@@ -2041,8 +2041,9 @@ my sub action-help(--> Nil) {
 
     activate-output-options;
     my proto sub MAIN(|) {*}
-    use CLI::Help:ver<0.0.4>:auth<zef:lizmat> %?RESOURCES, &MAIN, &HELP, 'long';
-    MAIN($pattern, |@positionals, :help, :$verbose);  # XXX pattern ?  options ??
+    use CLI::Help:ver<0.0.5>:auth<zef:lizmat> %?RESOURCES, &MAIN, &HELP, 'long';
+    @positionals.unshift: $pattern if $pattern;
+    MAIN(|@positionals, :help, :$verbose);  # XXX options ??
 }
 
 my sub action-json-per-file(--> Nil) {

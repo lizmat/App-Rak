@@ -2,6 +2,8 @@ Revision history for App-Rak
 
 {{$NEXT}}
      - Bump dependency on rak to get :old-new support
+     - Bump dependency on CLI::Help for unknown category fix
+     - Add support for --rename-files
 
 0.0.97  2022-09-24T20:30:23+02:00
      - Add extensions groups for #cro and #html
