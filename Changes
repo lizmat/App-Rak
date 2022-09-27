@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.0.99  2022-09-27T22:12:15+02:00
      - Add support for --unicode
      - Workaround Raku issue with coercion to Str with highlighting
      - Fix issue with non-matching incomplete flags, such as --tri

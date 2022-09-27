@@ -71,14 +71,6 @@ my sub query-ok(
     }
 }
 
-query-ok '{ .comb(2).Slip if $_ eq "nine" }', :!head, ok => q:to/OK/;
-nine
-10:ni
-10:ne
-OK
-
-=finish
-
 # Checks for "ine"
 my @ine = (
   <ine>,
@@ -615,6 +607,12 @@ query-ok <--unicode banknote>, :!add-paths, ok => qq:to/OK/;
 1F4B5 {BON}BANKNOTE{BOFF} WITH DOLLAR SIGN 💵
 1F4B6 {BON}BANKNOTE{BOFF} WITH EURO SIGN 💶
 1F4B7 {BON}BANKNOTE{BOFF} WITH POUND SIGN 💷
+OK
+
+query-ok '{ .comb(2).Slip if $_ eq "nine" }', :!head, ok => q:to/OK/;
+nine
+10:ni
+10:ne
 OK
 
 done-testing;
