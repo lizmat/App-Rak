@@ -4,7 +4,7 @@ use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;       # edit-files
 use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.14>:auth<zef:lizmat>;      # columns highlighter matches
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
-use rak:ver<0.0.26>:auth<zef:lizmat>;              # rak
+use rak:ver<0.0.28>:auth<zef:lizmat>;              # rak
 use String::Utils:ver<0.0.12>:auth<zef:lizmat> <after before between is-sha1>;
 
 # The epoch value when process started
@@ -15,9 +15,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-09-26T18:30:25+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-09-27T12:22:05+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dont-catch dryrun edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-line-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dont-catch dryrun edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-line-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -332,7 +332,7 @@ my sub main(@ARGS) is export {
         }
     }
     elsif @positionals == 1 && @positionals.head.IO.f {
-        %listing<show-filename> := False if %result<show-filename>:!exists;
+        %listing<show-filename> := False if %listing<show-filename>:!exists;
     }
 
     # Perform the actual action
@@ -618,10 +618,10 @@ my sub rak-results() {
         my $target := Regex.ACCEPTS($needle) ?? $needle !! $pattern;
 
         $trim
-          ?? -> Str() $line {
+          ?? -> $line {
                  highlighter $line.trim, $target, $pre, $post, |%nameds
              }
-          !! -> Str() $line {
+          !! -> $line {
                  highlighter $line, $target, $pre, $post, |%nameds
              }
     }
@@ -648,7 +648,7 @@ my sub rak-results() {
                 for @$value.sort(*.fc) {
                     sayer IO::Path.ACCEPTS($_)
                       ?? line-post-proc stringify($_)
-                      !! $_;
+                      !! line-post-proc .Str;
                     last RESULT if ++$seen == $only-first;
                 }
             }
@@ -656,7 +656,9 @@ my sub rak-results() {
             # Looks like normal search result
             elsif Iterable.ACCEPTS($value) {
                 if $value -> @matches {
-                    my $source := stringify($key) if IO::Path.ACCEPTS($key);
+                    my $source := IO::Path.ACCEPTS($key)
+                      ?? stringify($key)
+                      !! $key;
                     sayer $break if $has-break && $seen;
 
                     if PairContext.ACCEPTS(@matches.head) {
@@ -667,10 +669,18 @@ my sub rak-results() {
                             for @matches.map({ $_ if .value.elems }) {
                                 my uint $linenr = .key;
                                 sayer "" if $linenr - $last-linenr > $skip-ok;
-                                sayer $linenr ~ ':' ~ (.matched
-                                  ?? line-post-proc .value
-                                  !! .value.Str
-                                );
+                                if Slip.ACCEPTS(.value) {
+                                    # Can only produce a Slip from a real
+                                    # Callable, which cannot have any
+                                    # highlighting, so don't bother
+                                    sayer "$linenr:$_" for @(.value);
+                                }
+                                else {
+                                    sayer $linenr ~ ':' ~ (.matched
+                                      ?? line-post-proc .value.Str
+                                      !! .value.Str
+                                    );
+                                }
                                 last RESULT if ++$seen == $stop-after;
                                 $last-linenr = $linenr;
                             }
@@ -681,12 +691,20 @@ my sub rak-results() {
                             for @matches.map({ $_ if .value.elems }) {
                                 my uint $linenr = .key;
                                 sayer "" if $linenr - $last-linenr > $skip-ok;
-                                sayer $source
-                                  ~ ':' ~ $linenr
-                                  ~ ':' ~ (.matched
-                                  ?? line-post-proc .value
-                                  !! .value.Str
-                                );
+                                if Slip.ACCEPTS(.value) {
+                                    # Can only produce a Slip from a real
+                                    # Callable, which cannot have any
+                                    # highlighting, so don't bother
+                                    sayer "$source:$linenr:$_" for @(.value);
+                                }
+                                else {
+                                    sayer $source
+                                      ~ ':' ~ $linenr
+                                      ~ ':' ~ (.matched
+                                      ?? line-post-proc .value.Str
+                                      !! .value.Str
+                                    );
+                                }
                                 last RESULT if ++$seen == $stop-after;
                                 $last-linenr = $linenr;
                             }
@@ -697,11 +715,19 @@ my sub rak-results() {
                             for @matches.map({ $_ if .value.elems }) {
                                 my uint $linenr = .key;
                                 sayer "" if $linenr - $last-linenr > $skip-ok;
-                                sayer $linenr
-                                  ~ ':' ~ (.matched
-                                  ?? line-post-proc .value
-                                  !! .value.Str
-                                );
+                                if Slip.ACCEPTS(.value) {
+                                    # Can only produce a Slip from a real
+                                    # Callable, which cannot have any
+                                    # highlighting, so don't bother
+                                    sayer "$linenr:$_" for @(.value);
+                                }
+                                else {
+                                    sayer $linenr
+                                      ~ ':' ~ (.matched
+                                      ?? line-post-proc .value.Str
+                                      !! .value.Str
+                                    );
+                                }
                                 last RESULT if ++$seen == $stop-after;
                                 $last-linenr = $linenr;
                             }
@@ -712,7 +738,15 @@ my sub rak-results() {
                     elsif $group-matches || !$show-filename {
                         sayer $source if $show-filename;
                         for @matches {
-                            sayer line-post-proc $_;
+                            if Slip.ACCEPTS($_) {
+                                # Can only produce a Slip from a real
+                                # Callable, which cannot have any
+                                # highlighting, so don't bother
+                                sayer .Str for @$_;
+                            }
+                            else {
+                                sayer line-post-proc .Str;
+                            }
                             last RESULT if ++$seen == $stop-after;
                         }
                     }
@@ -720,7 +754,15 @@ my sub rak-results() {
                     # No line numbers and not grouping
                     elsif $show-filename {
                         for @matches {
-                            sayer $source ~ ':' ~ line-post-proc $_;
+                            if Slip.ACCEPTS($_) {
+                                # Can only produce a Slip from a real
+                                # Callable, which cannot have any
+                                # highlighting, so don't bother
+                                sayer "$source:$_" for @$_;
+                            }
+                            else {
+                                sayer $source ~ ':' ~ line-post-proc .Str;
+                            }
                             last RESULT if ++$seen == $stop-after;
                         }
                     }
@@ -1623,6 +1665,10 @@ my sub option-under-version-control($value --> Nil) {
     set-filesystem-flag('under-version-control', $value);
 }
 
+my sub option-unicode($value --> Nil) {
+    set-action('unicode', $value);
+}
+
 my sub option-unique($value --> Nil) {
     set-result-flag('unique', $value);
 }
@@ -1912,6 +1958,7 @@ my sub action-blame-per-file(--> Nil) {
     prepare-needle;
     %filesystem<under-version-control> := True;
     move-filesystem-options-to-rak;
+    move-result-options-to-rak;
 
     %listing<group-matches> := False if %listing<group-matches>:!exists;
     %listing<has-break>     := False if %listing<has-break>:!exists;
@@ -1931,10 +1978,10 @@ my sub action-blame-per-line(--> Nil) {
     prepare-needle;
     %filesystem<under-version-control> := True;
     move-filesystem-options-to-rak;
+    move-result-options-to-rak;
 
-    %rak<batch>            := 1;
-    %rak<omit-item-number> := True;
-    %rak<produce-many>     := -> $io { $GitBlameFile.new($io).lines }
+    %rak<batch>        := 1;
+    %rak<produce-many> := -> $io { $GitBlameFile.new($io).lines }
 
     activate-output-options;
     run-rak;
@@ -2076,6 +2123,7 @@ my sub action-json-per-file(--> Nil) {
     %filesystem<file> //= codify-extensions %exts<#json>
       unless $reading-from-stdin;
     move-filesystem-options-to-rak;
+    move-result-options-to-rak;
 
     my $enc := %rak<encoding>:delete // 'utf8-c8';
     %rak<produce-one> := -> $io { try from-json $io.slurp(:$enc) }
@@ -2093,6 +2141,7 @@ my sub action-json-per-elem(--> Nil) {
     %filesystem<file> //= codify-extensions %exts<#json>
       unless $reading-from-stdin;
     move-filesystem-options-to-rak;
+    move-result-options-to-rak;
 
     if %listing<show-line-number>:delete {
         # no action needed
@@ -2130,6 +2179,7 @@ my sub action-json-per-line(--> Nil) {
     %filesystem<file> //= codify-extensions %exts<#jsonl>
       unless $reading-from-stdin;
     move-filesystem-options-to-rak;
+    move-result-options-to-rak;
 
     if %listing<show-line-number>:delete {
         # no action needed
@@ -2365,6 +2415,49 @@ my sub action-rename-files(--> Nil) {
     rak-stats;
 }
 
+my sub action-unicode(--> Nil) {
+    my $count-only := %result<count-only>:delete;
+    meh-for 'unicode', <csv modify filesystem result>;
+
+    class Unicodes {
+        method lines() {
+            (0..0x10FFFF).map: {
+                my $uniname := .uniname;
+                $uniname
+                  unless $uniname.starts-with('<') && $uniname.ends-with('>')
+            }
+        }
+    }
+
+    %rak<sources>          := (Unicodes,);
+    %rak<omit-item-number> := True;
+    %rak<batch>            := 16384;
+
+    %rak<map-all> := $count-only;
+    %rak<mapper>  := $count-only
+      ?? -> $, @matches --> Empty {
+             sayer @matches
+               ?? "Found @matches.elems() match{'es' if @matches > 1}"
+               !! 'No matches found'
+         }
+      !! -> $source, @matches {
+             '<unicode>' => @matches.map: {
+                 my $chr := .uniparse;
+                 "$chr.ord.fmt('%5X') $_ $chr"
+             }
+         }
+
+    $ignorecase := True;
+    prepare-needle;
+
+    run-rak;
+
+    %listing<show-filename> := False unless %listing<show-filename>:exists;
+    %listing<trim>          := False unless %listing<trim>:exists;
+    rak-results;
+    rak-stats;
+}
+
 my sub action-version(--> Nil) {
     meh-only('version');
 
@@ -2459,7 +2552,7 @@ my sub description($name) {
     if $name eq 'help' | 'foo' | 'no-foo' {
         ""
     }
-    elsif %?RESOURCES<help.txt>.lines.first(*.starts-with(" --$name")) -> $line {
+    elsif %?RESOURCES<help.txt>.lines.first(*.starts-with(" --$name ")) -> $line {
         $line.substr(1).split(/ \s+ /, 2).tail
     }
     else {

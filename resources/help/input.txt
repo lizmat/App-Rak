@@ -51,7 +51,10 @@ These methods can be called on the Git::Blame::Commit object:
 - summary            the first line of the commit message of this line
 
 Example: committers in a repository
-$ rak '*.authors.Slip' --git-blame-per-file --unique
+$ rak --blame-per-file '*.authors.Slip' --unique
+
+Example: files with more than one commit and number of commits
+$ rak --blame-per-file '{ .commits.Int if .commits > 1 }'
 
 --blame-per-line
 
@@ -87,3 +90,16 @@ The following options only make sense when --csv-per-line has been specified:
 - --sep=[,]              field separator, default: ,
 - --strict               flag, do not allow different number of fields
 - --keep-meta            flag, produce fields as CSV::Field instead of Str
+
+--unicode
+
+Search the Unicode codepoint database (built into Raku) for defined codepoints
+by name.  Shows matched codepoint value in hexadecimal, the full name and the
+actual character.
+
+Example:
+$ rak --unicode banknote
+1F4B4 BANKNOTE WITH YEN SIGN 💴
+1F4B5 BANKNOTE WITH DOLLAR SIGN 💵
+1F4B6 BANKNOTE WITH EURO SIGN 💶
+1F4B7 BANKNOTE WITH POUND SIGN 💷

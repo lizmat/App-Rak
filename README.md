@@ -27,7 +27,7 @@ DESCRIPTION
 
 App::Rak provides a CLI called `rak` that allows you to look for a pattern in (a selection of files) from one or more directories recursively. It has been modelled after utilities such as `grep`, `ack`, `ag` and `rg`, with a little bit of `find` mixed in, and `-n` and `-p` parameters of many programming languages.
 
-Note: this is still very much in alpha development phase. Comments, suggestions and bug reports are more than welcome!
+Note: this project is now in beta-development phase. Comments, suggestions and bug reports continue to be more than welcome!
 
 POSITIONAL ARGUMENTS
 ====================
@@ -53,9 +53,49 @@ Paths can also be specified with the `--paths` option, in which case there shoul
 ON CALLABLES AS PATTERN
 =======================
 
+`Callables` can be specfied by a string starting with `*.` (so-called [Whatever currying](https://docs.raku.org/type/Whatever), or as a string starting with `{` and ending with `}`.
+
+Note that if a `Callable` is specified as a pattern, then no highlighting can be performed as it cannot signal why or where a match occurred.
+
+The return value of the pattern `Callable` match is interpreted in the following way:
+
+True
+----
+
+If the `Bool`ean True value is returned, assume the pattern is found. Produce the item unless `--invert-match` was specified.
+
+False
+-----
+
+If the `Bool`ean False value is returned, assume the pattern is **not** found. Do **not** produce the item unless `--invert-match` was specified.
+
+Nil
+---
+
+If `Nil` is returned, assume the pattern is **not** found.
+
+This typically happens when a `try` is used in a pattern, and an execution error occurred. Do **not** produce the item unless `--invert-match` was specified.
+
+Empty
+-----
+
+If the empty `Slip` is returned, assume the pattern is **not** found. Do **not** produce the item unless `--invert-match` was specified. Shown in stats as a `passthru`.
+
+any other Slip
+--------------
+
+If a non-empty `Slip` is returned, produce the values of the `Slip` separately for the given item (each with the same item number).
+
+### any other value
+
+Produce that value.
+
+PHASERS IN CALLABLE PATTERNS
+============================
+
 The Raku Programming Language has a number of unique features that can be used with patterns that are so-called `Callable`s. One of them is the use of so-called [phasers](https://docs.raku.org/language/phasers) (pieces of code that will be executed automatically when a certain condition has been met.
 
-`App::Rak` currently supports the [loop phasers](https://docs.raku.org/language/phasers#FIRST):
+`App::Rak` currently supports all of Raku's [loop phasers](https://docs.raku.org/language/phasers#FIRST):
 
   * FIRST - code to run when searching starts
 
@@ -1043,6 +1083,11 @@ NOTE: support of this feature depends on Raku supporting that feature on the cur
 -----------------------------
 
 Indicate whether to only select files that are under some form of version control. If specified with a trueish value, will assume files that are under `git` version control. Can also specify the name of the version control system as the value: currently only **git** is supported.
+
+--unicode
+---------
+
+Flag. If specified with a true value, will search the unicode database for defined codepoints by name. Default is `False`.
 
 --unique
 --------

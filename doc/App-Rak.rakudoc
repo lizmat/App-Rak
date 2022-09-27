@@ -30,8 +30,8 @@ been modelled after utilities such as C<grep>, C<ack>, C<ag> and C<rg>, with
 a little bit of C<find> mixed in, and C<-n> and C<-p> parameters of many
 programming languages.
 
-Note: this is still very much in alpha development phase.  Comments,
-suggestions and bug reports are more than welcome!
+Note: this project is now in beta-development phase.  Comments, suggestions
+and bug reports continue to be more than welcome!
 
 =head1 POSITIONAL ARGUMENTS
 
@@ -67,13 +67,58 @@ option was used for the pattern specification.
 
 =head1 ON CALLABLES AS PATTERN
 
+C<Callables> can be specfied by a string starting with C<*.> (so-called
+L<Whatever currying|https://docs.raku.org/type/Whatever>, or as a string
+starting with C<{> and ending with C<}>.
+
+Note that if a C<Callable> is specified as a pattern, then no highlighting
+can be performed as it cannot signal why or where a match occurred.
+
+The return value of the pattern C<Callable> match is interpreted in the
+following way:
+
+=head2 True
+
+If the C<Bool>ean True value is returned, assume the pattern is found.
+Produce the item unless C<--invert-match> was specified.
+
+=head2 False
+
+If the C<Bool>ean False value is returned, assume the pattern is B<not>
+found.  Do B<not> produce the item unless C<--invert-match> was specified.
+
+=head2 Nil
+
+If C<Nil> is returned, assume the pattern is B<not> found.
+
+This typically happens when a C<try> is used in a pattern, and an execution
+error occurred.  Do B<not> produce the item unless C<--invert-match> was
+specified.
+
+=head2 Empty
+
+If the empty C<Slip> is returned, assume the pattern is B<not> found.
+Do B<not> produce the item unless C<--invert-match> was specified.  Shown
+in stats as a C<passthru>.
+
+=head2 any other Slip
+
+If a non-empty C<Slip> is returned, produce the values of the C<Slip>
+separately for the given item (each with the same item number).
+
+=head3 any other value
+
+Produce that value.
+
+=head1 PHASERS IN CALLABLE PATTERNS
+
 The Raku Programming Language has a number of unique features that can
 be used with patterns that are so-called C<Callable>s.  One of them is
 the use of so-called L<phasers|https://docs.raku.org/language/phasers>
 (pieces of code that will be executed automatically when a certain
 condition has been met.
 
-C<App::Rak> currently supports the
+C<App::Rak> currently supports all of Raku's
 L<loop phasers|https://docs.raku.org/language/phasers#FIRST>:
 
 =item FIRST - code to run when searching starts
@@ -1299,6 +1344,11 @@ Indicate whether to only select files that are under some form of version
 control.  If specified with a trueish value, will assume files that are
 under C<git> version control.  Can also specify the name of the version
 control system as the value: currently only B<git> is supported.
+
+=head2 --unicode
+
+Flag.  If specified with a true value, will search the unicode database
+for defined codepoints by name.  Default is C<False>.
 
 =head2 --unique
 

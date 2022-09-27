@@ -1,6 +1,17 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Add support for --unicode
+     - Workaround Raku issue with coercion to Str with highlighting
+     - Fix issue with non-matching incomplete flags, such as --tri
+     - Make non-empty Slip return values from Callables DTRT
+     - Add documentation on possible return values of Callable patterns
+     - Bump dependency on rak for deadlock issues caused by Git::Files
+     - Fix issue with --blame-per-file not honoring e.g. --unique
+     - Fix issue with --blame-per-line not honoring e.g. --unique
+     - Fix issue with --json-per-file not honoring e.g. --unique
+     - Fix issue with --json-per-line not honoring e.g. --unique
+     - Fix issue with --json-per-elem not honoring e.g. --unique
 
 0.0.98  2022-09-26T19:49:26+02:00
      - Bump dependency on rak to get :old-new support
