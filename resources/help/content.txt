@@ -1,4 +1,38 @@
 Content modifiers:
- --modify-files        Change content of files using the Callable pattern
- --backup[=extension]  Make backup of file with extension (default: .bak)
- --dry-run             Don't actually make any changes, just run the process
+
+--backup[=extension]
+
+Only makes sense when the --modify-files is also specified.  Indicates
+whether backups should be made when a file is modified.  If an extension
+is specified, then that will be added to the name of the file.  If
+specified as a flag, then ".bak" will be assumed.  Defaults to not
+making any backup.
+
+--dry-run
+
+Only makes sense when either the --modify-files or --rename-files is
+also specified.  Indicates that *no* actual changes should be performed.
+Defaults to False, allowing for changes to be made.
+
+--modify-files
+
+Only makes sense with a Callable pattern.  Indicates that the inspected
+files may be potentially changed.  If the value returned by the
+Callable pattern is not True/False/Nil/Empty and different from the
+given line, then that line will be replaced by the returned value.
+Defaults to False, indicating that files should **not** be changed.
+Can also specify --dry-run to see which files would be changed
+without actually making any changes.
+
+--rename-files
+
+Only makes sense with a Callable pattern.  Assumes --find semantics
+if specified.  Indicates that the names of the selected files may be
+potentially changed.  If the value returned by the Callable pattern
+is not True/False/Nil/Empty and different from the given filename,
+then the name of the file will be replaced by the returned value.
+Defaults to False, indicating that no files will be renamed.  If
+the file is under version control (currently only "git" is supported)
+will make sure that the version control system will be aware of
+the rename.  Can also specify --dry-run to see which files would be
+renamed without actually making any changes.

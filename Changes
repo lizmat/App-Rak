@@ -1,6 +1,10 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - The first official beta-version of App::Rak.  With fleshed
+       out documentation for all arguments from the command line
+     - Bump dependency on rak to get default for :dir/:file fix
+     - Make sure --find-all is actually handled
 
 0.0.99  2022-09-27T22:12:15+02:00
      - Add support for --unicode

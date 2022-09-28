@@ -1,5 +1,29 @@
 Code pattern helpers:
- --repository=lib      First look for any modules to load in the "lib" directory
- --module=foo          Load module "foo" before compiling Raku code pattern
- --quietly             Disable warnings when executing pattern (default: False)
- --silently[=out,err]  Capture output when executing pattern (default: False)
+
+--module=foo
+
+Indicate the Raku module to be loaded before compiling Raku
+code pattern.  Can be specfied more than once.  Defaults to
+no additional module loading.  Also known as -M when calling
+Raku itself.
+
+--quietly
+
+Indicate whether warnings should be disabled when executing
+a Callable pattern.  Defaults to False.
+
+--repository=lib
+
+Indicate the directory of a filesystem repository that should
+be used first to look for module loading.  Defaults to no
+additional repositories.  Also known as -I when calling Raku
+itself.
+
+--silently[=out,err]
+
+Indicate whether any output that is created by executing a
+Callable pattern, should be prevented from actually being
+shown.  If specified as a flag, will capture both STDOUT
+and STDERR.  Can also specifically capture STDOUT (with
+"out") and/or capture STDERR (with "err").  Defaults to
+no preventing any output from a Callable pattern.

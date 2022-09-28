@@ -1,9 +1,36 @@
 General options:
- --help      Show this
- --help foo  Show additional help about:
-               pattern | string | code | haystack | result | listing
-               content | resource | edit | option | general | philosophy
-               examples
- --list-known-extensions  Show all known extensions and their groups
- --version                Show version information
- --verbose                Be more verbose, if applicable
+
+--help
+
+Show an overview of all options of the "rak" command line interface.
+
+--help subject
+
+Show additional information about the given subject.  Possible subjects
+are (in alphabetical order):
+
+- code        Code pattern helpers
+- content     Content modifiers
+- debug       Debugging options
+- examples    Usage examples
+- filesystem  File system filters
+- general     General options
+- haystack    Haystack specification
+- input       Input selection
+- listing     Listing modifiers
+- option      Option management
+- pattern     Pattern specification
+- philosophy  Ruminations
+- resource    Resource usage
+- result      Result modifiers
+- special     Special options
+- string      String search pattern modifiers
+
+--version
+
+Show version information about the "rak" command line interface.
+
+--verbose
+
+If specified with a True value, will show more information if that
+is possible, depending on the other arguments.

@@ -4,7 +4,7 @@ use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;       # edit-files
 use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.14>:auth<zef:lizmat>;      # columns highlighter matches
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
-use rak:ver<0.0.28>:auth<zef:lizmat>;              # rak
+use rak:ver<0.0.29>:auth<zef:lizmat>;              # rak
 use String::Utils:ver<0.0.12>:auth<zef:lizmat> <after before between is-sha1>;
 
 # The epoch value when process started
@@ -15,7 +15,7 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-09-27T12:22:05+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-09-27T22:55:07+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
 my str @options = <absolute accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dont-catch dryrun edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-line-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
@@ -1765,13 +1765,19 @@ my sub move-filesystem-options-to-rak(--> Nil) {
         }
         elsif %filesystem<file>:delete -> $file {
             maybe-meh-together 'file', %filesystem<
-              extensions known-extensions
+              extensions known-extensions find-all
             >:k;
             %rak<file> := $file;
         }
         elsif %filesystem<known-extensions>:delete -> $known {
-            maybe-meh-together 'known-extensions', %filesystem<extensions>:k;
+            maybe-meh-together 'known-extensions', %filesystem<
+              extensions find-all
+            >:k;
             %rak<file> := $known;
+        }
+        elsif %filesystem<find-all>:delete {
+            maybe-meh-together 'find-all', %filesystem<dir extensions>:k;
+            %rak<file> := True;
         }
         elsif %filesystem<extensions>:delete -> $seen {
             %rak<file> := $seen;

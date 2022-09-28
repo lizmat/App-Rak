@@ -1,33 +1,135 @@
-Filesystem filters:
- --accessed=condition   Check on epoch when file was last accessed
- --blocks               Number of filesystem blocks used by file
- --created=condition    Check on epoch when file was created
- --device-number        Number of device on which file is located
- --exec                 Run program, include if successful
- --filesize             Number of bytes of data used by file
- --hard-links           Number of hard-links to file on filesystem
- --inode                Inode number of file on filesystem
- --group=selector       File is owned by group names / expression
- --gid=condition        File is owned by given gid
- --has-setgid           Has SETGID bit set in attributes
- --has-setuid           Has SETUID bit set in attributes
- --is-empty             File does (not) contain any data
- --is-executable        File can (not) be executed by owner
- --is-readable          File can (not) be read by owner
- --is-writable          File can (not) be written to by owner
- --is-group-executable  File can (not) be executed by group members of owner
- --is-group-readable    File can (not) be read by group members of owner
- --is-group-writable    File can (not) be written to by group members of owner
- --is-owned-by-group    File is (not) owned by group of user
- --is-owned-by-user     File is (not) owned by user
- --is-sticky            Has STICKY bit set in attributes
- --is-symbolic-link     File is (not) a symbolic link
- --is-world-executable  File can (not) be executed by anybody
- --is-world-readable    File can (not) be read by anybody
- --is-world-writable    File can (not) be written to by anybody
- --meta-modified=cond   Check on epoch when meta-info of file was last changed
- --mode                 The full mode value of the file
- --modified=condition   Check on epoch when file was last changed
- --shell                Run shell command, include if successful
- --user=selector        File is owned by user names / expression
- --uid=expression       File is owned by given uid
+File system filters:
+
+File system filters refine the inital selection of files as indicated by
+the haystack arguments.
+
+Refining by name:
+
+These arguments partially overlap in functionality.  If none of these
+arguments are specified, then --dir (accepting *all* directories for
+recursion) and --known-extensions (accepting only files of which the
+extension is an extension of any of the predefined extension groups).
+
+--dir=expression
+
+Specifies the expression (either as a string, regular expression or as
+a Callable) that will be matched with the basename of a directory.
+This expression should return True to have a subdirectory be included
+for recursion.  Defaults to any directory of which the basename does
+**NOT** start with a period.  Specifying --dir as a flag will include
+*all* subdirectories, while specifying --/dir (or --not-dir) will
+cause no recursion to happen whatsoever (this can be handy when only
+interested in the files of the current directory).
+
+--extensions=list
+
+Specifies the extensions that a filename should have, to be accepted.
+Can either be a single extension (group), or a comma-separated list
+of extensions (groups).  Currently the predefined extension groups
+are: #raku, #perl, #cro, #text, #c, #c++, #yaml, #ruby, #python,
+#html, #markdown, #json, #jsonl, #csv, #config and #text.  Conflicts
+with --file, --find-all or --known-extensions.
+
+--file=expression
+
+Specifies the expression (either as a string, regular expression or
+as a Callable) that will be matched with the basename of a file.
+This expression should return True to have a file be included.
+Conflicts with --extensions, --find-all or --known-extensions.
+
+--find-all
+
+Flag.  If specified with a True value, will set --dir and --file both
+to True, indicating *no* limitation on which directories are acceptable
+for recursion, nor any limitation on the basename of a file.  Conflicts
+with --file, --dir, --extensions or --known-extensions.
+
+--known-extensions
+
+Flag.  If specified with a True value, will only accept files of which
+the extension is an extension of any of the predefined extension groups.
+Conflicts with --file, --find-all or --extensions.
+
+Refining by epoch:
+
+These arguments expect a Callable that will be given the associated
+epoch value of the file being checked.  See
+https://raku.land/zef:lizmat/App::Rak#checking-times-on-files for
+more information about possible features.
+
+--accessed=condition  Check on epoch when file was last accessed
+--created=condition   Check on epoch when file was created
+--meta-modified=cond  Check on epoch when meta-info of file was last changed
+--modified=condition  Check on epoch when file was last changed
+
+Refining by user / group name:
+
+These arguments either expect a Callable that will be given a string
+associated with the file, which is expected to return True to accept
+the file.  Or it may consist of a comma-separated list of names of
+acceptable names, optionally prefixed with an exclamation mark to
+indicate that the specified names are unacceptable.
+
+--user=selector   File is owned by user names / expression
+--group=selector  File is owned by group names / expression
+
+Refining by user / group ID:
+
+These arguments expect a Callable that will be given a numeric ID
+associated with the owner of file.  It is expected to return True
+to have the file accepted.  Note that this may actually only work
+on Unixy file systems.
+
+--uid=condition  File is owned by uid given
+--gid=condition  File is owned by gid given
+
+Refining by numeric meta value:
+
+These arguments expect a Callable (except --is-empty) that will be
+given the associated numeric value, and which should return True
+to have the file in question being accepted.
+
+--blocks=condition    Number of file system blocks used by file
+--device-number=cond  Number of device on which file is located
+--filesize=condition  Number of bytes of data used by file
+--is-empty            Number of bytes of data used by file is zero
+--hard-links=cond     Number of hard-links to file on file system
+--inode=condition     Inode number of file on file system
+--mode=condition      The full mode value of the file
+
+Refining by external program:
+
+These arguments can be used to accept a file if an external
+program (either direct or through a shell) will successfully
+run to completion when given the full path of the filename
+being inspected.  The filename is available as $_ in the
+expression that you give.
+
+--exec=program  Run program, include if successful
+--shell=action  Run shell command, include if successful
+
+Refining by attribute (not) being set:
+
+These arguments can be both specified with a True value
+(e.g. --is-readable) or with a False value (--/is-readable or
+--no-is-readable).  If specified with a True value, will accept
+a file if that attribute is set.  If specified with a False value,
+will accept a file if that attribute is **NOT** set.  Note that
+some of these attributes will actually only work on Unixy
+file systems.
+
+--has-setgid           Has SETGID bit (not) set in attributes
+--has-setuid           Has SETUID bit (not) set in attributes
+--is-executable        File can (not) be executed by owner
+--is-readable          File can (not) be read by owner
+--is-writable          File can (not) be written to by owner
+--is-group-executable  File can (not) be executed by group members of owner
+--is-group-readable    File can (not) be read by group members of owner
+--is-group-writable    File can (not) be written to by group members of owner
+--is-owned-by-group    File is (not) owned by group of user
+--is-owned-by-user     File is (not) owned by user
+--is-symbolic-link     File is (not) a symbolic link
+--is-sticky            Has STICKY bit (not) set in attributes
+--is-world-executable  File can (not) be executed by anybody
+--is-world-readable    File can (not) be read by anybody
+--is-world-writable    File can (not) be written to by anybody

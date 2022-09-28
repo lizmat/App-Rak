@@ -1,19 +1,109 @@
 Listing modifiers:
- --human                     Force defaults as if a human is watching
- --absolute                  Show paths as absolute paths
- --break[=string]            String to show between different files
- --group-matches             Show filename only once on a separate line
- --show-blame                Show git blame information if possible
- --show-filename             Show the filename in which match occurred
- --file-separator-null       Separate filenames with null bytes
- --show-line-number          Show the line number in which match occurred
- --summary-if-larger-than=N  Summarize matching line if longer than N chars
- --trim                      Remove whitespace, true if no context
- --highlight                 Highlight matches if possible
- --highlight-before=xxx      String to put before match
- --highlight-after=yyy       String to put after match
- --proximate[=N]             Grouping of matched lines
- --only-first[=N]            Show only the N results, N defaults to 1
- --output-file=filename      Send output to indicated file (default: STDOUT)
- --pager                     Pager to use (default: ACK_PAGER // none)
- --stats                     Also show statistics
+
+--absolute
+
+Indicate that whenever a path is shown, it should be shown as an absolute
+path.  The default is False, making paths show as relative paths.
+
+--break[=string]
+
+String to show between different files.  Defaults to "" if a human is
+watching, or to no string to show between different files otherwise.
+
+--file-separator-null
+
+Only makes sense in combination with --files-with-matches or
+--files-without-matches.  If specified, will separate filenames
+with null bytes, rather than with newlines.  Defaults to False.
+
+--group-matches
+
+If specified with a true value, then if a file contains matches, will
+show the filename on a separate line, otherwise the filename will be
+prefixed to any match.  Defaults to True if a human is watching, else
+False.
+
+--highlight
+
+Highlight matches in strings if the pattern is not a Callable.
+Defaults to True if a human is watching, else False.
+
+--highlight-before=xxx
+
+Specify the string to put before a match in a string.  By default
+is the BOLD ON terminal sequence.
+
+ --highlight-after=yyy
+
+Specify the string to put after a match in a string.  Defaults to
+either what was specified with --highlight-before, or to BOLD OFF
+if that was *not* specified.
+
+--human
+
+Force defaults as if a human is watching.  Defaults to True if a human
+is watching (aka, a terminal is connected to STDOUT, aka $*OUT.t is true).
+The following defaults will be applied unless specifically overridden:
+
+- --break=""
+- --group-matches
+- --highlight
+- --trim
+- --only-first=1000
+- --proximate=1
+
+--only-first[=N]
+
+Specify the *total* number of lines that matched, to be shown.  Defaults
+to 1000 if a human is watching, else no limitation will be applied.  If
+specified as a flag, assumes 1.
+
+--output-file=filename
+
+Specify the name of the file to send the output to.  Defaults to STDOUT.
+
+--pager=program
+
+Specify a pager program to use.  Defaults to what is specified with the
+ACK_PAGER environment variable.  If that is not specified either, does
+not activate any pager.
+
+--proximate[=N]
+
+Specify grouping of matched lines by indicating the maximum difference
+in line number value that is allowed before an extra empty line will
+be added between matches.  Defaults to 1 if a human is watching, or
+no proximation otherwise.
+
+--show-blame
+
+Indicate whether to show blame information if possible (currently only
+"git blame" supported).  Defaults to False.
+
+--show-filename
+
+Indicate whether to show the filename in which a match occurred.
+Defaults to True.  Some other options may override this, such as
+--unique and --frequencies.
+
+--show-line-number
+
+Indicate whether to show the line number in which match occurred.
+Defaults to True.  Some other options may override this, such as
+--unique and --frequencies.
+
+--summary-if-larger-than=N
+
+Indicate whether a matching line should be summarized if it
+exceeds the given number of characters.  Defaults to 160.
+
+--stats
+
+Indicate to show statistics about the search performed after the
+results have been shown.  Defaults to False.
+
+--trim
+
+Indicate to remove whitespace at the start and the end of a
+matching line.  Defaults to True if a human is watching.  May be
+overridden by some options, such as --context.

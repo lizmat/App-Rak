@@ -1,4 +1,4 @@
-Editor options:
+Special options:
  --edit[=editor]  Go edit the result in an editor, (default EDITOR or vim)
  --vimgrep        Produce output in :vimgrep format
  --checkout       Checkout branch if pattern matches single branch name

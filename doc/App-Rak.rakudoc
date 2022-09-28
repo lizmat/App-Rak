@@ -411,7 +411,7 @@ $ rak foo --extensions=
 
 =end code
 
-Predefined groups are C<#raku>, C<#perl>, C<#cro>, C<#text> C<#c>, C<#c++>,
+Predefined groups are C<#raku>, C<#perl>, C<#cro>, C<#text>, C<#c>, C<#c++>,
 C<#yaml>, C<#ruby>, C<#python>, C<#html>, C<#markdown>, C<#json>, C<#jsonl>,
 C<#csv>, C<#config> and C<#text>.
 

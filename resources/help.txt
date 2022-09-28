@@ -14,7 +14,7 @@ String search pattern modifiers:
  --type=ends-with    Look for string at end of a line
  --type=contains     Look for string anywhere (default)
 
-Input selection:
+Action to perform:
  --find            Interprete selected paths as the lines to inspect
  --json-per-file   Call Raku code with parsed JSON
  --json-per-elem   Call Raku code with top elements of parsed JSON
@@ -23,6 +23,8 @@ Input selection:
  --blame-per-line  Call Raku code with Git::Blame::Line objects if possible
  --csv-per-line    Interpret file as CSV and produce rows
  --unicode         Search the Unicode codepoint database
+ --per-file        Inspect files as a whole file
+ --per-line        Inspect files line by line (default)
 
 Code pattern helpers:
  --repository=lib      First look for any modules to load in the "lib" directory
@@ -32,51 +34,51 @@ Code pattern helpers:
 
 Haystack specification:
  path1 path2 ...          All other arguments are paths (default: current dir)
- --paths                  Comma separated list of paths instead of ^^
- --extensions             By group (e.g. #raku) and/or comma separated
+ --path=specification     Comma separated list of paths instead of ^^
  --files-from=file        Read files to inspect from given file
- --known-extensions       Only search files with known extensions
  --paths-from=file        Read path specifications from given file
+ --under-version-control  Select paths that are under version control
  --recurse-symlinked-dir  Recurse into symlinked directories? (default: don't)
  --recurse-unmatched-dir  Recurse into directories not matching (default: don't)
- --under-version-control  Only select paths that are under version control
- --dir=expression         Directory basename filter, default: not ^.
- --file=expression        File basename filter, default: all
- --find-all               Override --dir / --file defaults
 
 Filesystem filters:
- --accessed=condition   Check on epoch when file was last accessed
- --blocks               Number of filesystem blocks used by file
- --created=condition    Check on epoch when file was created
- --device-number        Number of device on which file is located
- --exec                 Run program, include if successful
- --filesize             Number of bytes of data used by file
- --hard-links           Number of hard-links to file on filesystem
- --inode                Inode number of file on filesystem
- --group=selector       File is owned by group names / expression
- --gid=condition        File is owned by given gid
- --has-setgid           Has SETGID bit set in attributes
- --has-setuid           Has SETUID bit set in attributes
- --is-empty             File does (not) contain any data
- --is-executable        File can (not) be executed by owner
- --is-readable          File can (not) be read by owner
- --is-writable          File can (not) be written to by owner
- --is-group-executable  File can (not) be executed by group members of owner
- --is-group-readable    File can (not) be read by group members of owner
- --is-group-writable    File can (not) be written to by group members of owner
- --is-owned-by-group    File is (not) owned by group of user
- --is-owned-by-user     File is (not) owned by user
- --is-sticky            Has STICKY bit set in attributes
- --is-symbolic-link     File is (not) a symbolic link
- --is-world-executable  File can (not) be executed by anybody
- --is-world-readable    File can (not) be read by anybody
- --is-world-writable    File can (not) be written to by anybody
- --meta-modified=cond   Check on epoch when meta-info of file was last changed
- --mode                 The full mode value of the file
- --modified=condition   Check on epoch when file was last changed
- --shell                Run shell command, include if successful
- --user=selector        File is owned by user names / expression
- --uid=expression       File is owned by given uid
+ --accessed=condition    Check on epoch when file was last accessed
+ --blocks=condition      Number of filesystem blocks used by file
+ --created=condition     Check on epoch when file was created
+ --device-number         Number of device on which file is located
+ --dir=expression        Directory basename filter, default: not ^.
+ --exec=program          Run program, include if successful
+ --extensions=spec       By group (e.g. #raku) and/or comma separated
+ --file=expression       File basename filter, default: all
+ --filesize=condition    Number of bytes of data used by file
+ --find-all              Override --dir / --file defaults
+ --group=selector        File is owned by group names / expression
+ --gid=condition         File is owned by given gid
+ --hard-links=condition  Number of hard-links to file on file system
+ --has-setgid            Has SETGID bit set in attributes
+ --has-setuid            Has SETUID bit set in attributes
+ --inode=condition       Inode number of file on file system
+ --is-empty              File does (not) contain any data
+ --is-executable         File can (not) be executed by owner
+ --is-readable           File can (not) be read by owner
+ --is-writable           File can (not) be written to by owner
+ --is-group-executable   File can (not) be executed by group members of owner
+ --is-group-readable     File can (not) be read by group members of owner
+ --is-group-writable     File can (not) be written to by group members of owner
+ --is-owned-by-group     File is (not) owned by group of user
+ --is-owned-by-user      File is (not) owned by user
+ --is-sticky             Has STICKY bit set in attributes
+ --is-symbolic-link      File is (not) a symbolic link
+ --is-world-executable   File can (not) be executed by anybody
+ --is-world-readable     File can (not) be read by anybody
+ --is-world-writable     File can (not) be written to by anybody
+ --known-extensions      Only search files with known extensions
+ --meta-modified=cond    Check on epoch when meta-info of file was last changed
+ --mode=condition        The full mode value of the file
+ --modified=condition    Check on epoch when file was last changed
+ --shell=action          Run shell command, include if successful
+ --user=selector         File is owned by user names / expression
+ --uid=condition         File is owned by given uid
 
 Result modifiers:
  --context=N               List N lines around any line with a match
@@ -118,6 +120,7 @@ Listing modifiers:
 Content modifiers:
  --modify-files        Change content of files using the Callable pattern
  --backup[=extension]  Make backup of file with extension (default: .bak)
+ --rename-files        Rename files using the Callable pattern
  --dry-run             Don't actually make any changes, just run the process
 
 Resource usage:
@@ -140,12 +143,12 @@ General options:
                pattern | string   | code    | haystack | result  | listing
                content | resource | special | option   | general | philosophy
                examples
- --list-known-extensions  Show all known extensions and their groups
  --version                Show version information
  --verbose                Be more verbose, if applicable
 
 Debugging options:
  --dont-catch             Let code exceptions be thrown with backtrace
+ --list-known-extensions  Show all known extensions and their group namep
  --list-expanded-options  List all options given after having been expanded
  --rak                    Show arguments to "rak" plumbing before running
 

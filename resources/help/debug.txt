@@ -1,4 +1,31 @@
 Debugging options:
- --dont-catch             Let code exceptions be thrown with backtrace
- --list-expanded-options  List all options given after having been expanded
- --rak                    Show arguments to "rak" plumbing before running
+
+--dont-catch
+
+Indicate that code exceptions should be thrown with Raku backtrace.
+Defaults to False, catching any exception and turn this into a
+limited error message.  Mostly intended for App::Rak developers
+and for error reporting by users when making a Github issue.
+
+--list-expanded-options
+
+If specified with a True value, do not execute search query.
+Instead show all the options that would be executed internally
+after all custom options (previously saved with --save) have been
+expanded.  Defaults to False, performing the query as intended.
+Mostly intended for users that don't understand the presented
+results from the given arguments, and potentially for error
+reporting by users when making a Github issue.
+
+--list-known-extensions
+
+If specified with a True value, will list all of the extension
+groups known, and which extensions are considered part or that
+group.  No other arguments should be specified.  Mainly intended
+as documentation for both users as well as App::Rak developers.
+
+--rak
+
+If specified with a True value, will show the arguments that will
+be passed to the "rak" plumbing logic.  Intended to be used by
+App::Rak developers.  Defaults to False, not showing these arguments.
