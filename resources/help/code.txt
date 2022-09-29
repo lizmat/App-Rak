@@ -1,4 +1,5 @@
 Code pattern helpers:
+‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
 
 --module=foo
 
@@ -6,6 +7,11 @@ Indicate the Raku module to be loaded before compiling Raku
 code pattern.  Can be specfied more than once.  Defaults to
 no additional module loading.  Also known as -M when calling
 Raku itself.
+
+Example:
+# show all non-empty lines as space separated codepoints
+# using the experimental "pack" function
+$ rak --module='experimental :pack' '{ (pack "A*", $_).List }'
 
 --quietly
 

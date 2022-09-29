@@ -99,7 +99,7 @@ OK
 # Check without highlighting
 for @ine {
     query-ok .Slip,
-      <--show-filename --show-line-number --group-matches --/highlight>,
+      <--show-filename --show-item-number --group-matches --/highlight>,
       :head(2), ok => q:to/OK/;
 nine
 10:nine
@@ -119,7 +119,7 @@ for (
 }
 
 query-ok "six",
-  <--smartcase --/group-matches --/show-line-number --/highlight --/break>,
+  <--smartcase --/group-matches --/show-item-number --/highlight --/break>,
   ok => q:to/OK/;
 six:SIX
 seven:SIX
@@ -321,7 +321,7 @@ nine
 8:{BON}seven{BOFF}
 OK
 
-query-ok <even --no-group-matches --/show-line-number>, ok => qq:to/OK/;
+query-ok <even --no-group-matches --/show-item-number>, ok => qq:to/OK/;
 seven:s{BON}even{BOFF}
 
 eight:s{BON}even{BOFF}
@@ -343,7 +343,7 @@ eight:8:s{BON}ev{BOFF}en
 nine:8:s{BON}ev{BOFF}en
 OK
 
-query-ok <ven --highlight-before=* --/show-filename --/show-line-number>,
+query-ok <ven --highlight-before=* --/show-filename --/show-item-number>,
   ok => q:to/OK/;
 se*ven*
 

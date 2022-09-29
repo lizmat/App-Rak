@@ -1,3 +1,6 @@
+Arguments overview:
+‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
+
 Pattern specification:
  foo                      literal string
  '/ << bar >> /'          Raku regex indicated by being bounded by / /
@@ -8,23 +11,23 @@ either as first argument, or as --pattern=foo option
 String search pattern modifiers:
  --ignorecase  Ignore distinction between upper, lower and title case letters
  --ignoremark  Only compare base characters, ignore additional marks
- --smartcase   As --ignorecase if pattern does NOT contain any uppercase
+ --smartcase   As --ignorecase if pattern does *NOT* contain any uppercase
  --type=words        Look for string as a word
  --type=starts-with  Look for string at start of a line
  --type=ends-with    Look for string at end of a line
  --type=contains     Look for string anywhere (default)
 
-Action to perform:
- --find            Interprete selected paths as the lines to inspect
- --json-per-file   Call Raku code with parsed JSON
- --json-per-elem   Call Raku code with top elements of parsed JSON
- --json-per-line   Call Raku code with parsed JSON
- --blame-per-file  Call Raku code with Git::Blame::File objects if possible
- --blame-per-line  Call Raku code with Git::Blame::Line objects if possible
- --csv-per-line    Interpret file as CSV and produce rows
- --unicode         Search the Unicode codepoint database
- --per-file        Inspect files as a whole file
- --per-line        Inspect files line by line (default)
+Item producers:
+ --per-line[=producer]  Produce lines for pattern matching
+ --per-file[=producer]  Produce whole file for pattern matching
+ --find            Produce absolute paths for pattern matching
+ --json-per-file   Interpret whole file as a single JSON for matching
+ --json-per-elem   Interpret whole file as JSON, match each top level element
+ --json-per-line   Interpret each line as JSON for pattern matching
+ --blame-per-file  Produce Git::Blame::File object for pattern matcing
+ --blame-per-line  Produce Git::Blame::Line objects for pattern matching
+ --csv-per-line    Produce rows from Text::CSV object for pattern matching
+ --unicode         Produce names of codepoints for pattern matching
 
 Code pattern helpers:
  --repository=lib      First look for any modules to load in the "lib" directory
@@ -105,7 +108,7 @@ Listing modifiers:
  --show-blame                Show git blame information if possible
  --show-filename             Show the filename in which match occurred
  --file-separator-null       Separate filenames with null bytes
- --show-line-number          Show the line number in which match occurred
+ --show-item-number          Show the item number in which match occurred
  --summary-if-larger-than=N  Summarize matching line if longer than N chars
  --trim                      Remove whitespace, true if no context
  --highlight                 Highlight matches if possible

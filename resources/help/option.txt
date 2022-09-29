@@ -1,4 +1,11 @@
 Option management:
- --save=name              Translate --name to all other options specified,
-                          remove if --save was the only option specified
- --list-custom-options    List all previously saved options
+‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
+
+--save=name
+
+Translate --name to all other options specified, remove if --save
+was the only option specified
+
+--list-custom-options
+
+List all previously saved options

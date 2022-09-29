@@ -17,7 +17,7 @@ my constant BOFF = "\e[22m";  # BOLD OFF
 #- start of available options --------------------------------------------------
 #- Generated on 2022-09-27T22:55:07+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dont-catch dryrun edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-line-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dont-catch dryrun edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -524,7 +524,7 @@ my sub HELP($text, @keys, :$verbose) {
     say "-" x $header.chars;
     say $writing-to-stdout
       ?? $text.lines.map({
-              !.starts-with(" ") && .ends-with(":") ?? BON ~ $_ ~ BOFF !! $_
+              !$++ || .starts-with('--') ?? BON ~ $_ ~ BOFF !! $_
          }).join("\n")
       !! $text;
 
@@ -632,8 +632,15 @@ my sub rak-results() {
     }
 
     # Set way to stringify paths
-    my &stringify :=
+    my &path-stringify :=
       IO::Path.^find_method($absolute ?? "absolute" !! "relative");
+    my sub stringify($value) {
+        IO::Path.ACCEPTS($value)
+          ?? path-stringify($value)
+          !! Buf.ACCEPTS($value)
+            ?? $value.List.Str
+            !! $value.Str
+    }
 
     # show the results!
     my int $seen;
@@ -646,9 +653,7 @@ my sub rak-results() {
             # Just listing paths
             if $key eq '<find>' {
                 for @$value.sort(*.fc) {
-                    sayer IO::Path.ACCEPTS($_)
-                      ?? line-post-proc stringify($_)
-                      !! line-post-proc .Str;
+                    sayer line-post-proc stringify($_);
                     last RESULT if ++$seen == $only-first;
                 }
             }
@@ -656,9 +661,7 @@ my sub rak-results() {
             # Looks like normal search result
             elsif Iterable.ACCEPTS($value) {
                 if $value -> @matches {
-                    my $source := IO::Path.ACCEPTS($key)
-                      ?? stringify($key)
-                      !! $key;
+                    my $source := stringify($key);
                     sayer $break if $has-break && $seen;
 
                     if PairContext.ACCEPTS(@matches.head) {
@@ -677,8 +680,8 @@ my sub rak-results() {
                                 }
                                 else {
                                     sayer $linenr ~ ':' ~ (.matched
-                                      ?? line-post-proc .value.Str
-                                      !! .value.Str
+                                      ?? line-post-proc stringify(.value)
+                                      !! stringify(.value)
                                     );
                                 }
                                 last RESULT if ++$seen == $stop-after;
@@ -701,8 +704,8 @@ my sub rak-results() {
                                     sayer $source
                                       ~ ':' ~ $linenr
                                       ~ ':' ~ (.matched
-                                      ?? line-post-proc .value.Str
-                                      !! .value.Str
+                                      ?? line-post-proc stringify(.value)
+                                      !! stringify(.value)
                                     );
                                 }
                                 last RESULT if ++$seen == $stop-after;
@@ -724,8 +727,8 @@ my sub rak-results() {
                                 else {
                                     sayer $linenr
                                       ~ ':' ~ (.matched
-                                      ?? line-post-proc .value.Str
-                                      !! .value.Str
+                                      ?? line-post-proc stringify(.value)
+                                      !! stringify(.value)
                                     );
                                 }
                                 last RESULT if ++$seen == $stop-after;
@@ -745,7 +748,7 @@ my sub rak-results() {
                                 sayer .Str for @$_;
                             }
                             else {
-                                sayer line-post-proc .Str;
+                                sayer line-post-proc stringify $_;
                             }
                             last RESULT if ++$seen == $stop-after;
                         }
@@ -761,7 +764,8 @@ my sub rak-results() {
                                 sayer "$source:$_" for @$_;
                             }
                             else {
-                                sayer $source ~ ':' ~ line-post-proc .Str;
+                                sayer $source
+                                  ~ ':' ~ line-post-proc stringify $_;
                             }
                             last RESULT if ++$seen == $stop-after;
                         }
@@ -771,20 +775,14 @@ my sub rak-results() {
 
             # looks like frequencies output
             else {
-                sayer $outer.value ~ ':' ~ $outer.key;
+                sayer "&stringify($outer.value):$outer.key()";
                 last RESULT if ++$seen == $stop-after;
             }
         }
 
-        # Only got filename, so show its path
-        elsif IO::Path.ACCEPTS($outer) {
-            sayer stringify($outer);
-            last RESULT if ++$seen == $only-first;
-        }
-
-        # Probably --unique
+        # anything else
         else {
-            sayer $outer.Str;
+            sayer stringify $outer;
             last RESULT if ++$seen == $stop-after;
         }
     }
@@ -1549,9 +1547,9 @@ my sub option-per-file($value --> Nil) {
 }
 
 my sub option-per-line($value --> Nil) {
-    Bool.ACCEPTS($value)
-      ?? set-action('per-line', $value)
-      !! meh "'--per-line' must be specified as a flag";
+    set-action 'per-line', Bool.ACCEPTS($value)
+      ?? $value
+      !! convert-to-simple-Callable($value);
 }
 
 my sub option-proximate($value --> Nil) {
@@ -1617,8 +1615,8 @@ my sub option-show-filename($value --> Nil) {
     set-listing-flag('show-filename', $value);
 }
 
-my sub option-show-line-number($value --> Nil) {
-    set-result-flag('show-line-number', $value);
+my sub option-show-item-number($value --> Nil) {
+    set-result-flag('show-item-number', $value);
 }
 
 my sub option-silently($value --> Nil) {
@@ -1871,13 +1869,13 @@ my sub move-result-options-to-rak(--> Nil) {
                 %rak<max-matches-per-source> := $max;
             }
 
-            with %result<show-line-number>:delete {
+            with %result<show-item-number>:delete {
                 %rak<omit-item-number> := True unless $_;
             }
 
             if %result<find>:delete {
                 %rak<find>             := True;
-                %rak<omit-item-number> := True;
+                %rak<omit-item-number> := True unless %result<frequencies>;
 
                 # Only interested in number of files
                 if %result<count-only>:delete {
@@ -2149,7 +2147,7 @@ my sub action-json-per-elem(--> Nil) {
     move-filesystem-options-to-rak;
     move-result-options-to-rak;
 
-    if %listing<show-line-number>:delete {
+    if %listing<show-item-number>:delete {
         # no action needed
     }
     elsif %listing<files-with-matches>:delete {
@@ -2187,7 +2185,7 @@ my sub action-json-per-line(--> Nil) {
     move-filesystem-options-to-rak;
     move-result-options-to-rak;
 
-    if %listing<show-line-number>:delete {
+    if %listing<show-item-number>:delete {
         # no action needed
     }
     elsif %listing<files-with-matches>:delete {
@@ -2338,6 +2336,10 @@ my sub action-per-line(--> Nil) {
     prepare-needle;
     move-filesystem-options-to-rak;
     move-result-options-to-rak;
+
+    # The default in rak already does the right thing
+    %rak<produce-many> := $action
+      if $action.defined && !($action<> =:= True);
 
     run-rak;
     rak-results;

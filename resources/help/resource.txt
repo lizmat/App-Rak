@@ -1,3 +1,10 @@
 Resource usage:
- --batch=N   Max number of files to process in a thread (default: 64)
- --degree=N  Max number of threads to use for processing (default: cores - 1)
+‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
+
+--batch=N
+
+Max number of files to process in a thread (default: 64)
+
+--degree=N
+
+Max number of threads to use for processing (default: cores - 1)

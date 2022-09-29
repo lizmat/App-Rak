@@ -1,4 +1,5 @@
 Listing modifiers:
+‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
 
 --absolute
 
@@ -80,15 +81,15 @@ no proximation otherwise.
 Indicate whether to show blame information if possible (currently only
 "git blame" supported).  Defaults to False.
 
---show-filename
+--show-item-number
 
-Indicate whether to show the filename in which a match occurred.
+Indicate whether to show the item number of an item that matched.
 Defaults to True.  Some other options may override this, such as
 --unique and --frequencies.
 
---show-line-number
+--show-filename
 
-Indicate whether to show the line number in which match occurred.
+Indicate whether to show the filename in which a match occurred.
 Defaults to True.  Some other options may override this, such as
 --unique and --frequencies.
 

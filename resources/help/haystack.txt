@@ -1,4 +1,5 @@
 Haystack specification:
+‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
 
 The "haystack" is the original selection of files that will be examined,
 which will then be refined by the file system arguments, before being

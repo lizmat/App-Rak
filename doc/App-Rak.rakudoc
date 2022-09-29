@@ -1086,6 +1086,23 @@ $ rak foo --per-file='*.lines(:!chomp).head(10).join'
 
 =end code
 
+=head2 --per-line[=code]
+
+Indicate whether matching should be done per line.  If specified as a flag,
+will read lines with the indicated C<--encoding> and present each line to the
+matcher (which is actually the default if no action was specified).i
+
+Optionally takes a C<Callable> specification: this will be given an C<IO::Path>
+object of the file: that is then expected to produce lines that will be
+presented to the matcher.
+
+=begin code :lang<bash>
+
+# look for foo in only the last 10 lines of each file
+$ rak foo --per-line='*.lines.tail(10)'
+
+=end code
+
 =head2 --proximate=[N]
 
 Indicates whether matched lines should be grouped together that are within
@@ -1248,13 +1265,13 @@ if possible, instead of just the line.  Defaults to C<False>.
 
 Requires that the L<C<Git::Blame::File>|https://raku.land/zef:lizmat/Git::Blame::File> module is installed.
 
+=head2 --show-item-number
+
+Flag.  Indicate whether item numbers should be shown.  Defaults to C<True>.
+
 =head2 --show-filename
 
 Flag.  Indicate whether filenames should be shown.  Defaults to C<True>.
-
-=head2 --show-line-number
-
-Flag.  Indicate whether line numbers should be shown.  Defaults to C<True>.
 
 =head2 --shell=invocation
 

@@ -1,8 +1,30 @@
 String search pattern modifiers:
- --ignorecase  Ignore distinction between upper, lower and title case letters
- --ignoremark  Only compare base characters, ignore additional marks
- --smartcase   As --ignorecase if pattern does NOT contain any uppercase
- --type=words        Look for string as a word
- --type=starts-with  Look for string at start of a line
- --type=ends-with    Look for string at end of a line
- --type=contains     Look for string anywhere (default)
+‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
+
+--ignorecase
+
+Ignore distinction between upper, lower and title case letters
+
+--ignoremark
+
+Only compare base characters, ignore additional marks
+
+--smartcase
+
+As --ignorecase if pattern does NOT contain any uppercase
+
+--type=contains
+
+Look for string anywhere (default)
+
+--type=words
+
+Look for string as a word
+
+--type=starts-with
+
+Look for string at start of a line
+
+--type=ends-with
+
+Look for string at end of a line

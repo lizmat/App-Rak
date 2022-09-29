@@ -1,4 +1,5 @@
 File system filters:
+‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
 
 File system filters refine the inital selection of files as indicated by
 the haystack arguments.

@@ -1,3 +1,6 @@
+Philosophy:
+‒‒‒‒‒‒‒‒‒‒‒
+
 The philosophy of "rak" came from having a personal itch for having
 "ack" on a newly installed machine, but not wanting to fetch that
 from CPAN because, well, it is Perl and I want to move away from it.

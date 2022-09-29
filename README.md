@@ -320,7 +320,7 @@ $ rak foo --extensions=md,markdown
 $ rak foo --extensions=
 ```
 
-Predefined groups are `#raku`, `#perl`, `#cro`, `#text` `#c`, `#c++`, `#yaml`, `#ruby`, `#python`, `#html`, `#markdown`, `#json`, `#jsonl`, `#csv`, `#config` and `#text`.
+Predefined groups are `#raku`, `#perl`, `#cro`, `#text`, `#c`, `#c++`, `#yaml`, `#ruby`, `#python`, `#html`, `#markdown`, `#json`, `#jsonl`, `#csv`, `#config` and `#text`.
 
 The `--list-known-extensions` argument can be used to see which predefined groups of extensions are supported, and which extensions they cover.
 
@@ -869,6 +869,18 @@ Indicate whether matching should be done per file, rather than per line. If spec
 ```bash
 # look for foo in only the first 10 lines of each file
 $ rak foo --per-file='*.lines(:!chomp).head(10).join'
+```
+
+--per-line[=code]
+-----------------
+
+Indicate whether matching should be done per line. If specified as a flag, will read lines with the indicated `--encoding` and present each line to the matcher (which is actually the default if no action was specified).i
+
+Optionally takes a `Callable` specification: this will be given an `IO::Path` object of the file: that is then expected to produce lines that will be presented to the matcher.
+
+```bash
+# look for foo in only the last 10 lines of each file
+$ rak foo --per-line='*.lines.tail(10)'
 ```
 
 --proximate=[N]

@@ -1,4 +1,5 @@
 General options:
+‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
 
 --help
 
@@ -16,7 +17,7 @@ are (in alphabetical order):
 - filesystem  File system filters
 - general     General options
 - haystack    Haystack specification
-- input       Input selection
+- item        Item producers
 - listing     Listing modifiers
 - option      Option management
 - pattern     Pattern specification

@@ -5,6 +5,11 @@ Revision history for App-Rak
        out documentation for all arguments from the command line
      - Bump dependency on rak to get default for :dir/:file fix
      - Make sure --find-all is actually handled
+     - Support --per-line also with a Callable producer
+     - Properly stringify any Buf returned by a matcher as a list
+       of integers
+     - Rename --show-line-number to --show-item-number to make it
+       more in line with the concept of producers producing items
 
 0.0.99  2022-09-27T22:12:15+02:00
      - Add support for --unicode

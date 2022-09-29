@@ -1,16 +1,62 @@
 Result modifiers:
- --context=N               List N lines around any line with a match
- --before-context=N        List N lines before any line with a match
- --after-context=N         List N lines after any line with a match
- --paragraph-context       List all lines in the same paragraph around a match
- --passthru-context        List all lines if there is at least one match
- --passthru                List all lines always
- --invert-match            Select lines that do **not** match
- --max-matches-per-file=N  Maximum number of matches per file, default: all
- --count-only              Only return count of matches
- --stats-only              Only return statistics of the search
- --files-with-matches      Only return filenames with matches
- --files-without-matches   Only return filenames without matches
- --matches-only            Only produce the actual matches
- --unique                  Only return unique lines
- --frequencies             Only return lines and their frequencies
+‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
+
+--after-context=N
+
+List N lines after any line with a match
+
+--before-context=N
+
+List N lines before any line with a match
+
+--context=N
+
+List N lines around any line with a match
+
+--count-only
+
+Only return count of matches
+
+--files-with-matches
+
+Only return filenames with matches
+
+--files-without-matches
+
+Only return filenames without matches
+
+--frequencies
+
+Only return lines and their frequencies
+
+--invert-match
+
+Select lines that do **not** match
+
+--matches-only
+
+Only produce the actual matches
+
+--max-matches-per-file=N
+
+Maximum number of matches per file, default: all
+
+--paragraph-context
+
+List all lines in the same paragraph around a match
+
+--passthru
+
+List all lines always
+
+--passthru-context
+
+List all lines if there is at least one match
+
+--stats-only
+
+Only return statistics of the search
+
+--unique
+
+Only return unique lines

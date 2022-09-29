@@ -1,6 +1,92 @@
 Pattern specification:
- foo                      string
- '/ << bar >> /'          Raku regex indicated by being bounded by / /
- '{ .ends-with("bar") }'  Raku code indicated by being bounded by { }
- '*.starts--with("foo")'  Raku WhateverCode starting with *.
-either as first argument, or as --pattern=foo option
+‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
+
+There are 2 ways in which a pattern can be specified:
+
+1. As the first positional argument
+2. With the --pattern argument
+
+The latter can be handy if you want to create a short-cut to searching
+for a particular string with --save.
+
+Patterns come in 3 flavours:
+
+1. as a literal string
+2. as a regex (the Raku name for "regular expression")
+3. as a piece of code (a Callable in Raku)
+
+If a literal string is specified as a pattern, then by default
+any item of which the stringification contains that string, will
+be accepted.
+
+Example:
+# produce any lines that have "foo" in them
+$ rak foo
+
+Literal strings matching can be further specialize with the --type
+argument, which can have 4 possible values:
+
+1. contains     string must occur anywhere in item
+2. words        string must be surrounded by (virtual) whitespace in item
+3. starts-with  item must *start* with string
+4. ends-with    item must *end* with string
+
+Example:
+# produce any lines that have the word "bar" in them
+$ rak bar --type=words
+
+If a string that starts and ends with '/' is specified as a pattern,
+it is considered to be a regex and will be compiled as such.  Any
+item of which the stringification smart matches with the regex,
+will be accepted.  See https://docs.raku.org/language/regexes for
+more information about Raku regexes.
+
+Example:
+# produce any lines that have the word "bar" in them
+$ rak '/ << bar >> /'
+
+Both literal string matching, as well as matching with a regex, are
+sensitive to the --ignorecase and --ignoremark arguments.
+
+If a string that starts with '{' and ends with '}' is specified, or
+a string that starts with '*.', they will be considered to be Raku
+executable code and compiled as such.  Each item will be passed as
+a positional argument to the compiled code, and the code is expected
+to return a value that is either:
+
+1. True       produce item, unless --invert-match was specified
+2. False      do **NOT** produce item, unless --invert-match was specified
+3. Empty      do **NOT** produce item, unless --invert-match was specified
+4. Nil        do **NOT** produce item, unless --invert-match was specified
+5. Slip       produce all items in the Slip, always
+6. product    produce that, always
+
+True and False are returned for any condition.
+
+Empty is returned for any failed conditional construct, such as "if",
+"unless", "with" or "without".
+
+Nil is typically returned when a "try" has failed.
+
+That last two options are specifically handy when using in conjunction
+with the --unique, --frequencies (for getting summaries).  And with the
+content modification options --modify-files and --rename-files.
+
+Examples:
+# produce any lines that have "foo" in them
+$ rak '*.contains("foo")'
+
+# produce any lines that do **NOT** have "foo" in them
+$ rak '*.contains("foo").not'
+
+# produce uppercased lines
+$ rak '*.uc'
+
+# produce only lines uppercased that have "foo" in them
+$ rak '{ .uc if .contains("foo") }'
+
+# produce all lines, only uppercase the ones that have "foo" in them
+$ rak '{.contains("rakudoc") ?? .uc !! $_}'
+
+# produce all unique words
+$ rak '*.words.Slip'

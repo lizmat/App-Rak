@@ -1,0 +1,189 @@
+Item producers:
+‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
+
+These arguments determine the items that will be presented to the
+pattern matcher.
+
+--per-line[=producer]
+
+Produce the lines of text for each selected file.  Can be specified as
+a flag (which is actually the default behaviour if no other producer
+has been specified).  Can also be specified as a Callable pattern, which
+is then responsible for producing lines to be presented to the pattern
+matcher.
+
+Examples:
+# look for "foo" in all files with known extensions from current directory
+# and show each line that has "foo" in it
+$ rak foo
+
+# look for "foo" only in the last 10 lines of each file and show each line
+# that has "foo" in it
+$ rak --per-line='*.lines.head(10)' foo
+
+--per-file[=producer]
+
+Produce the whole file to the pattern matcher.  Can be specified as a
+flag.  Can also be specified as a Callable pattern, which is then
+responsible for producing the content to be presented to the matcher.
+
+Examples:
+# all names of files that have the string "foo" in them
+$ rak --per-file --files-with-matches foo
+
+--find
+
+Produce the paths from the haystack specification and the filesystem
+filters as items for matching.  A Callable pattern will be presented
+with an IO::Path object, other matching uses the absolute path.
+
+Examples:
+# all paths that contain "special" in their name
+$ rak --find special
+
+# number of files with "special" in their name
+$ rak --find special --count-only
+
+# all paths of which basename starts with an "f"
+$ rak --find '*.basename.starts-with("f")'
+
+# all basenames and their frequencies of which the basename
+# starts with an "f"
+$ rak --find '{ .basename if .basename.starts-with("f")}' --frequencies
+
+--json-per-file
+
+Attempt to parse the whole file as JSON.  If parsing is successful,
+pass the obtained data-structure as an item to the pattern matcher.
+Only files with an extension from the #json extension group will be
+tried, unless overridden by any explicit extension specification.
+
+Example:
+# Produce the unique "name" fields of which the "auth" field starts
+# with "zef:" (basically all modules in the zef ecosystem) of all
+# .json files that can be found in the REA/main directory and its
+# subdirectories.
+$ rak --json-per-file '{ .<name> if .<auth> ~~ /^zef:/ }' --unique REA/meta
+
+--json-per-elem
+
+Attempt to parse the whole files as JSON.  If parsing is successful,
+pass all top-level elements of the data-structure as items to the
+pattern matcher.  Only files with an extension from the #json
+extension group will be tried, unless overridden by any explicit
+extension specification.
+
+Example:
+# Produce the unique "name" fields of which the "auth" field starts
+# with "zef:" (basically all modules in the zef ecosystem) from the
+# REA/META.json file containing all meta information of the Raku
+# Ecosystem Archive.
+$ rak --json-per-elem '{.<name> if .<auth> ~~ /^zef:/}' --unique REA/META.json
+
+--json-per-line
+
+Attempt to parse each line in the file as JSON.  If parsing is
+successful, pass the obtained data-structure as an item to the
+pattern matcher.  Only files with an extension from the #jsonl
+extension group will be tried, unless overridden by any explicit
+extension specification.
+
+--blame-per-file
+
+Attempt to obtain "git blame" information of the file as a Git::Blame::File
+object.  If successful, pass the Git::Blame::File object as an item to
+the pattern matcher.  Only looks at files that are under version control
+(as if --under-version-control has been specified).
+
+These methods can be called on the object passed to the pattern Callable:
+- commits  Map of commits, key is SHA1, value if Git::Blame::Commit object
+- authors  list of unique authors
+
+These methods can be called on the Git::Blame::Commit object:
+- author             the name of the author
+- author-mail        the email address of the author
+- author-time        a DateTime object for the authoring
+- commit             the associated Git::Blame::Commit object
+- committed          whether it has been committed already
+- committer          the name of the committer
+- committer-mail     the email address of the committer
+- committer-time     a DateTime object for the committing
+- previous-sha1      the full SHA1 of the previous commit
+- previous-sha       the shortened SHA1 of the previous commit
+- previous-filename  the filename in the previous commit
+- sha1               full SHA1 of the commit to which this line belongs
+- sha                shortened SHA1 of the commit to which this line belongs
+- summary            the first line of the commit message of this line
+
+Examples:
+# produce the committers in a repository
+$ rak --blame-per-file '*.authors.Slip' --unique
+
+# produce files with more than one commit and number of commits
+$ rak --blame-per-file '{ .commits.Int if .commits > 1 }'
+
+Requires that the Git::Blame::File module is installed.
+For more information about Git::Blame::File objects, see
+https://raku.land/zef:lizmat/Git::Blame::File .
+
+--blame-per-line
+
+Attempt to obtain "git blame" information of the file as a Git::Blame::File
+object.  If successful, produce each line as a Git::Blame::Line item to the
+pattern matcher.  Only looks at files that are under version control
+(as if --under-version-control has been specified).
+
+Apart from the methods that can be called on the Git::Blame::Commit
+object (see above), these additional methods can be called on the object
+passed to the pattern matcher:
+- commit                the associated Git::Blame::Commit object
+- filename              the current filename
+- line                  the actual line currently
+- line-number           the current line-number
+- original-line-number  line number when this line was created
+
+Requires that the Git::Blame::File module is installed.
+For more information about Git::Blame::Line objects, see
+https://raku.land/zef:lizmat/Git::Blame::File .
+
+--csv-per-line
+
+Attempt to interprete file as a CSV file, and pass each row as an item
+to the pattern matchere.  Only files with extensions from the #csv group
+will be tried, unless overridden by any explicit extension specification.
+
+The following options only make sense when --csv-per-line has been specified:
+- --allow-loose-escapes  flag, allow any character to be escaped
+- --allow-loose-quotes   flag, allow unquoted fields
+- --allow-whitespace     flag, allow whitespace around separator
+- --auto-diag            flag, show diagnostics (default: true)
+- --eol=[\n|\r|\r\n]     different line ending to assume
+- --escape=[\\]          escape character, default \  (shell requires \\)
+- --formula=[type]       none | die | diag | empty, default: none
+- --quote=["]            quoting char, default: "
+- --sep=[,]              field separator, default: ,
+- --strict               flag, do not allow different number of fields
+- --keep-meta            flag, produce fields as CSV::Field instead of Str
+
+Example:
+# Show the values of the first column of the rows in the "info.csv" file
+# if the second column is equal to "foo"
+$ rak --csv-per-line '{.[0] if .[1] eq "foo"}' info.csv
+
+Requires that the Text::CSV module is installed.
+For more information about Text::CSV, see
+https://raku.land/github:Tux/Text::CSV .
+
+--unicode
+
+Produce the names of all Unicode defined codepoints (built into Raku)
+and pass these to the pattern matcher.  Shows matched codepoint values
+in hexadecimal, the full name and the actual character.
+
+Example:
+# show all codepoints that have "banknote" in their name
+$ rak --unicode banknote
+1F4B4 BANKNOTE WITH YEN SIGN 💴
+1F4B5 BANKNOTE WITH DOLLAR SIGN 💵
+1F4B6 BANKNOTE WITH EURO SIGN 💶
+1F4B7 BANKNOTE WITH POUND SIGN 💷
