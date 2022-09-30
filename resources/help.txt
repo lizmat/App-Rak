@@ -143,9 +143,9 @@ Option management:
 General options:
  --help      Show this
  --help foo  Show additional help about:
-               pattern | string   | code    | haystack | result  | listing
-               content | resource | special | option   | general | philosophy
-               examples
+   argument   | code       | content  | debugging | examples | faq
+   filesystem | general    | haystack | item      | listing  | option
+   pattern    | philosophy | resource | result    | special  | string
  --version                Show version information
  --verbose                Be more verbose, if applicable
 
@@ -156,6 +156,7 @@ Debugging options:
  --rak                    Show arguments to "rak" plumbing before running
 
 Argument format:
+ foo        Positional argument
  --foo      Option "foo" is True
  --/foo     Option "foo" is False
  --no-foo   Option "foo" is False

@@ -1,62 +1,77 @@
 Result modifiers:
 ‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
 
+These options alter the way a search result is processed and shown.
+Many combinations of these options may or may not make sense.
+
 --after-context=N
 
-List N lines after any line with a match
+Also produce N items after any item with a match.  Defaults to *no*
+items after any item with a match.
 
 --before-context=N
 
-List N lines before any line with a match
+Also produce N items before any item with a match.  Defaults to *no*
+items before any item with a match.
 
 --context=N
 
-List N lines around any line with a match
+Also produce N items before and after any item with a match.
+Defaults to *no* items before or after a match.
 
 --count-only
 
-Only return count of matches
+When specified with a true value, will **ONLY** produce result counts.
 
 --files-with-matches
 
-Only return filenames with matches
+Produce only the names of files *with* matches.  By default, will
+return full result information.
 
 --files-without-matches
 
-Only return filenames without matches
+Produce only the names of files *without* matches.  By default, will
+return full result information.
 
 --frequencies
 
-Only return lines and their frequencies
+Create a Bag of the search result and produce the contents of the Bag
+in decreasing frequency.  Usually used in conjunction with a Callable
+pattern that produces a string, or with --matches-only.
 
 --invert-match
 
-Select lines that do **not** match
+Invert the meaning of matching, producing items that did *not* match.
 
 --matches-only
 
-Only produce the actual matches
+Only produce the actual matches, instead of the items that matched.
+Usually used in conjunction with --unique or --frequencies.
 
 --max-matches-per-file=N
 
-Maximum number of matches per file, default: all
+Specify the maximum number of matches that should be produced per
+file.  If not specified, will produce all possible matches of a file.
 
 --paragraph-context
 
-List all lines in the same paragraph around a match
+Also produce all items before and after any matched item if they are
+in the same paragraph.  A paragraph being defined as the items between
+two items that stringify to the empty string.
 
 --passthru
 
-List all lines always
+Always produce all items.
 
 --passthru-context
 
-List all lines if there is at least one match
+Produce all items of a file if there was at least one match.
 
 --stats-only
 
-Only return statistics of the search
+When specified with a true value, will **ONLY** produce statistics.
+See also --stats.
 
 --unique
 
-Only return unique lines
+Only produce unique items (or whatever a Callable pattern produced).

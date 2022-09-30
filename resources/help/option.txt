@@ -3,9 +3,60 @@ Option management:
 
 --save=name
 
-Translate --name to all other options specified, remove if --save
-was the only option specified
+Create a custom option with the name given, of all the other named
+arguments specified.  The other named arguments may themselves be
+shortcuts.
+
+Examples:
+# specify '--rsd' as a shortcut to '--recurse-symlinked-dir"
+$ rak --recurse-symlinked-dir --save=rsd
+
+# specify '--i' as shortcut to '--ignorecase'
+$ rak --ignorecase --save=i
+
+# specify '--m' as shortcut to '--ignoremark'
+$ rak --ignoremark --save=m
+
+# run a search with '--ignorecase' and '--ignoremark'
+$ rak -im foo
+
+# specify '--r' as shortcut to '-im' and '--extensions=#raku'
+$ rak -im --extensions=#raku --save=r
+
+# run a search with --im on files with raku extensions
+$ rak -r foo
+
+One of these other named arguments can be marked as needing to
+have a value specified with a single exclamation mark as its value.
+
+Examples:
+# specify '--ex' as a shortcut for '--extensions', requiring a value
+$ rak --extensions=! --save=ex
+
+# run a search on files with raku extensions only
+$ rak foo --ex=#raku
+
+It's also possible for one named argument to have a default value
+(that can be overridden) by specifying the default value between
+square brackets.
+
+Examples:
+# specify '--x' as a shortcut for --extensions=#raku with override
+$ rak --extensions=[#raku] --save=x
+
+# run a search on files with Raku extensions
+$ rak -x foo
+
+# run a search on files with ".dat" extensions
+$ rak -x=dat foo
+
+To remove a custom option, just specify the --save argument with
+the name of the custom option you would like to remove.
+
+# Example:
+# Remove the '--ex' custom option
+$ rak --save=ex
 
 --list-custom-options
 
-List all previously saved options
+List all currently known custom options.  Must be the only argument.

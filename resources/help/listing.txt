@@ -46,12 +46,12 @@ Force defaults as if a human is watching.  Defaults to True if a human
 is watching (aka, a terminal is connected to STDOUT, aka $*OUT.t is true).
 The following defaults will be applied unless specifically overridden:
 
-- --break=""
-- --group-matches
-- --highlight
-- --trim
-- --only-first=1000
-- --proximate=1
+ --break=""
+ --group-matches
+ --highlight
+ --trim
+ --only-first=1000
+ --proximate=1
 
 --only-first[=N]
 

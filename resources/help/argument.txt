@@ -1,6 +1,7 @@
 Argument format:
 ‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
 
+In short:
  foo        Positional argument
  --foo      Option "foo" is True
  --/foo     Option "foo" is False
@@ -9,3 +10,32 @@ Argument format:
  -fo        Single letter options "f" and "o" True
  -/ba       Single letter options "b" and "a" False
  -j2        Single letter option "j" with value 2
+
+More verbose:
+Command line arguments come in two types: positional and named.
+Named arguments start with a "-" and are usually referred to as
+"options" in the documentation.  And argument that does not start
+with a hyphen, is considered to be a positional argument.
+
+Named and positional arguments can be specified in any order.
+
+Note that the values of some arguments will need quoting in some
+form according to rules determined by the shell being used.
+
+If a named argument starts with single "-", then the name is
+considered to be a sequence of one letter named arguments
+with a boolean True value.  Except if all of the characters
+after the first letter are numeric, then these are considered
+a numerical value specified with that single letter named
+argument.
+
+If a named argument starts with two hyphens, then the characters
+after it (until an optional equal sign) are considered to be
+the name of a single named argument.  If such a named argument
+contains an equal sign, then the characters after the equal sign
+are considered the value of that named argument.
+
+If there is no equal sign, then the named argument is supposed
+to be a Boolean True value.  Except when there is a slash, or
+"no-" after the first hyphen(s), in which case the named argument
+is considered to have the boolean False value.

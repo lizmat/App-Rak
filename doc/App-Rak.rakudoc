@@ -1219,7 +1219,7 @@ Save all options with the given name in the configuration file
 been saved with the given name.
 
 This feature can used to both create shortcuts for specific (long) options,
-or just as a convenient way to combine often used options.
+or just as a convenient way to combine often used options, or both.
 
 =begin code :lang<bash>
 
@@ -1229,8 +1229,8 @@ Saved option '--im' as: --ignorecase --ignoremark
 # same as --ignorecase --ignoremark
 $ rak foo --im
 
-$ rak --follow-symlinks --save=fs
-Saved option '--fs' as: --follow-symlinks
+$ rak --recurse-symlinked-dir --save=rsd
+Saved option '--rsd' as: --recurse-symlinked-dir
 
 $ rak --break='[---]' --save=B
 Saved option '--B' as: --break='[---]'

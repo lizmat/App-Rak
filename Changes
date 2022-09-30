@@ -12,6 +12,7 @@ Revision history for App-Rak
        more in line with the concept of producers producing items
      - Make dependency on Edit::Files optional
      - Fix issue with --modify-files losing line-endings
+     - Allow a Callable to be specified with --degree
 
 0.0.99  2022-09-27T22:12:15+02:00
      - Add support for --unicode

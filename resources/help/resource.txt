@@ -1,10 +1,39 @@
 Resource usage:
 ‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
 
---batch=N
+By default, "rak" attempts to use all computer's resources as
+much as possible.  You can tune some of the parameters related
+to parallelism of execution.
 
-Max number of files to process in a thread (default: 64)
+--batch[=N]
 
---degree=N
+Indicate how many files should be processed within a single worker
+thread at a time.  Defaults to 64 if not specified.  When specified
+as a flag without any value, will assume the value 1.
 
-Max number of threads to use for processing (default: cores - 1)
+Examples:
+# run a search using batches of 1024 files per worker thread
+$ rak --batch=1024 foo
+
+# run a search with each file handled by a separate worker thread
+$ rak --batch foo
+
+--degree[=N | code]
+
+Indicate how many worker threads should be use maximally (which
+usually effectively means the number of CPU cores to be used).
+Defaults to the number of CPU cores minus one (with a minimum of
+one, obviously).  When specified as a flag without any value,
+will assume the value 1.  When specified with a Callable, will
+call that Callable with the total number of CPUs available,
+and will use the result as the value to apply.
+
+Examples:
+# run a search on only one worker thread
+$ rak --degree foo
+
+# run a search on maximally 2 worker threads
+$ rak --degree=2 foo
+
+# run a search on half of the CPUs maximally
+$ rak --degree='*/2' foo

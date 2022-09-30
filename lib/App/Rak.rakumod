@@ -441,10 +441,10 @@ my sub convert-to-Callable(Str:D $code) {
 }
 
 # Convert a string to non-Regex code, fail if not possible
-my sub convert-to-simple-Callable(Str:D $code) {
+my sub convert-to-simple-Callable(Str:D $code, str $name) {
     my $callable := codify($code);
     Regex.ACCEPTS($callable)
-      ?? meh "Cannot use a regular expression in this context: '$code'"
+      ?? meh "Cannot use a regular expression for --$name: '$code'"
       !! $callable
 }
 
@@ -902,7 +902,7 @@ my sub set-filesystem-Instant(str $name, $value --> Nil) {
         $init-epoch - seconds(.substr(1, *-5))
     });
 
-    my $compiled := convert-to-simple-Callable($code);
+    my $compiled := convert-to-simple-Callable($code, $name);
     Callable.ACCEPTS($compiled)
       ?? (%filesystem{$name} := $compiled)
       !! meh "Problem compiling expression for '--$name': $value";
@@ -912,7 +912,7 @@ my sub set-filesystem-Instant(str $name, $value --> Nil) {
 my sub set-filesystem-Int(str $name, $value --> Nil) {
     meh "Must specify a condition for '--$name'" if Bool.ACCEPTS($value);
 
-    my $compiled := convert-to-simple-Callable($value);
+    my $compiled := convert-to-simple-Callable($value, $name);
     Callable.ACCEPTS($compiled)
       ?? (%filesystem{$name} := $compiled)
       !! meh "Problem compiling condition for '--$name': $value";
@@ -922,7 +922,7 @@ my sub set-filesystem-Int(str $name, $value --> Nil) {
 my sub set-filesystem-id(str $name, $value --> Nil) {
     meh "Must specify a condition for '--$name'" if Bool.ACCEPTS($value);
 
-    my $compiled := convert-to-simple-Callable($value);
+    my $compiled := convert-to-simple-Callable($value, $name);
     %filesystem{$name} := do if Callable.ACCEPTS($compiled) {
         $compiled
     }
@@ -953,7 +953,7 @@ my sub set-filesystem-name(str $name, $value, $name-getter, $id-getter --> Nil) 
     }
 
     # An actual condition
-    my $compiled := convert-to-simple-Callable($value);
+    my $compiled := convert-to-simple-Callable($value, $name);
     %filesystem{$name} := do if Callable.ACCEPTS($compiled) {
         -> $id { $compiled($_) with id-getter($id).head }
     }
@@ -1186,7 +1186,13 @@ my sub option-csv-per-line($value --> Nil) {
 }
 
 my sub option-degree($value --> Nil) {
-    set-rak-Int('degree', $value);
+    my $code := convert-to-simple-Callable($value, 'degree');
+    my $integer := Callable.ACCEPTS($code)
+      ?? $code(Kernel.cpu-cores).Int
+      !! $value.Int;
+    Int.ACCEPTS($integer)
+      ?? (%rak<degree> := $integer)
+      !! meh "'--degree' must be an integer, or a Callable, not '$value'";
 }
 
 my sub option-device-number($value --> Nil) {

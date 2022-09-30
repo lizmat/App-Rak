@@ -10,10 +10,12 @@ Show an overview of all options of the "rak" command line interface.
 Show additional information about the given subject.  Possible subjects
 are (in alphabetical order):
 
+- argument    Argument format
 - code        Code pattern helpers
 - content     Content modifiers
-- debug       Debugging options
+- debugging   Debugging options
 - examples    Usage examples
+- faq         Frequently asked questions
 - filesystem  File system filters
 - general     General options
 - haystack    Haystack specification
