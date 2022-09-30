@@ -15,7 +15,6 @@ jobs:
         os:
           - ubuntu-latest
           - macOS-latest
-          - windows-latest
         raku-version:
           - 'latest'
     runs-on: ${{ matrix.os }}
@@ -25,6 +24,6 @@ jobs:
         with:
           raku-version: ${{ matrix.raku-version }}
       - name: Install Dependencies
-        run: zef -v install --/test --test-depends --deps-only .
+        run: zef install --/test --test-depends --deps-only .
       - name: Run Tests
         run: raku run-tests
