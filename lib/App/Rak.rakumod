@@ -1,6 +1,5 @@
 # The modules that we need here, with their full identities
 use as-cli-arguments:ver<0.0.6>:auth<zef:lizmat>;  # as-cli-arguments
-use Edit::Files:ver<0.0.4>:auth<zef:lizmat>;       # edit-files
 use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.14>:auth<zef:lizmat>;      # columns highlighter matches
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
@@ -155,6 +154,7 @@ my $config-file := $*HOME.add('.rak-config.json');
 # Links to optional classes
 my $GitBlameFile;
 my $TextCSV;
+my &edit-files;
 
 # Variables for grouping options given
 my $verbose;      # process verbose
@@ -524,7 +524,11 @@ my sub HELP($text, @keys, :$verbose) {
     say "-" x $header.chars;
     say $writing-to-stdout
       ?? $text.lines.map({
-              !$++ || .starts-with('--') ?? BON ~ $_ ~ BOFF !! $_
+             !$++  # always first line
+               || .starts-with('--')
+               || (.ends-with(':') && !.starts-with(' '))
+               ?? BON ~ $_ ~ BOFF
+               !! $_
          }).join("\n")
       !! $text;
 
@@ -980,6 +984,14 @@ my sub external-execution(str $name, $value --> Nil) {
       !! (%filesystem{$name} := $value);
 }
 
+# check Edit::Files availability
+my sub check-EditFiles(str $name) {
+    unless &edit-files {
+        CATCH { meh-not-installed 'Edit::Files', $name }
+        &edit-files = "use Edit::Files; &edit-files".EVAL;
+    }
+}
+
 # check Text::CSV availability
 my sub check-TextCSV(str $name) {
     unless $TextCSV {
@@ -1198,6 +1210,7 @@ my sub option-dryrun($value --> Nil) {
 }
 
 my sub option-edit($value --> Nil) {
+    check-EditFiles('edit');
     set-action('edit', $value);
 }
 
@@ -1705,10 +1718,12 @@ my sub meh-pager($name --> Nil) is hidden-from-backtrace {
 }
 
 my sub meh-what($name, %hash, $description --> Nil) is hidden-from-backtrace {
-    meh qq:to/MEH/ if %hash;
+    if %hash.map({ .key if .value }) -> @keys {
+        meh qq:to/MEH/.chomp;
 These $description options are incompatible with --$name:
-%hash.keys.sort.map({"--$_"})
+@keys.sort.map({"--$_"})
 MEH
+    }
 }
 
 my sub meh-csv($name --> Nil) is hidden-from-backtrace {
@@ -2251,7 +2266,8 @@ my sub action-modify-files(--> Nil) {
     my int $nr-lines-changed;
     my int $nr-lines-removed;
 
-    %rak<passthru-context> := %listing<passthru-context>:delete  // True;
+    %rak<with-line-endings> := True unless %rak<with-line-endings>:exists;
+    %rak<passthru-context>  := %listing<passthru-context>:delete  // True;
     %rak<mapper> := -> $io, @matches --> Empty {
         ++$nr-files-seen;
 

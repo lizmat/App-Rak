@@ -58,10 +58,10 @@ epoch value of the file being checked.  See
 https://raku.land/zef:lizmat/App::Rak#checking-times-on-files for
 more information about possible features.
 
---accessed=condition  Check on epoch when file was last accessed
---created=condition   Check on epoch when file was created
---meta-modified=cond  Check on epoch when meta-info of file was last changed
---modified=condition  Check on epoch when file was last changed
+ --accessed=condition  Check on epoch when file was last accessed
+ --created=condition   Check on epoch when file was created
+ --meta-modified=cond  Check on epoch when meta-info of file was last changed
+ --modified=condition  Check on epoch when file was last changed
 
 Refining by user / group name:
 
@@ -71,8 +71,8 @@ the file.  Or it may consist of a comma-separated list of names of
 acceptable names, optionally prefixed with an exclamation mark to
 indicate that the specified names are unacceptable.
 
---user=selector   File is owned by user names / expression
---group=selector  File is owned by group names / expression
+ --user=selector   File is owned by user names / expression
+ --group=selector  File is owned by group names / expression
 
 Refining by user / group ID:
 
@@ -81,8 +81,8 @@ associated with the owner of file.  It is expected to return True
 to have the file accepted.  Note that this may actually only work
 on Unixy file systems.
 
---uid=condition  File is owned by uid given
---gid=condition  File is owned by gid given
+ --uid=condition  File is owned by uid given
+ --gid=condition  File is owned by gid given
 
 Refining by numeric meta value:
 
@@ -90,13 +90,13 @@ These arguments expect a Callable (except --is-empty) that will be
 given the associated numeric value, and which should return True
 to have the file in question being accepted.
 
---blocks=condition    Number of file system blocks used by file
---device-number=cond  Number of device on which file is located
---filesize=condition  Number of bytes of data used by file
---is-empty            Number of bytes of data used by file is zero
---hard-links=cond     Number of hard-links to file on file system
---inode=condition     Inode number of file on file system
---mode=condition      The full mode value of the file
+ --blocks=condition    Number of file system blocks used by file
+ --device-number=cond  Number of device on which file is located
+ --filesize=condition  Number of bytes of data used by file
+ --is-empty            Number of bytes of data used by file is zero
+ --hard-links=cond     Number of hard-links to file on file system
+ --inode=condition     Inode number of file on file system
+ --mode=condition      The full mode value of the file
 
 Refining by external program:
 
@@ -106,31 +106,31 @@ run to completion when given the full path of the filename
 being inspected.  The filename is available as $_ in the
 expression that you give.
 
---exec=program  Run program, include if successful
---shell=action  Run shell command, include if successful
+ --exec=program  Run program, include if successful
+ --shell=action  Run shell command, include if successful
 
 Refining by attribute (not) being set:
 
 These arguments can be both specified with a True value
 (e.g. --is-readable) or with a False value (--/is-readable or
---no-is-readable).  If specified with a True value, will accept
+ --no-is-readable).  If specified with a True value, will accept
 a file if that attribute is set.  If specified with a False value,
 will accept a file if that attribute is **NOT** set.  Note that
 some of these attributes will actually only work on Unixy
 file systems.
 
---has-setgid           Has SETGID bit (not) set in attributes
---has-setuid           Has SETUID bit (not) set in attributes
---is-executable        File can (not) be executed by owner
---is-readable          File can (not) be read by owner
---is-writable          File can (not) be written to by owner
---is-group-executable  File can (not) be executed by group members of owner
---is-group-readable    File can (not) be read by group members of owner
---is-group-writable    File can (not) be written to by group members of owner
---is-owned-by-group    File is (not) owned by group of user
---is-owned-by-user     File is (not) owned by user
---is-symbolic-link     File is (not) a symbolic link
---is-sticky            Has STICKY bit (not) set in attributes
---is-world-executable  File can (not) be executed by anybody
---is-world-readable    File can (not) be read by anybody
---is-world-writable    File can (not) be written to by anybody
+ --has-setgid           Has SETGID bit (not) set in attributes
+ --has-setuid           Has SETUID bit (not) set in attributes
+ --is-executable        File can (not) be executed by owner
+ --is-readable          File can (not) be read by owner
+ --is-writable          File can (not) be written to by owner
+ --is-group-executable  File can (not) be executed by group members of owner
+ --is-group-readable    File can (not) be read by group members of owner
+ --is-group-writable    File can (not) be written to by group members of owner
+ --is-owned-by-group    File is (not) owned by group of user
+ --is-owned-by-user     File is (not) owned by user
+ --is-symbolic-link     File is (not) a symbolic link
+ --is-sticky            Has STICKY bit (not) set in attributes
+ --is-world-executable  File can (not) be executed by anybody
+ --is-world-readable    File can (not) be read by anybody
+ --is-world-writable    File can (not) be written to by anybody

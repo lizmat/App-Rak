@@ -1,30 +1,23 @@
 Examples:
 ‒‒‒‒‒‒‒‒‒
 
-Find all occurrences of the pattern ‘patricia’ in a file
+# Find all occurrences of the pattern ‘patricia’ in a file
+$ rak patricia myfile
 
-  $ rak patricia myfile
+# Same as above but looking only for complete words
+$ rak patricia myfile --type=words
 
-Same as above but looking only for complete words
+# Count occurrences of the exact pattern FOO
+$ rak FOO myfile --count-only
 
-  $ rak patricia myfile --type=words
+# Same as above but ignoring case
+$ rak FOO myfile --count-only --ignorecase
 
-Count occurrences of the exact pattern FOO
+# Find all occurrences of the pattern ‘.Pp’ at the beginning of a line
+$ rak .Pp myfile --type=starts-with
 
-  $ rak FOO myfile --count-only
+# Find all lines in a file which do not contain the words ‘foo’ or ‘bar’
+$ rak '/ << foo | bar >> /' myfile --invert-match
 
-Same as above but ignoring case
-
-  $ rak FOO myfile --count-only --ignorecase
-
-Find all occurrences of the pattern ‘.Pp’ at the beginning of a line
-
-  $ rak .Pp myfile --type=starts-with
-
-Find all lines in a file which do not contain the words ‘foo’ or ‘bar’
-
-  $ rak '/ << foo | bar >> /' myfile --invert-match
-
-Peruse the file ‘calendar’ looking for either 19, 20, or 25
-
-  $ rak '/ 19 | 20 | 25 /' calendar
+# Peruse the file ‘calendar’ looking for either 19, 20, or 25
+$ rak '/ 19 | 20 | 25 /' calendar

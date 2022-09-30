@@ -1014,15 +1014,15 @@ Flag. Indicate whether to show `git blame` information for matching lines if pos
 
 Requires that the [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File) module is installed.
 
+--show-item-number
+------------------
+
+Flag. Indicate whether item numbers should be shown. Defaults to `True`.
+
 --show-filename
 ---------------
 
 Flag. Indicate whether filenames should be shown. Defaults to `True`.
-
---show-line-number
-------------------
-
-Flag. Indicate whether line numbers should be shown. Defaults to `True`.
 
 --shell=invocation
 ------------------

@@ -10,6 +10,8 @@ Revision history for App-Rak
        of integers
      - Rename --show-line-number to --show-item-number to make it
        more in line with the concept of producers producing items
+     - Make dependency on Edit::Files optional
+     - Fix issue with --modify-files losing line-endings
 
 0.0.99  2022-09-27T22:12:15+02:00
      - Add support for --unicode

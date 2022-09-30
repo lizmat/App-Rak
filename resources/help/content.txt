@@ -20,10 +20,11 @@ Defaults to False, allowing for changes to be made.
 Only makes sense with a Callable pattern.  Indicates that the inspected
 files may be potentially changed.  If the value returned by the
 Callable pattern is not True/False/Nil/Empty and different from the
-given line, then that line will be replaced by the returned value.
-Defaults to False, indicating that files should **not** be changed.
-Can also specify --dry-run to see which files would be changed
-without actually making any changes.
+given line, then that line will be replaced by the returned value(s).
+Else it will be kept unchanged because of an implicit --passthru-context
+argument being active.  Defaults to False, indicating that files
+should **not** be changed.  Can also specify --dry-run to see which
+files would be changed without actually making any changes.
 
 --rename-files
 
