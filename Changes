@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.1  2022-10-02T20:04:39+02:00
      - The first official beta-version of App::Rak.  With fleshed
        out documentation for all arguments from the command line
      - Bump dependency on rak to get default for :dir/:file fix
