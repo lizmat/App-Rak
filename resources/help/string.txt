@@ -3,28 +3,60 @@ String search pattern modifiers:
 
 --ignorecase
 
-Ignore distinction between upper, lower and title case letters
+If specified with a True value, will cause the pattern matcher (if
+it is *not* a Callable) to ignore the distinction between upper,
+lower and title case letters.
+
+Example:
+# search for "foo" without taking case into account
+$ rak --ignorecase foo
 
 --ignoremark
 
-Only compare base characters, ignore additional marks
+If specified with a True value, will cause the pattern matcher (if
+it is *not* a Callable) to only use the base character, ignoring any
+additional marks and/or accents.
+
+Example:
+# search for "foo" without taking accents into account
+$ rak --ignoremark foo
 
 --smartcase
 
-As --ignorecase if pattern does NOT contain any uppercase
+If specified with a True value, will cause the pattern matcher (if
+it is a literal text) to ignore the distinction between upper,
+lower and title case letters (like --ignorecase), but only if the
+pattern does **NOT** contain any uppercase characters.
 
---type=contains
+Example:
+# search for "foo" without taking case into account
+$ rak --smartcase foo
 
-Look for string anywhere (default)
+# search for "Foo" while *still* taking case into account
+$ rak --smartcase Foo
 
---type=words
+--type=[contains | words | starts-with | ends-with]
 
-Look for string as a word
+Only makes sense with a literal pattern matcher.  Expects one of
+the following literal values:
 
---type=starts-with
+ - contains     match if literal pattern occurs anywhere
+ - words        match if literal pattern is on word/non-word boundaries
+ - starts-with  match if literal pattern is at the start of an item
+ - ends-with    match if literal pattern is at the end of an item
 
-Look for string at start of a line
+Examples:
+# search for "foo" anywhere in an item (default case)
+$ rak foo
 
---type=ends-with
+# search for "foo" anywhere in an item
+$ rak --type=contains foo
 
-Look for string at end of a line
+# search for "foo" as a word
+$ rak --type=words foo
+
+# search for "foo" at the start of a line
+$ rak --type=starts-with foo
+
+# search for "foo" at the end of a line
+$ rak --type=ends-with foo

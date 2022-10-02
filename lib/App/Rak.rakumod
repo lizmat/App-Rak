@@ -1,7 +1,7 @@
 # The modules that we need here, with their full identities
 use as-cli-arguments:ver<0.0.6>:auth<zef:lizmat>;  # as-cli-arguments
 use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
-use highlighter:ver<0.0.14>:auth<zef:lizmat>;      # columns highlighter matches
+use highlighter:ver<0.0.15>:auth<zef:lizmat>;      # columns highlighter matches
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
 use rak:ver<0.0.29>:auth<zef:lizmat>;              # rak
 use String::Utils:ver<0.0.12>:auth<zef:lizmat> <after before between is-sha1>;
@@ -332,7 +332,12 @@ my sub main(@ARGS) is export {
         }
     }
     elsif @positionals == 1 && @positionals.head.IO.f {
-        %listing<show-filename> := False if %listing<show-filename>:!exists;
+        %listing<show-filename> := False
+          if %listing<show-filename>:!exists;
+    }
+    elsif $reading-from-stdin {
+        %result<show-item-number> := False
+          if %result<show-item-number>:!exists;
     }
 
     # Perform the actual action
@@ -1562,13 +1567,13 @@ my sub option-pattern($value --> Nil) {
 my sub option-per-file($value --> Nil) {
     set-action 'per-file', Bool.ACCEPTS($value)
       ?? $value
-      !! convert-to-simple-Callable($value);
+      !! convert-to-simple-Callable($value, 'per-file');
 }
 
 my sub option-per-line($value --> Nil) {
     set-action 'per-line', Bool.ACCEPTS($value)
       ?? $value
-      !! convert-to-simple-Callable($value);
+      !! convert-to-simple-Callable($value, 'per-line');
 }
 
 my sub option-proximate($value --> Nil) {
@@ -2093,6 +2098,7 @@ my sub action-csv-per-line(--> Nil) {
 my sub action-edit(--> Nil) {
     %rak<max-matches-per-source> := $_
       with %result<max-matches-per-file>:delete;
+    my $find := %result<find>:delete;
 
     meh-for 'edit', <output-file pager result modify csv>;
 
@@ -2101,7 +2107,7 @@ my sub action-edit(--> Nil) {
     my $editor := Bool.ACCEPTS($action) ?? Any !! $action;
 
     # find filenames to edit
-    if %result<find>:delete {
+    if $find {
         my str @files;
         %rak<sources-only> := True;
         %rak<mapper>       := -> $io --> Empty {

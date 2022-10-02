@@ -21,3 +21,6 @@ $ rak '/ << foo | bar >> /' myfile --invert-match
 
 # Peruse the file ‘calendar’ looking for either 19, 20, or 25
 $ rak '/ 19 | 20 | 25 /' calendar
+
+# Show the 20 most frequent words in lowercase
+# rak '*.match(/ \w+ /, :g)>>.lc.Slip' --frequencies --only-first=20

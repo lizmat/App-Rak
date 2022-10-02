@@ -4,6 +4,7 @@ Revision history for App-Rak
      - The first official beta-version of App::Rak.  With fleshed
        out documentation for all arguments from the command line
      - Bump dependency on rak to get default for :dir/:file fix
+       and non-eagerizing when reading from STDIN
      - Make sure --find-all is actually handled
      - Support --per-line also with a Callable producer
      - Properly stringify any Buf returned by a matcher as a list
@@ -12,7 +13,9 @@ Revision history for App-Rak
        more in line with the concept of producers producing items
      - Make dependency on Edit::Files optional
      - Fix issue with --modify-files losing line-endings
+     - --edit and --find can now be used together again
      - Allow a Callable to be specified with --degree
+     - Bump dependency on highlighter to fix --matches-only behaviour
 
 0.0.99  2022-09-27T22:12:15+02:00
      - Add support for --unicode

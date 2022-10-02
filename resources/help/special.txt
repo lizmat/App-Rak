@@ -1,14 +1,27 @@
 Special options:
 ‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
 
---checkout
+--checkout=string
 
-Checkout branch if pattern matches single branch name
+Helper function for the busy developer who has a large number of
+git branches to handle.  Takes the specified string, searches the
+available branches in the current directory, and will checkout
+the one if there is a single match.  Presents the matching branches
+if there is more than one.  Will checkout branch "main" if "master"
+was specified if there is no branch named "master", and vice-versa.
+Branches need not have been checked out locally yet.
 
 --edit[=editor]
 
-Go edit the result in an editor, (default EDITOR or vim)
+Take the search result as positions in the code to go edit.  If no
+specific editor is specified, will assume what is specified in the
+EDITOR environment variable.  If no editor specification can be
+found, will assume "vim" as the editor.
+
+Can be used in conjuction with --find to edit files of which the
+name matches the pattern.
 
 --vimgrep
 
-Produce output in :vimgrep format
+Take the search result as positiuons in the code to go edit from
+within "vim" using the :vimgrep option.

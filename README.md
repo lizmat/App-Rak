@@ -9,17 +9,23 @@ SYNOPSIS
 ========
 
 ```bash
-$ rak foo      # look for "foo" in current directory recursively
+# look for "foo" in current directory recursively
+$ rak foo
 
-$ rak foo bar  # look for "foo" in directory "bar" recursively
+# look for "foo" in directory "bar" recursively
+$ rak foo bar
 
-$ rak '/ << foo >> /'    # look for "foo" as word in current directory
+# look for "foo" as word in current directory
+$ rak '/ << foo >> /'
 
-$ rak foo --files-with-matches  # look for "foo", only produce filenames
+# look for "foo", only produce filenames
+$ rak foo --files-with-matches
 
-$ rak foo --before=2 --after=2  # also produce 2 lines before and after
+# also produce 2 lines before and after
+$ rak foo --before=2 --after=2
 
-$ rak '{.contains("foo") && .contains("bar")}'  # lines with foo AND bar
+# lines with foo AND bar
+$ rak '{.contains("foo") && .contains("bar")}'
 ```
 
 DESCRIPTION
@@ -35,7 +41,7 @@ POSITIONAL ARGUMENTS
 pattern
 -------
 
-The pattern to search for. This can either be a string, or a [Raku regular expression](https://docs.raku.org/language/regexes) (indicated by a string starting and ending with `/`), a `Callable` (indicated by a string starting with `{` and ending with `}`), or a a result of [`Whatever` currying](https://docs.raku.org/type/Whatever) (indicated by a string starting with `*.`).
+The pattern to search for. This can either be a literal string, or a [Raku regular expression](https://docs.raku.org/language/regexes) (indicated by a string starting and ending with `/`), a `Callable` (indicated by a string starting with `{` and ending with `}`), or a result of [`Whatever` currying](https://docs.raku.org/type/Whatever) (indicated by a string starting with `*.`).
 
 Can also be specified with the `--pattern` option, in which case **all** the positional arguments are considered to be a path specification.
 
@@ -44,9 +50,9 @@ If the pattern is a `Callable`, then the dynamic variable `$*SOURCE` will contai
 path(s)
 -------
 
-Optional. Either indicates the path of the directory (and its sub-directories), or the file that will be searched. By default, all directories that do not start with a period, will be recursed into (but this can be changed with the `--dir` option).
+Optional. Either indicates the path of the directory (and its sub-directories), or the file that will be searched. By default, all directories that do not start with a period, and which are not symbolic links, will be recursed into (but this can be changed with the `--dir` option).
 
-By default, all files will be searched in the directories. This can be changed with the `--file` option.
+By default, all files with known extensions will be searched in the directories. This can be changed with the `--file` option, or specialized version of that like `--extensions`.
 
 Paths can also be specified with the `--paths` option, in which case there should only be a positional argument for the pattern, or none if `--pattern` option was used for the pattern specification.
 
@@ -93,7 +99,7 @@ Produce that value.
 PHASERS IN CALLABLE PATTERNS
 ============================
 
-The Raku Programming Language has a number of unique features that can be used with patterns that are so-called `Callable`s. One of them is the use of so-called [phasers](https://docs.raku.org/language/phasers) (pieces of code that will be executed automatically when a certain condition has been met.
+The Raku Programming Language has a number of unique features that can be used with patterns that are executable code. One of them is the use of so-called [phasers](https://docs.raku.org/language/phasers) (pieces of code that will be executed automatically when a certain condition has been met.
 
 `App::Rak` currently supports all of Raku's [loop phasers](https://docs.raku.org/language/phasers#FIRST):
 
@@ -103,13 +109,19 @@ The Raku Programming Language has a number of unique features that can be used w
 
   * LAST - code to run when searching is done
 
-These phasers will be called in a thread-safe manner.
+These phasers will be called in a **thread-safe** manner.
 
 ```bash
-$ rak '{ FIRST state $seen = 0; NEXT $seen++; LAST say "$seen files"; .contains("pattern")}'
+# show number of files inspected before the search result
+$ rak '{ state $s = 0; NEXT $s++; LAST say "$s files"; .contains("foo")}'
+
+# show number of files inspected after of the search result
+$ rak '{ state $s = 0; NEXT $s++; END say "$s files"; .contains("foo")}'
 ```
 
-Any other phasers that do not require special attention by `App::Rak` are also supported in any code specified.
+Note that the use of the `LAST` phaser will make the search run eagerly, meaning that no results will be shown until the search has been completed.
+
+Any other phasers that do not require special attention by `App::Rak` are also supported in any code specified (such as `BEGIN` and `END`).
 
 CREATING YOUR OWN OPTIONS
 =========================
@@ -117,6 +129,7 @@ CREATING YOUR OWN OPTIONS
 App::Rak provides **many** options. If you are happy with a set of options for a certain workflow, You can use the `--save` option to save that set of options and than later access them with the given name:
 
 ```bash
+# create --im shortcut for ignoring case and accents
 $ rak --ignorecase --ignoremark --save=im
 Saved option '--im' as: --ignorecase --ignoremark
 
@@ -129,7 +142,7 @@ You can use the `--list-custom-options` to see what options you have saved befor
 SUPPORTED OPTIONS
 =================
 
-All options are optional. Any unexpected options, will cause an exception to be thrown with the unexpected options listed.
+All options are optional. Any unexpected options, will cause an exception to be thrown with the unexpected options listed and possible alternatives mentioned. Unless specifically indicated otherwise, using the negation of a flag has the same effect as **not** specifying it.
 
 --accessed=condition
 --------------------
@@ -141,7 +154,7 @@ See "CHECKING TIMES ON FILES" for more information about features that can be us
 --absolute
 ----------
 
-Flag. If specified with a trueish value indicates that whenever paths are shown, they will be shown as absolute paths. Defaults to `False`, which will cause paths to be shown as paths relative to the current directory.
+Flag. If specified indicates that whenever paths are shown, they will be shown as absolute paths. Defaults to `False`, which will cause paths to be produced as paths relative to the current directory.
 
 --after-context=N
 -----------------
@@ -166,17 +179,17 @@ Only applicable if `--csv-per-line` has been specified. Flag. If specified, indi
 --auto-diag
 -----------
 
-Only applicable if `--csv-per-line` has been specified. Flag. If (implicitly) specified with a trueish value, will show diagnostic information about problems that occurred during parsing of the CSV file. The default is `True`.
+Only applicable if `--csv-per-line` has been specified. Flag. If (implicitly) specified, will show diagnostic information about problems that occurred during parsing of the CSV file. The default is `True`.
 
 --backup[=extension]
 --------------------
 
 Indicate whether backups should be made of files that are being modified. If specified without extension, the extension `.bak` will be used.
 
---batch=N
----------
+--batch[=N]
+-----------
 
-Indicate the number of files that should be checked per thread. Defaults to `64` if not specified. See also <--degree>.
+Indicate the number of files that should be checked per thread. If specified as a flag, will assue `1`. Defaults to `64` if not specified. See also <--degree>.
 
 --before-context=N
 ------------------
@@ -186,9 +199,9 @@ Indicate the number of lines that should be shown **before** any line that match
 --blame-per-file
 ----------------
 
-Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each of the selected files will be provided as [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File#methods-on-gitblamefile) objects if `git blame` can be performed on the a selected file. If that is not possible, then the selected file will be ignored.
+Flag. Only makes sense if the pattern is a `Callable`. If specified, indicates that each of the selected files will be provided as [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File#methods-on-gitblamefile) objects if `git blame` can be performed on the a selected file. If that is not possible, then the selected file will be ignored.
 
-If <git blame> information can be obtained, then the associated `Git::Blame::File` object will be presented to the pattern `Callable`. If the Callable returns a true value, then filename will be shown. If the returned value is a string, then that string will be shown.
+If <git blame> information can be obtained, then the associated `Git::Blame::File` object will be presented to the pattern `Callable`. If the Callable returns `True`, then the filename will be produced. If anything else is returned, then the stringification of that object will be produced.
 
 ```bash
 # show files with more than 10 commits
@@ -200,9 +213,9 @@ Requires that the [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::
 --blame-per-line
 ----------------
 
-Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each line from the selected files will be provided as [`Git::Blame::Line`](https://raku.land/zef:lizmat/Git::Blame::File#accessors-on-gitblameline) objects if `git blame` can be performed on the a selected file. If that is not possible, then the selected file will be ignored.
+Flag. Only makes sense if the pattern is a `Callable`. If specified, indicates that each line from the selected files will be provided as [`Git::Blame::Line`](https://raku.land/zef:lizmat/Git::Blame::File#accessors-on-gitblameline) objects if `git blame` can be performed on the a selected file. If that is not possible, then the selected file will be ignored.
 
-If <git blame> information can be obtained, then the associated `Git::Blame::Line` object will be presented to the pattern `Callable`. If the Callable returns a true value, then the short representation of the `git blame` information will be shown. If the returned value is a string, then that string will be shown.
+If <git blame> information can be obtained, then the associated `Git::Blame::Line` object will be presented to the pattern `Callable`. If the Callable returns `True`, then the short representation of the `git blame` information will be produced. If the returned value is anything else, then the stringification of that object will be produced.
 
 ```bash
 # show git blame on lines of which the author is "Scooby Doo"
@@ -234,12 +247,12 @@ Only valid if the current directory is under git version control. Indicate the b
 --context=N
 -----------
 
-Indicate the number of lines that should be shown **around** any line that matches. Defaults to **0**. Overrides any a `--after-context` or `--before-context` arguments.
+Indicate the number of lines that should be produced **around** any line that matches. Defaults to **0**.
 
 --count-only
 ------------
 
-Flag. Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:files-with-matches` (or `files-without matches`) option is also specified with a `True` value, will just show total counts. See also `stats-only`.
+Flag. Indicate whether just the number of lines with matches should be calculated. When specified with a `True` value, will show a "N matches in M files" by default, and if the `:files-with-matches` (or `files-without matches`) option is also specified with a `True` value, will just show total counts. See also `--stats-only`.
 
 --created=condition
 -------------------
@@ -251,16 +264,16 @@ See "CHECKING TIMES ON FILES" for more information about features that can be us
 --csv-per-line
 --------------
 
-Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that selected files should be interpreted as comma separated values (CSV). Each row from the selected files will be provided as a list of strings (or of `CSV::Field` objects).
+Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that selected files should be interpreted as comma separated values (CSV). Each row from the selected files will be provided as a list of strings (or as `CSV::Field` objects if `--keep-meta` was specified).
 
 Attempt to interpret file as a CSV file, and pass each row as a List to to the pattern Callable. Only files with extensions from the `#csv` group will be tried, unless overridden by any explicit extension specification.
 
 More documentation can be found with the [Text::CSV](https://raku.land/github:Tux/Text::CSV) module itself.
 
---degree=N
-----------
+--degree[=N | code]
+-------------------
 
-Indicate the number of worker threads that should be maximally. Defaults to the number of cores minus 1 if not specified. See also <--batch>.
+Indicate the number of worker threads that should be maximally. Defaults to the number of cores minus 1 if not specified. Assumes `1` if specified as a flag. Can also take a `Callable` specification, in which case the number of CPU cores will be presented to that Callable as the only argument. See also <--batch>.
 
 --device-number=condition
 -------------------------
@@ -275,7 +288,7 @@ If specified, indicates the `Callable` that should return True to have a directo
 --dont-catch
 ------------
 
-Flag. If specified with a trueish value, will **not** catch any error during processing, but will throw any error again. Defaults to `False`, making sure that errors **will** be caught. Mainly intended for debugging and error reporting.
+Flag. If specified as a flag, will **not** catch any error during processing, but will throw any error again. Defaults to `False`, making sure that errors **will** be caught. Mainly intended for debugging and error reporting.
 
 --dryrun
 --------
@@ -285,7 +298,7 @@ Flag. Indicate to **not** actually make any changes to any content modification 
 --edit[=editor]
 ---------------
 
-Indicate whether the patterns found should be fed into an editor for inspection and/or changes. Defaults to `False`. Optionally takes the name of the editor to be used.
+Indicate whether the patterns found should be fed into an editor for inspection and/or changes. Defaults to `False`. Optionally takes the name of the editor to be used. If no editor is specified, will use what is in the `EDITOR` environment variable. If that is not specified either, will call "vim".
 
 --eol=[lf|cr|crlf]
 ------------------
@@ -305,7 +318,7 @@ If specified, indicates the name of a program and its arguments to be executed. 
 --extensions=spec
 -----------------
 
-Indicate the extensions of the filenames that should be inspected. By default, no limitation on filename extensions will be done.
+Indicate the extensions of the filenames that should be inspected. By default, only files with known extensions, will be searched.
 
 Extensions can be specified as a comma-separated list of either a a predefined group of extensions (indicated by `#name`), or a single extension.
 
@@ -313,11 +326,14 @@ Extensions can be specified as a comma-separated list of either a a predefined g
 # inspect files with extensions used by Raku and Perl
 $ rak foo --extensions=#raku,#perl
 
-# inspect files with Markdown content
+# inspect files with presumable Markdown content
 $ rak foo --extensions=md,markdown
 
 # inspect files without extension
 $ rak foo --extensions=
+
+# inspect files without extension or with the extension "foo"
+$ rak foo --extensions=,foo
 ```
 
 Predefined groups are `#raku`, `#perl`, `#cro`, `#text`, `#c`, `#c++`, `#yaml`, `#ruby`, `#python`, `#html`, `#markdown`, `#json`, `#jsonl`, `#csv`, `#config` and `#text`.
@@ -332,7 +348,7 @@ If specified, indicates the `Callable` that should return True to have a file be
 --file-separator-null
 ---------------------
 
-Flag. Indicate to separate filenames by null bytes rather than newlines if the `--files-with-matches` option is specified with a `True` value.
+Flag. Indicate to separate filenames by null bytes rather than newlines if the `--files-with-matches` or `--files-without-matches` option are specified with a `True` value.
 
 --files-from=filename
 ---------------------
@@ -342,17 +358,17 @@ Indicate the path of the file to read filenames from instead of the expansion of
 --files-with-matches
 --------------------
 
-Flag. If specified with a true value, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
+Flag. If specified, will only produce the filenames of the files in which the pattern was found. Defaults to `False`.
 
 --files-without-matches
 -----------------------
 
-Flag. If specified with a true value, will only produce the filenames of the files in which the pattern was **not** found. Defaults to `False`.
+Flag. If specified, will only produce the filenames of the files in which the pattern was **not** found. Defaults to `False`.
 
 --filesize=condition
 --------------------
 
-If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The number of bytes of data in the file, will be passed as the only argument.
+If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The number of bytes of data in the file, will be passed as the only argument. See also `--is-empty`.
 
 ```bash
 # show files that consist of at 30 bytes
@@ -362,17 +378,17 @@ $ rak --find --filesize='* >= 30'
 --find
 ------
 
-Flag. If specified with a true value, will **not** look at the contents of the selected paths, but instead consider the selected paths as lines in a virtual file.
+Flag. If specified, will **not** look at the contents of the selected paths, but instead consider the selected paths as lines in a virtual file. And as such will always only produce filenames.
 
 --find-all
 ----------
 
-Flag. If specified with a true value, will override any file or directory filter settings and include all possible files for inspection.
+Flag. If specified, will override any file or directory filter settings and include all possible files for inspection (basically setting both `--dir` and `--file` to `True`).
 
 --only-first[=N]
 ----------------
 
-Indicate the **overall** number of matches to show. If specified without a value, will default to **1**. Defaults to **1000** if a human is watching, otherwise defaults to returning all possible matches.
+Indicate the **overall** number of matches to show. If specified without a value, will default to **1**. Defaults to **1000** if a human is watching, otherwise defaults to returning all possible matches. Can be used to tweak search results, before letting it loose to get all possible results.
 
 --formula=[none]
 ----------------
@@ -390,7 +406,7 @@ Only applicable if `--csv-per-line` has been specified. If specified, indicates 
 --frequencies
 -------------
 
-Flag. If specified, will produce a frequency table of the matches with the most frequent match first. Default is `False`. See also `--unique`;
+Flag. If specified, will produce a frequency table of the matches with the most frequent match first. Default is `False`. See also `--unique`. Usually used in conjunction with `--matches-only` and/or `Callable` patterns returning something other than True/False/Nil/Empty.
 
 --gid=condition
 ---------------
@@ -432,7 +448,7 @@ NOTE: support of this feature depends on Raku supporting that feature on the cur
 --group-matches
 ---------------
 
-Flag. Indicate whether matches of a file should be grouped together by mentioning the filename only once (instead of on every line). Defaults to `True`.
+Flag. Indicate whether matches of a file should be grouped together by mentioning the filename only once (instead of on every line). Defaults to `True` if a human is watching, else `False`.
 
 --hard-links=condition
 ----------------------
@@ -442,14 +458,14 @@ If specified, indicates the `Callable` that should return True to include a file
 --has-setgid
 ------------
 
-Flag. If specified with a trueish value, will only select files that do have the SETGID bit set in their attributes. Use negation `--/has-setgid` to only select files that do **not** have the SETGID bit set.
+Flag. If specified, will only select files that do have the SETGID bit set in their attributes. Use negation `--/has-setgid` to only select files that do **not** have the SETGID bit set.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --has-setuid
 ------------
 
-Flag. If specified with a trueish value, will only select files that do have the SETUID bit set in their attributes. Use negation `--/has-setuid` to only select files that do **not** have the SETUID bit set.
+Flag. If specified, will only select files that do have the SETUID bit set in their attributes. Use negation `--/has-setuid` to only select files that do **not** have the SETUID bit set.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
@@ -458,33 +474,41 @@ NOTE: support of this feature depends on Raku supporting that feature on the cur
 
 Show argument documentation, possibly extended by giving the area of interest, which are:
 
-  * pattern
-
-  * string
+  * argument
 
   * code
 
-  * input
+  * content
 
-  * haystack
+  * debugging
+
+  * examples
+
+  * faq
 
   * filesystem
 
-  * result
+  * general
+
+  * haystack
+
+  * item
 
   * listing
 
-  * resource
-
-  * special
-
   * option
 
-  * general
+  * pattern
 
   * philosophy
 
-  * examples
+  * resource
+
+  * result
+
+  * special
+
+  * string
 
 --highlight
 -----------
@@ -499,7 +523,7 @@ Indicate the string that should be used at the end of the pattern found in a lin
 --highlight--before[=string]
 ----------------------------
 
-Indicate the string that should be used at the end of the pattern found in a line. Specifying implies `--highlight`ing implicitly. If `highlight` is explicitely specified with a trueish value, will default to the terminal code to start **bold**.
+Indicate the string that should be used at the end of the pattern found in a line. Specifying implies `--highlight`ing implicitly. If `highlight` is explicitely specified, will default to the terminal code to start **bold**.
 
 --human
 -------
@@ -509,12 +533,12 @@ Flag. Indicate that search results should be presented in a human readable manne
 --ignorecase
 ------------
 
-Flag. If specified with a trueish value, indicates that any matching should be done case insensitively. Default is `False`.
+Flag. If specified, indicates that any matching using a literal string or a regex, should be done case insensitively. Default is `False`.
 
 --ignoremark
 ------------
 
-Flag. If specified with a trueish value, indicates that any matching should be done without consideration of any accents. Default is `False`.
+Flag. If specified, indicates that any matching using a literal string or a regex, should be done without consideration of any accents. Default is `False`.
 
 --inode=condition
 -----------------
@@ -526,9 +550,11 @@ NOTE: support of this feature depends on Raku supporting that feature on the cur
 --invert-match
 --------------
 
-Flag. If specified with a trueish value, will negate the result of any match if it has a logical meaning:
+Flag. If specified, will negate the result of any match if it has a logical meaning:
 
   * True -> False
+
+  * False -> True
 
   * Nil -> True
 
@@ -539,149 +565,152 @@ Flag. If specified with a trueish value, will negate the result of any match if 
 --is-empty
 ----------
 
-Flag. If specified with a trueish value, will only select files that do not contain any data. Use negation `--/is-empty` to only select files that **do** contain data.
+Flag. If specified, will only select files that do not contain any data. Use negation `--/is-empty` to only select files that **do** contain data. Special case of `--filesize`.
 
 --is-executable
 ---------------
 
-Flag. If specified with a trueish value, will only select files that can be executed by the current user. Use negation `--/is-executable` to only select files that are **not** executable by the current user.
+Flag. If specified, will only select files that can be executed by the current user. Use negation `--/is-executable` to only select files that are **not** executable by the current user.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-group-executable
 ---------------------
 
-Flag. If specified with a trueish value, will only select files that can be executed by members of the group of the owner. Use negation `--/is-group-executable` to only select files that are **not** executable by the members of the group of the owner.
+Flag. If specified, will only select files that can be executed by members of the group of the owner. Use negation `--/is-group-executable` to only select files that are **not** executable by the members of the group of the owner.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-group-readable
 -------------------
 
-Flag. If specified with a trueish value, will only select files that can be read by members of the group of the owner. Use negation `--/is-group-readable` to only select files that are **not** readable by the members of the group of the owner.
+Flag. If specified, will only select files that can be read by members of the group of the owner. Use negation `--/is-group-readable` to only select files that are **not** readable by the members of the group of the owner.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-group-writable
 -------------------
 
-Flag. If specified with a trueish value, will only select files that can be written to by members of the group of the owner. Use negation `--/is-group-writable` to only select files that are **not** writable by the members of the group of the owner.
+Flag. If specified, will only select files that can be written to by members of the group of the owner. Use negation `--/is-group-writable` to only select files that are **not** writable by the members of the group of the owner.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-owned-by-group
 -------------------
 
-Flag. If specified with a trueish value, will only select files that are owned by the group of the current user. Use negation `--/is-owned-by-group` to only select files that are **not** owned by the group of the current user.
+Flag. If specified, will only select files that are owned by the group of the current user. Use negation `--/is-owned-by-group` to only select files that are **not** owned by the group of the current user.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-owned-by-user
 ------------------
 
-Flag. If specified with a trueish value, will only select files that are owned by current user. Use negation `--/is-owned-by-user` to only select files that are **not** owned by the current user.
+Flag. If specified, will only select files that are owned by current user. Use negation `--/is-owned-by-user` to only select files that are **not** owned by the current user.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-owner-executable
 ---------------------
 
-Flag. If specified with a trueish value, will only select files that can be executed by the owner. Use negation `--/is-owner-executable` to only select files that are **not** executable by the owner.
+Flag. If specified, will only select files that can be executed by the owner. Use negation `--/is-owner-executable` to only select files that are **not** executable by the owner.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-owner-readable
 -------------------
 
-Flag. If specified with a trueish value, will only select files that can be read by the owner. Use negation `--/is-owner-readable` to only select files that are **not** readable by the owner.
+Flag. If specified, will only select files that can be read by the owner. Use negation `--/is-owner-readable` to only select files that are **not** readable by the owner.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-owner-writable
 -------------------
 
-Flag. If specified with a trueish value, will only select files that can be written to by the owner. Use negation `--/is-owner-writable` to only select files that are **not** writable by the owner.
+Flag. If specified, will only select files that can be written to by the owner. Use negation `--/is-owner-writable` to only select files that are **not** writable by the owner.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-readable
 -------------
 
-Flag. If specified with a trueish value, will only select files that can be read by the the current user. Use negation `--/is-readable` to only select files that are **not** readable by the current user.
+Flag. If specified, will only select files that can be read by the current user. Use negation `--/is-readable` to only select files that are **not** readable by the current user.
 
 --is-sticky
 -----------
 
-Flag. If specified with a trueish value, will only select files that do have the STICKY bit set in their attributes. Use negation `--/is-sticky` to only select files that do **not** have the STICKY bit set.
+Flag. If specified, will only select files that do have the STICKY bit set in their attributes. Use negation `--/is-sticky` to only select files that do **not** have the STICKY bit set.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-symbolic-link
 ------------------
 
-Flag. If specified with a trueish value, will only select files that are symbolic links. Use negation `--/is-symbolic-link` to only select files that are **not** symbolic links.
+Flag. If specified, will only select files that are symbolic links. Use negation `--/is-symbolic-link` to only select files that are **not** symbolic links.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-world-executable
 ---------------------
 
-Flag. If specified with a trueish value, will only select files that can be executed by anybody. Use negation `--/is-group-executable` to only select files that are **not** executable by anybody.
+Flag. If specified, will only select files that can be executed by anybody. Use negation `--/is-group-executable` to only select files that are **not** executable by anybody.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-world-readable
 -------------------
 
-Flag. If specified with a trueish value, will only select files that can be read by anybody. Use negation `--/is-world-readable` to only select files that are **not** readable by anybody.
+Flag. If specified, will only select files that can be read by anybody. Use negation `--/is-world-readable` to only select files that are **not** readable by anybody.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-world-writable
 -------------------
 
-Flag. If specified with a trueish value, will only select files that can be written to by anybody. Use negation `--/is-world-writable` to only select files that can **not** be written to by anybody.
+Flag. If specified, will only select files that can be written to by anybody. Use negation `--/is-world-writable` to only select files that can **not** be written to by anybody.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
 --is-writable
 -------------
 
-Flag. If specified with a trueish value, will only select files that can be written to by the current user. Use negation `--/is-writable` to only select files that can **not** be written to by the current user.
+Flag. If specified, will only select files that can be written to by the current user. Use negation `--/is-writable` to only select files that can **not** be written to by the current user.
 
 --json-per-elem
 ---------------
 
-Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each selected file will be interpreted as JSON, and if valid, will then produce all elements of the outermost data structure to the pattern for introspection. If the data structure is a hash, then key/value `Pair`s will be produced.
+Flag. Only makes sense if the pattern is a `Callable`. If specified, indicates that each selected file will be interpreted as JSON, and if valid, will then produce all elements of the outermost data structure to the pattern for introspection. If the data structure is a hash, then key/value `Pair`s will be produced.
 
-If the Callable returns a true value, the element will be shown. If the returned value is a string, that string will be mentioned. For example when searching the list of modules in the zef ecosystem (which consists of an array of hashes):
+If the Callable returns `True`, the stringification of the element will be produced. If the returned value is a string, that string will be produced. For example when searching the list of modules in the zef ecosystem (which consists of an array of hashes):
 
 ```bash
-$ rak '{ $_ with .<auth> }' META.json --json-per-elem
+# Show all defined "auth" values of top elemens in JSON file
+$ rak '{ .<auth> // False }' META.json --json-per-elem
 ```
 
 --json-per-file
 ---------------
 
-Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each selected file will be interpreted as JSON, and if valid, will then be given to the pattern for introspection. If the Callable returns a true value, the filename will be shown. If the returned value is a string, that string will also be mentioned. For example:
+Flag. Only makes sense if the pattern is a `Callable`. If specified, indicates that each selected file will be interpreted as JSON, and if valid, will then be given to the pattern for introspection. If the Callable returns `True`, the filename will be produced. If anything else is returned, then the stringification of that object will be produced. For example:
 
 ```bash
-$ rak '{ $_ with .<auth> }' --json-per-file
+# show the "auth" value from all JSON files
+$ rak '*<auth> // False' --json-per-file
 ```
 
 --json-per-line
 ---------------
 
-Flag. Only makes sense if the pattern is a `Callable`. If specified with a `True` value, indicates that each line from the selected files will be interpreted as JSON, and if valid, will then be given to the pattern for introspection. If the Callable returns a true value, the filename and line number will be shown. If the returned value is a string, that string will also be mentioned. For example:
+Flag. Only makes sense if the pattern is a `Callable`. If specified, indicates that each line from the selected files will be interpreted as JSON, and if valid, will then be given to the pattern for introspection. If the Callable returns `True`, the filename and line number will be produced. If the returned value is anything else, then the stringification of that object will be be produced. For example:
 
 ```bash
+# show the "auth" value from the JSON blob on each line
 $ rak '{ $_ with .<auth> }' --json-per-line
 ```
 
 --keep-meta
 -----------
 
-Only applicable if `--csv-per-line` has been specified. Flag. If specified, indicates that meta-information will be kept for each field, by presenting each field as a `CSV::Field|https://github.com/Tux/CSV/blob/master/doc/Text-CSV.md#csvfield` object rather than as a string. The most important methods that can be called on a `CSV::Field` object are:
+Flag. Only applicable if `--csv-per-line` has been specified. If specified, indicates that meta-information will be kept for each field, by presenting each field as a `CSV::Field|https://github.com/Tux/CSV/blob/master/doc/Text-CSV.md#csvfield` object rather than as a string. The most important methods that can be called on a `CSV::Field` object are:
 
   * is-quoted - field was quoted
 
@@ -699,28 +728,33 @@ Flag. Indicate that only files with known extensions (occuring in any of the `#g
 --list-custom-options
 ---------------------
 
+Flag. If specified as the only option, will list all additional options previously saved with `--save`.
+
 ```bash
+# show all of the custom options
 $ rak --list-custom-options
 fs: --'follow-symlinks'
 im: --ignorecase --ignoremark
 ```
 
-Flag. If specified with a true value and as the only option, will list all additional options previously saved with `--save`.
-
 --list-expanded-options
 -----------------------
 
+Flag. If specified, will show all actual options being activated after having been recursively expanded, and then exit. Intended as a debugging aid if you have many custom options defined.
+
 ```bash
+# show how custom option "--im" expands
 $ rak --im --list-expanded-options
 --ignorecase --ignoremark
 ```
 
-Flag. If specified with a true value, will show all actual options being activated after having been recursively expanded, and then exit. Intended as a debugging aid if you have many custom options defined.
-
 --list-known-extensions
 -----------------------
 
+Flag. If specified, will show all known extension groups and the extensions they represent. Intended as an informational aid.
+
 ```bash
+# show the filename extensions that "rak" knows about
 $ rak --list-known-extensions
        #c: c h hdl
      #c++: cpp cxx hpp hxx
@@ -733,8 +767,6 @@ $ rak --list-known-extensions
     #text: (none) txt
     #yaml: yaml yml
 ```
-
-Flag. If specified with a true value, will show all known extension groups and the extensions they represent. Intended as an informational aid.
 
 --matches-only
 --------------
@@ -798,17 +830,18 @@ Keep this line unchanged the file. NOTE: this means the exact `Nil` value.
 Keep this line unchanged the file. NOTE: this means the exact `Empty` value. This is typically returned as the result of a failed condition. For example, only change the string "foo" into "bar" if the line starts with "#":
 
 ```bash
+# replace "foo" by "bar" in all comment lines
 $ rak '{ .subst("foo","bar") if .starts-with("#") }' --modify-files
 ```
 
 ### any other value
 
-Inserts this value in the file instead of the given line. The value can either be a string, or a list of strings.
+Inserts this value in the file instead of the given line. The value can either be a string, or a list of strings (which would add lines to the file).
 
 --module=Foo
 ------------
 
-Indicate the Raku module that should be loaded. Only makes sense if the pattern is executable code.
+Indicate the Raku module that should be loaded. Only makes sense if the pattern is a `Callable`.
 
 --output-file=filename
 ----------------------
@@ -821,15 +854,23 @@ Indicate the path of the file in which the result of the search should be placed
 Indicate the name (and arguments) of a pager program to be used to page through the generated output. Defaults to the `RAK_PAGER` environment variable. If that isn't specified either, then no pager program will be run.
 
 ```bash
+# use the "more" pager to page the output
 $ RAK_PAGER='more -r' rak foo
 
+# use the "less" pager to page the output
 $ rak foo --pager='less -r'
 ```
 
 --paragraph-context
 -------------------
 
-Flag. Indicate all lines that are part of the same paragraph **around** any line that matches. Defaults to `False`.
+Flag. Indicate all lines that are part of the same paragraph **around** any line that matches. Defaults to `False`. Paragraph boundaries are:
+
+  * the start of the file
+
+  * an empty line
+
+  * the end of the file
 
 --passthru
 ----------
@@ -837,14 +878,14 @@ Flag. Indicate all lines that are part of the same paragraph **around** any line
 Flag. Indicate whether **all** lines from source should be shown always. Highlighting will still be performed, if so (implicitely) specified.
 
 ```bash
-# Watch a log file, and highlight a certain IP address.
+# watch a log file, and highlight a IP address 123.45.67.89
 $ tail -f ~/access.log | rak --passthru 123.45.67.89
 ```
 
 --passthru-context
 ------------------
 
-Flag. Indicate whether **all** lines from source should be shown if at least one line matches. Highlighting will still be performed, if so (implicitely) specified.
+Flag. Indicate whether **all** lines from source should be produced if at least one line matches. Highlighting will still be performed, if so (implicitely) specified.
 
 --paths=path1,path2
 -------------------
@@ -859,7 +900,7 @@ Indicate the path of the file to read path specifications from instead of from a
 --pattern=foo
 -------------
 
-Alternative way to specify the pattern to search for. If (implicitly) specified, will assume the first positional parameter specified is actually a path specification, rather than a pattern. This allows the pattern to be searched for to be saved with `--save`.
+Alternative way to specify the pattern to search for. If (implicitly) specified, will assume the first positional parameter specified is actually a path specification, rather than a pattern. This allows the pattern to be saved with `--save`, and thus freeze a specific pattern as part of a custom option.
 
 --per-file[=code]
 -----------------
@@ -886,12 +927,12 @@ $ rak foo --per-line='*.lines.tail(10)'
 --proximate=[N]
 ---------------
 
-Indicates whether matched lines should be grouped together that are within N lines of each other. This is useful for visually picking out matches that appear close to other matches. If specified as a flag, indicates a proximation of **1**. Defaults to **0**, indication no proximation.
+Indicates whether matched lines should be grouped together that are within N lines of each other. This is useful for visually picking out matches that appear close to other matches. If specified as a flag, indicates a proximation of **1**. Defaults to **1** if a human is watching, to <0> otherwise (indication no proximation check to be performed).
 
 --quietly
 ---------
 
-Flag. Only makes sense if the pattern is a `Callable`. If specified with a true value, will catch all **warnings** that are emitted when executing the pattern's `Callable`. Defaults to False.
+Flag. Only makes sense if the pattern is a `Callable`. If specified, will catch all **warnings** that are emitted when executing the pattern's `Callable`. Defaults to `False`.
 
 --quote=["]
 -----------
@@ -901,7 +942,7 @@ Only applicable if `--csv-per-line` has been specified. Indicates the character 
 --rak
 -----
 
-Flag. Intended for debugging purposes only. When specified with a trueish value, will show the named arguments sent to the `rak` subroutine just before it is being called.
+Flag. Intended for debugging purposes only. When specified, will show the named arguments sent to the `rak` plumbing subroutine just before it isi being called.
 
 --recurse-unmatched-dir
 -----------------------
@@ -949,6 +990,7 @@ Use this value as the new name of the file. It can either be a string or an `IO:
 Example: rename all files with the `.t` extension to the `.rakutest` extension.
 
 ```bash
+# change the extension of all .t files to .rakutest
 $ rak '*.subst(/ \.t $/,".rakutest")' --rename-files
 ```
 
@@ -959,39 +1001,34 @@ Note that files that are under git revision control will be renamed using `git m
 
 Indicate the directory that should be searched for Raku module loading. Only makes sense if the pattern is executable code.
 
-Note that you can create a familiar shortcut for the most common arguments of the `--repository` option:
-
-```bash
-$ rak --repository=. --save=I.
-Saved option '--I.' as: --repository='.'
-
-$ rak --repository=lib --save=Ilib
-Saved option '--Ilib' as: --repository=lib
-```
-
 --save=shortcut-name
 --------------------
 
 Save all options with the given name in the configuration file (`~/.rak-config.json`), and exit with a message that these options have been saved with the given name.
 
-This feature can used to both create shortcuts for specific (long) options, or just as a convenient way to combine often used options.
+This feature can used to both create shortcuts for specific (long) options, or just as a convenient way to combine often used options, or both.
 
 ```bash
+# save options as "--im"
 $ rak --ignorecase --ignoremark --save=im
 Saved option '--im' as: --ignorecase --ignoremark
 
-# same as --ignorecase --ignoremark
+# can use shortcut to --ignorecase --ignoremark
 $ rak foo --im
 
-$ rak --follow-symlinks --save=fs
-Saved option '--fs' as: --follow-symlinks
+# save options as "--rsd"
+$ rak --recurse-symlinked-dir --save=rsd
+Saved option '--rsd' as: --recurse-symlinked-dir
 
+# save as "--B" with a default of '---'
 $ rak --break='[---]' --save=B
 Saved option '--B' as: --break='[---]'
 
+# save as "--P" requiring a value
 $ rak --pattern=! --save=P
 Saved option '--P' as: --pattern='!'
 
+# remove shortcut "--foo"
 $ rak --save=foo
 Removed configuration for 'foo'
 ```
@@ -1060,7 +1097,7 @@ Flag. **Only** show statistics about the search operation. See also `--count-onl
 --strict
 --------
 
-Only applicable if `--csv-per-line` has been specified. Flag. If specified with a trueish value, then each line in the CSV file **must** have the same number of fields. Default is to allow different numbers of fields.
+Flag. Only applicable if `--csv-per-line` has been specified. If specified, then each line in the CSV file **must** have the same number of fields. Default is to allow different numbers of fields.
 
 --summary-if-larger-than=N
 --------------------------
@@ -1069,7 +1106,7 @@ Indicate the maximum size a line may have before it will be summarized. Defaults
 
   * --type=words|starts-with|ends-with|contains
 
-Only makes sense if the pattern is a string. With `words` specified, will look for pattern as a word in a line, with `starts-with` will look for the pattern at the beginning of a line, with `ends-with` will look for the pattern at the end of a line, with `contains` will look for the pattern at any position in a line.
+Only makes sense if the pattern is a literal string. With `words` specified, will look for pattern as a word in a line, with `starts-with` will look for the pattern at the beginning of a line, with `ends-with` will look for the pattern at the end of a line, with `contains` will look for the pattern at any position in a line (which is the default).
 
 --trim
 ------
@@ -1079,13 +1116,13 @@ Flag. Indicate whether lines that have the pattern, should have any whitespace a
 --uid=condition
 ---------------
 
-If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The numeric `uid` of the file will be passed as the only argument. Can also be specified as a single numeric argument. See also `--user`.
+If specified, indicates the `Callable` that should return `True` to include a file in the selection of files to be checked. The numeric `uid` of the file will be passed as the only argument. Can also be specified as a single numeric argument. See also `--user`.
 
 ```bash
-# show files of which the numeric user id is greater than 500
+# select files of which the numeric user id is greater than 500
 $ rak --find --uid='* > 500'
 
-# show files of which the numeric user id is 501
+# select files of which the numeric user id is 501
 $ rak --find --uid=501
 ```
 
@@ -1094,22 +1131,22 @@ NOTE: support of this feature depends on Raku supporting that feature on the cur
 --under-version-control[=git]
 -----------------------------
 
-Indicate whether to only select files that are under some form of version control. If specified with a trueish value, will assume files that are under `git` version control. Can also specify the name of the version control system as the value: currently only **git** is supported.
+Indicate whether to only select files that are under some form of version control. If specified as a flag, will assume files that are under `git` version control. Can also specify the name of the version control system as the value: currently only **git** is supported.
 
 --unicode
 ---------
 
-Flag. If specified with a true value, will search the unicode database for defined codepoints by name. Default is `False`.
+Flag. If specified, will search the unicode database for defined codepoints by name. Default is `False`.
 
 --unique
 --------
 
-Flag. If specified with a true value, will only produce unique lines of output. Default is `False`. See also `--frequencies`.
+Flag. If specified, will only produce unique lines of output. Default is `False`. See also `--frequencies`.
 
 --user=condition
 ----------------
 
-If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The user name associated with the `uid` of the file will be passed as the only argument.
+If specified, indicates the `Callable` that should return `True` to include a file in the selection of files to be checked. The user name associated with the `uid` of the file will be passed as the only argument.
 
 Can also be specified as a list of comma separated names to (not) select on. To select all names **except** the listed named, prefix with a `!`.
 
@@ -1119,10 +1156,10 @@ See also `--uid`. Requires the [P5getpwnam](https://raku.land/zef:lizmat/P5getpw
 # files of which the name associated with the user id starts with underscore
 $ rak --find --user='*.starts-with("_")'
 
-# show files of which the owner is liz or wendy
+# select files of which the owner is liz or wendy
 $ rak --find --user=liz,wendy
 
-# show files of which the owner is NOT liz or wendy
+# select files of which the owner is NOT liz or wendy
 $ rak --find --user='!liz,wendy'
 ```
 
@@ -1136,7 +1173,7 @@ Flag. If the only argument, shows the name and version of the script, and the sy
 --vimgrep
 ---------
 
-Flag. If specified with a true value, will output search results in the format "filename:linenumber:column:line". This allows integration with the `:grep` action in vim-like editors.
+Flag. If specified, will output search results in the format "filename:linenumber:column:line". This allows integration with the `:grep` action in vim-like editors.
 
 CHECKING TIMES ON FILES
 =======================
@@ -1164,13 +1201,13 @@ Examples
 --------
 
 ```bash
-# all files that were modified later than an hour ago
+# select all files that were modified later than an hour ago
 $ rak --find --modified='* > "1h".ago'
 
-# all files that were created before 2.5 hours ago
+# select all files that were created before 2.5 hours ago
 $ rak --find --created='* < "2h30m".ago'
 
-# all files that were modified after "Changes" was created
+# select all files that were modified after "Changes" was created
 $ rak --find --modified='* > "Changes".IO.created'
 ```
 

@@ -127,13 +127,13 @@ Content modifiers:
  --dry-run             Don't actually make any changes, just run the process
 
 Resource usage:
- --batch=N   Max number of files to process in a thread (default: 64)
- --degree=N  Max number of threads to use for processing (default: cores - 1)
+ --batch[=N]          Max number of files to process in a thread (default: 64)
+ --degree[=N | code]  Max workers to use for processing (default: cores - 1)
 
 Special options:
- --edit[=editor]  Go edit the result in an editor, (default EDITOR or vim)
- --vimgrep        Produce output in :vimgrep format
- --checkout       Checkout branch if pattern matches single branch name
+ --edit[=editor]    Go edit the result in an editor, (default EDITOR or vim)
+ --vimgrep          Produce output in :vimgrep format
+ --checkout=string  Checkout branch if pattern matches single branch name
 
 Option management:
  --save=name            Translate --name to all other options specified,

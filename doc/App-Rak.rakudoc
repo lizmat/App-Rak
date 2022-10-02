@@ -8,17 +8,23 @@ App::Rak - 21st century grep / find / ack / ag / rg on steroids
 
 =begin code :lang<bash>
 
-$ rak foo      # look for "foo" in current directory recursively
+# look for "foo" in current directory recursively
+$ rak foo
 
-$ rak foo bar  # look for "foo" in directory "bar" recursively
+# look for "foo" in directory "bar" recursively
+$ rak foo bar
 
-$ rak '/ << foo >> /'    # look for "foo" as word in current directory
+# look for "foo" as word in current directory
+$ rak '/ << foo >> /'
 
-$ rak foo --files-with-matches  # look for "foo", only produce filenames
+# look for "foo", only produce filenames
+$ rak foo --files-with-matches
 
-$ rak foo --before=2 --after=2  # also produce 2 lines before and after
+# also produce 2 lines before and after
+$ rak foo --before=2 --after=2
 
-$ rak '{.contains("foo") && .contains("bar")}'  # lines with foo AND bar
+# lines with foo AND bar
+$ rak '{.contains("foo") && .contains("bar")}'
 
 =end code
 
@@ -37,11 +43,11 @@ and bug reports continue to be more than welcome!
 
 =head2 pattern
 
-The pattern to search for.  This can either be a string, or a
+The pattern to search for.  This can either be a literal string, or a
 L<Raku regular expression|https://docs.raku.org/language/regexes>
 (indicated by a string starting and ending with C</>), a
 C<Callable> (indicated by a string starting with C<{> and ending with C<}>),
-or a a result of L<C<Whatever> currying|https://docs.raku.org/type/Whatever>
+or a result of L<C<Whatever> currying|https://docs.raku.org/type/Whatever>
 (indicated by a string starting with C<*.>).
 
 Can also be specified with the C<--pattern> option, in which case B<all>
@@ -55,11 +61,13 @@ pattern C<Callable>s will be called in a thread B<unsafe> manner.
 
 Optional.  Either indicates the path of the directory (and its
 sub-directories), or the file that will be searched.  By default, all
-directories that do not start with a period, will be recursed into (but
-this can be changed with the C<--dir> option).
+directories that do not start with a period, and which are not symbolic
+links, will be recursed into (but this can be changed with the C<--dir>
+option).
 
-By default, all files will be searched in the directories.  This can be
-changed with the C<--file> option.
+By default, all files with known extensions will be searched in the
+directories.  This can be changed with the C<--file> option, or specialized
+version of that like C<--extensions>.
 
 Paths can also be specified with the C<--paths> option, in which case there
 should only be a positional argument for the pattern, or none if C<--pattern>
@@ -113,10 +121,10 @@ Produce that value.
 =head1 PHASERS IN CALLABLE PATTERNS
 
 The Raku Programming Language has a number of unique features that can
-be used with patterns that are so-called C<Callable>s.  One of them is
-the use of so-called L<phasers|https://docs.raku.org/language/phasers>
-(pieces of code that will be executed automatically when a certain
-condition has been met.
+be used with patterns that are executable code.  One of them is the use
+of so-called L<phasers|https://docs.raku.org/language/phasers> (pieces
+of code that will be executed automatically when a certain condition has
+been met.
 
 C<App::Rak> currently supports all of Raku's
 L<loop phasers|https://docs.raku.org/language/phasers#FIRST>:
@@ -125,16 +133,23 @@ L<loop phasers|https://docs.raku.org/language/phasers#FIRST>:
 =item NEXT - code to run when searching a file is done
 =item LAST - code to run when searching is done
 
-These phasers will be called in a thread-safe manner.
+These phasers will be called in a B<thread-safe> manner.
 
 =begin code :lang<bash>
 
-$ rak '{ FIRST state $seen = 0; NEXT $seen++; LAST say "$seen files"; .contains("pattern")}'
+# show number of files inspected before the search result
+$ rak '{ state $s = 0; NEXT $s++; LAST say "$s files"; .contains("foo")}'
+
+# show number of files inspected after of the search result
+$ rak '{ state $s = 0; NEXT $s++; END say "$s files"; .contains("foo")}'
 
 =end code
 
+Note that the use of the C<LAST> phaser will make the search run eagerly,
+meaning that no results will be shown until the search has been completed.
+
 Any other phasers that do not require special attention by C<App::Rak>
-are also supported in any code specified.
+are also supported in any code specified (such as C<BEGIN> and C<END>).
 
 =head1 CREATING YOUR OWN OPTIONS
 
@@ -144,6 +159,7 @@ of options and than later access them with the given name:
 
 =begin code :lang<bash>
 
+# create --im shortcut for ignoring case and accents
 $ rak --ignorecase --ignoremark --save=im
 Saved option '--im' as: --ignorecase --ignoremark
 
@@ -158,7 +174,9 @@ before.
 =head1 SUPPORTED OPTIONS
 
 All options are optional.  Any unexpected options, will cause an exception
-to be thrown with the unexpected options listed.
+to be thrown with the unexpected options listed and possible alternatives
+mentioned.  Unless specifically indicated otherwise, using the negation of
+a flag has the same effect as B<not> specifying it.
 
 =head2 --accessed=condition
 
@@ -173,10 +191,9 @@ can be used inside the C<Callable>.
 
 =head2 --absolute
 
-Flag.  If specified with a trueish value indicates that whenever paths
-are shown, they will be shown as absolute paths.  Defaults to C<False>,
-which will cause paths to be shown as paths relative to the current
-directory.
+Flag.  If specified indicates that whenever paths are shown, they will be
+shown as absolute paths.  Defaults to C<False>, which will cause paths to
+be produced as paths relative to the current directory.
 
 =head2 --after-context=N
 
@@ -201,19 +218,19 @@ indicates that whitespace is allowed around separators.
 =head2 --auto-diag
 
 Only applicable if C<--csv-per-line> has been specified.  Flag.  If
-(implicitly) specified with a trueish value, will show diagnostic information
-about problems that occurred during parsing of the CSV file.  The default is
-C<True>.
+(implicitly) specified, will show diagnostic information about problems
+that occurred during parsing of the CSV file.  The default is C<True>.
 
 =head2 --backup[=extension]
 
 Indicate whether backups should be made of files that are being modified.
 If specified without extension, the extension C<.bak> will be used.
 
-=head2 --batch=N
+=head2 --batch[=N]
 
-Indicate the number of files that should be checked per thread.  Defaults
-to C<64> if not specified.  See also <--degree>.
+Indicate the number of files that should be checked per thread.  If specified
+as a flag, will assue C<1>.  Defaults to C<64> if not specified.  See also
+<--degree>.
 
 =head2 --before-context=N
 
@@ -222,16 +239,17 @@ matches.  Defaults to B<0>.  Will be overridden by a C<--context> argument.
 
 =head2 --blame-per-file
 
-Flag.  Only makes sense if the pattern is a C<Callable>.  If specified with a
-C<True> value, indicates that each of the selected files will be provided as
+Flag.  Only makes sense if the pattern is a C<Callable>.  If specified,
+indicates that each of the selected files will be provided as
 L<C<Git::Blame::File>|https://raku.land/zef:lizmat/Git::Blame::File#methods-on-gitblamefile>
 objects if C<git blame> can be performed on the a selected file.  If that
 is not possible, then the selected file will be ignored.
 
 If <git blame> information can be obtained, then the associated
 C<Git::Blame::File> object will be presented to the pattern C<Callable>.
-If the Callable returns a true value, then filename will be shown.  If the
-returned value is a string, then that string will be shown.
+If the Callable returns C<True>, then the filename will be produced.  If
+anything else is returned, then the stringification of that object will be
+produced.
 
 =begin code :lang<bash>
 
@@ -244,17 +262,17 @@ Requires that the L<C<Git::Blame::File>|https://raku.land/zef:lizmat/Git::Blame:
 
 =head2 --blame-per-line
 
-Flag.  Only makes sense if the pattern is a C<Callable>.  If specified with a
-C<True> value, indicates that each line from the selected files will be
-provided as L<C<Git::Blame::Line>|https://raku.land/zef:lizmat/Git::Blame::File#accessors-on-gitblameline>
+Flag.  Only makes sense if the pattern is a C<Callable>.  If specified,
+indicates that each line from the selected files will be provided as
+L<C<Git::Blame::Line>|https://raku.land/zef:lizmat/Git::Blame::File#accessors-on-gitblameline>
 objects if C<git blame> can be performed on the a selected file.  If that
 is not possible, then the selected file will be ignored.
 
 If <git blame> information can be obtained, then the associated
 C<Git::Blame::Line> object will be presented to the pattern C<Callable>.
-If the Callable returns a true value, then the short representation of
-the C<git blame> information will be shown.  If the returned value is a
-string, then that string will be shown.
+If the Callable returns C<True>, then the short representation of the
+C<git blame> information will be produced.  If the returned value is anything
+else, then the stringification of that object will be produced.
 
 =begin code :lang<bash>
 
@@ -294,9 +312,8 @@ is no match.  Branches need not have been checked out locally yet.
 
 =head2 --context=N
 
-Indicate the number of lines that should be shown B<around> any line that
-matches.  Defaults to B<0>.  Overrides any a C<--after-context> or
-C<--before-context> arguments.
+Indicate the number of lines that should be produced B<around> any line that
+matches.  Defaults to B<0>.
 
 =head2 --count-only
 
@@ -304,7 +321,7 @@ Flag.  Indicate whether just the number of lines with matches should be
 calculated.  When specified with a C<True> value, will show a "N matches
 in M files" by default, and if the C<:files-with-matches> (or
 C<files-without matches>) option is also specified with a C<True> value,
-will just show total counts.  See also C<stats-only>.
+will just show total counts.  See also C<--stats-only>.
 
 =head2 --created=condition
 
@@ -321,7 +338,8 @@ can be used inside the C<Callable>.
 Flag.  Only makes sense if the pattern is a C<Callable>.  If specified with a
 C<True> value, indicates that selected files should be interpreted as
 comma separated values (CSV).  Each row from the selected files will be
-provided as a list of strings (or of C<CSV::Field> objects).
+provided as a list of strings (or as C<CSV::Field> objects if C<--keep-meta>
+was specified).
 
 Attempt to interpret file as a CSV file, and pass each row as a List to
 to the pattern Callable.  Only files with extensions from the C<#csv> group
@@ -330,10 +348,13 @@ will be tried, unless overridden by any explicit extension specification.
 More documentation can be found with the
 L<Text::CSV|https://raku.land/github:Tux/Text::CSV> module itself.
 
-=head2 --degree=N
+=head2 --degree[=N | code]
 
 Indicate the number of worker threads that should be maximally.  Defaults
-to the number of cores minus 1 if not specified.  See also <--batch>.
+to the number of cores minus 1 if not specified.  Assumes C<1> if specified
+as a flag.  Can also take a C<Callable> specification, in which case the
+number of CPU cores will be presented to that Callable as the only argument.
+See also <--batch>.
 
 =head2 --device-number=condition
 
@@ -351,10 +372,9 @@ include B<all> directories for recursion.
 
 =head2 --dont-catch
 
-Flag.  If specified with a trueish value, will B<not> catch any error
-during processing, but will throw any error again.  Defaults to C<False>,
-making sure that errors B<will> be caught.  Mainly intended for debugging
-and error reporting.
+Flag.  If specified as a flag, will B<not> catch any error during processing,
+but will throw any error again.  Defaults to C<False>, making sure that
+errors B<will> be caught.  Mainly intended for debugging and error reporting.
 
 =head2 --dryrun
 
@@ -366,7 +386,9 @@ with the C<--modify-files> and the C<--rename-files> option.
 
 Indicate whether the patterns found should be fed into an editor for
 inspection and/or changes.  Defaults to C<False>.  Optionally takes the
-name of the editor to be used.
+name of the editor to be used.  If no editor is specified, will use what
+is in the C<EDITOR> environment variable.  If that is not specified either,
+will call "vim".
 
 =head2 --eol=[lf|cr|crlf]
 
@@ -392,7 +414,7 @@ conclusion.
 =head2 --extensions=spec
 
 Indicate the extensions of the filenames that should be inspected.
-By default, no limitation on filename extensions will be done.
+By default, only files with known extensions, will be searched.
 
 Extensions can be specified as a comma-separated list of either a
 a predefined group of extensions (indicated by C<#name>), or a single
@@ -403,11 +425,14 @@ extension.
 # inspect files with extensions used by Raku and Perl
 $ rak foo --extensions=#raku,#perl
 
-# inspect files with Markdown content
+# inspect files with presumable Markdown content
 $ rak foo --extensions=md,markdown
 
 # inspect files without extension
 $ rak foo --extensions=
+
+# inspect files without extension or with the extension "foo"
+$ rak foo --extensions=,foo
 
 =end code
 
@@ -428,7 +453,8 @@ all files should be included.
 =head2 --file-separator-null
 
 Flag.  Indicate to separate filenames by null bytes rather than newlines
-if the C<--files-with-matches> option is specified with a C<True> value.
+if the C<--files-with-matches> or C<--files-without-matches> option are
+specified with a C<True> value.
 
 =head2 --files-from=filename
 
@@ -438,19 +464,19 @@ to read filenames from STDIN.
 
 =head2 --files-with-matches
 
-Flag.  If specified with a true value, will only produce the filenames of
-the files in which the pattern was found.  Defaults to C<False>.
+Flag.  If specified, will only produce the filenames of the files in which
+the pattern was found.  Defaults to C<False>.
 
 =head2 --files-without-matches
 
-Flag.  If specified with a true value, will only produce the filenames of
-the files in which the pattern was B<not> found.  Defaults to C<False>.
+Flag.  If specified, will only produce the filenames of the files in which
+the pattern was B<not> found.  Defaults to C<False>.
 
 =head2 --filesize=condition
 
 If specified, indicates the C<Callable> that should return True to include a
 file in the selection of files to be checked.  The number of bytes of data
-in the file, will be passed as the only argument.
+in the file, will be passed as the only argument.  See also C<--is-empty>.
 
 =begin code :lang<bash>
 
@@ -461,20 +487,22 @@ $ rak --find --filesize='* >= 30'
 
 =head2 --find
 
-Flag.  If specified with a true value, will B<not> look at the contents of
-the selected paths, but instead consider the selected paths as lines in a
-virtual file.
+Flag.  If specified, will B<not> look at the contents of the selected paths,
+but instead consider the selected paths as lines in a virtual file.  And as
+such will always only produce filenames.
 
 =head2 --find-all
 
-Flag.  If specified with a true value, will override any file or directory
-filter settings and include all possible files for inspection.
+Flag.  If specified, will override any file or directory filter settings and
+include all possible files for inspection (basically setting both C<--dir>
+and C<--file> to C<True>).
 
 =head2 --only-first[=N]
 
 Indicate the B<overall> number of matches to show.  If specified without a
 value, will default to B<1>.  Defaults to B<1000> if a human is watching,
-otherwise defaults to returning all possible matches.
+otherwise defaults to returning all possible matches.  Can be used to tweak
+search results, before letting it loose to get all possible results.
 
 =head2 --formula=[none]
 
@@ -491,7 +519,9 @@ values are recognized:
 =head2 --frequencies
 
 Flag.  If specified, will produce a frequency table of the matches with
-the most frequent match first.  Default is C<False>.  See also C<--unique>;
+the most frequent match first.  Default is C<False>.  See also C<--unique>.
+Usually used in conjunction with C<--matches-only> and/or C<Callable>
+patterns returning something other than True/False/Nil/Empty.
 
 =head2 --gid=condition
 
@@ -545,7 +575,7 @@ the current operating system.
 
 Flag.  Indicate whether matches of a file should be grouped together by
 mentioning the filename only once (instead of on every line).  Defaults
-to C<True>.
+to C<True> if a human is watching, else C<False>.
 
 =head2 --hard-links=condition
 
@@ -555,18 +585,18 @@ the file on the filesystem, will be passed as the only argument.
 
 =head2 --has-setgid
 
-Flag. If specified with a trueish value, will only select files that do have
-the SETGID bit set in their attributes.  Use negation C<--/has-setgid> to
-only select files that do B<not> have the SETGID bit set.
+Flag. If specified, will only select files that do have the SETGID bit set
+in their attributes.  Use negation C<--/has-setgid> to only select files
+that do B<not> have the SETGID bit set.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
 =head2 --has-setuid
 
-Flag. If specified with a trueish value, will only select files that do have
-the SETUID bit set in their attributes.  Use negation C<--/has-setuid> to
-only select files that do B<not> have the SETUID bit set.
+Flag. If specified, will only select files that do have the SETUID bit set
+in their attributes.  Use negation C<--/has-setuid> to only select files
+that do B<not> have the SETUID bit set.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
@@ -576,20 +606,24 @@ the current operating system.
 Show argument documentation, possibly extended by giving the area of
 interest, which are:
 
-=item pattern
-=item string
+=item argument
 =item code
-=item input
-=item haystack
-=item filesystem
-=item result
-=item listing
-=item resource
-=item special
-=item option
-=item general
-=item philosophy
+=item content
+=item debugging
 =item examples
+=item faq
+=item filesystem
+=item general
+=item haystack
+=item item
+=item listing
+=item option
+=item pattern
+=item philosophy
+=item resource
+=item result
+=item special
+=item string
 
 =head2 --highlight
 
@@ -609,8 +643,7 @@ is specified with C<--highlight-before>, or to the ANSI code to end B<bold>.
 
 Indicate the string that should be used at the end of the pattern found in
 a line.  Specifying implies C<--highlight>ing implicitly.  If C<highlight>
-is explicitely specified with a trueish value, will default to the terminal
-code to start B<bold>.
+is explicitely specified, will default to the terminal code to start B<bold>.
 
 =head2 --human
 
@@ -622,13 +655,14 @@ defaults to C<False>.
 
 =head2 --ignorecase
 
-Flag.  If specified with a trueish value, indicates that any matching should
-be done case insensitively.  Default is C<False>.
+Flag.  If specified, indicates that any matching using a literal string or
+a regex, should be done case insensitively.  Default is C<False>.
 
 =head2 --ignoremark
 
-Flag.  If specified with a trueish value, indicates that any matching should
-be done without consideration of any accents.  Default is C<False>.
+Flag.  If specified, indicates that any matching using a literal string or
+a regex, should be done without consideration of any accents.  Default is
+C<False>.
 
 =head2 --inode=condition
 
@@ -641,214 +675,215 @@ the current operating system.
 
 =head2 --invert-match
 
-Flag.  If specified with a trueish value, will negate the result of any
-match if it has a logical meaning:
+Flag.  If specified, will negate the result of any match if it has a logical
+meaning:
 
 =item True -> False
+=item False -> True
 =item Nil -> True
 =item Empty -> True
 =item none of the above -> just that
 
 =head2 --is-empty
 
-Flag. If specified with a trueish value, will only select files that do not
-contain any data.  Use negation C<--/is-empty> to only select files that B<do>
-contain data.
+Flag. If specified, will only select files that do not contain any data.
+Use negation C<--/is-empty> to only select files that B<do> contain data.
+Special case of C<--filesize>.
 
 =head2 --is-executable
 
-Flag. If specified with a trueish value, will only select files that can be
-executed by the current user.  Use negation C<--/is-executable> to only select
-files that are B<not> executable by the current user.
+Flag. If specified, will only select files that can be executed by the
+current user.  Use negation C<--/is-executable> to only select files that
+are B<not> executable by the current user.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
 =head2 --is-group-executable
 
-Flag. If specified with a trueish value, will only select files that can be
-executed by members of the group of the owner.  Use negation
-C<--/is-group-executable> to only select files that are B<not> executable by
-the members of the group of the owner.
+Flag. If specified, will only select files that can be executed by members
+of the group of the owner.  Use negation C<--/is-group-executable> to only
+select files that are B<not> executable by the members of the group of the
+owner.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
 =head2 --is-group-readable
 
-Flag. If specified with a trueish value, will only select files that can be
-read by members of the group of the owner.  Use negation
-C<--/is-group-readable> to only select files that are B<not> readable by
-the members of the group of the owner.
+Flag. If specified, will only select files that can be read by members of
+the group of the owner.  Use negation C<--/is-group-readable> to only select
+files that are B<not> readable by the members of the group of the owner.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
 =head2 --is-group-writable
 
-Flag. If specified with a trueish value, will only select files that can be
-written to by members of the group of the owner.  Use negation
-C<--/is-group-writable> to only select files that are B<not> writable by
-the members of the group of the owner.
+Flag. If specified, will only select files that can be written to by members
+of the group of the owner.  Use negation C<--/is-group-writable> to only
+select files that are B<not> writable by the members of the group of the owner.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
 =head2 --is-owned-by-group
 
-Flag. If specified with a trueish value, will only select files that are
-owned by the group of the current user.  Use negation
-C<--/is-owned-by-group> to only select files that are B<not> owned by
-the group of the current user.
+Flag. If specified, will only select files that are owned by the group of
+the current user.  Use negation C<--/is-owned-by-group> to only select files
+that are B<not> owned by the group of the current user.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
 =head2 --is-owned-by-user
 
-Flag. If specified with a trueish value, will only select files that are
-owned by current user.  Use negation C<--/is-owned-by-user> to only select
-files that are B<not> owned by the current user.
+Flag. If specified, will only select files that are owned by current user.
+Use negation C<--/is-owned-by-user> to only select files that are B<not>
+owned by the current user.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
 =head2 --is-owner-executable
 
-Flag. If specified with a trueish value, will only select files that can be
-executed by the owner.  Use negation C<--/is-owner-executable> to only select
-files that are B<not> executable by the owner.
+Flag. If specified, will only select files that can be executed by the owner.
+Use negation C<--/is-owner-executable> to only select files that are B<not>
+executable by the owner.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
 =head2 --is-owner-readable
 
-Flag. If specified with a trueish value, will only select files that can be
-read by the owner.  Use negation C<--/is-owner-readable> to only select files
-that are B<not> readable by the owner.
+Flag. If specified, will only select files that can be read by the owner.
+Use negation C<--/is-owner-readable> to only select files that are B<not>
+readable by the owner.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
 =head2 --is-owner-writable
 
-Flag. If specified with a trueish value, will only select files that can be
-written to by the owner.  Use negation C<--/is-owner-writable> to only select
-files that are B<not> writable by the owner.
+Flag. If specified, will only select files that can be written to by the
+owner.  Use negation C<--/is-owner-writable> to only select files that are
+B<not> writable by the owner.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
 =head2 --is-readable
 
-Flag. If specified with a trueish value, will only select files that can be
-read by the the current user.  Use negation C<--/is-readable> to only select
-files that are B<not> readable by the current user.
+Flag. If specified, will only select files that can be read by the current
+user.  Use negation C<--/is-readable> to only select files that are B<not>
+readable by the current user.
 
 =head2 --is-sticky
 
-Flag. If specified with a trueish value, will only select files that do have
-the STICKY bit set in their attributes.  Use negation C<--/is-sticky> to
-only select files that do B<not> have the STICKY bit set.
+Flag. If specified, will only select files that do have the STICKY bit set
+in their attributes.  Use negation C<--/is-sticky> to only select files that
+do B<not> have the STICKY bit set.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
 =head2 --is-symbolic-link
 
-Flag. If specified with a trueish value, will only select files that are
-symbolic links.  Use negation C<--/is-symbolic-link> to only select files that
-are B<not> symbolic links.
+Flag. If specified, will only select files that are symbolic links.  Use
+negation C<--/is-symbolic-link> to only select files that are B<not>
+symbolic links.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
 =head2 --is-world-executable
 
-Flag. If specified with a trueish value, will only select files that can be
-executed by anybody.  Use negation C<--/is-group-executable> to only select
-files that are B<not> executable by anybody.
+Flag. If specified, will only select files that can be executed by anybody.
+Use negation C<--/is-group-executable> to only select files that are B<not>
+executable by anybody.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
 =head2 --is-world-readable
 
-Flag. If specified with a trueish value, will only select files that can be
-read by anybody.  Use negation C<--/is-world-readable> to only select files
-that are B<not> readable by anybody.
+Flag. If specified, will only select files that can be read by anybody.
+Use negation C<--/is-world-readable> to only select files that are B<not>
+readable by anybody.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
 =head2 --is-world-writable
 
-Flag. If specified with a trueish value, will only select files that can be
-written to by anybody.  Use negation C<--/is-world-writable> to only select
-files that can B<not> be written to by anybody.
+Flag. If specified, will only select files that can be written to by anybody.
+Use negation C<--/is-world-writable> to only select files that can B<not> be
+written to by anybody.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
 =head2 --is-writable
 
-Flag. If specified with a trueish value, will only select files that can be
-written to by the current user.  Use negation C<--/is-writable> to only select
-files that can B<not> be written to by the current user.
+Flag. If specified, will only select files that can be written to by the
+current user.  Use negation C<--/is-writable> to only select files that
+can B<not> be written to by the current user.
 
 =head2 --json-per-elem
 
-Flag.  Only makes sense if the pattern is a C<Callable>.  If specified with
-a C<True> value, indicates that each selected file will be interpreted
-as JSON, and if valid, will then produce all elements of the outermost
-data structure to the pattern for introspection.  If the data structure
-is a hash, then key/value C<Pair>s will be produced.
+Flag.  Only makes sense if the pattern is a C<Callable>.  If specified,
+indicates that each selected file will be interpreted as JSON, and if valid,
+will then produce all elements of the outermost data structure to the
+pattern for introspection.  If the data structure is a hash, then key/value
+C<Pair>s will be produced.
 
-If the Callable returns a true value, the element will be shown.  If
-the returned value is a string, that string will be mentioned.  For example
-when searching the list of modules in the zef ecosystem (which consists of
-an array of hashes):
+If the Callable returns C<True>, the stringification of the element will
+be produced.  If the returned value is a string, that string will be produced.
+For example when searching the list of modules in the zef ecosystem (which
+consists of an array of hashes):
 
 =begin code :lang<bash>
 
-$ rak '{ $_ with .<auth> }' META.json --json-per-elem
+# Show all defined "auth" values of top elemens in JSON file
+$ rak '{ .<auth> // False }' META.json --json-per-elem
 
 =end code
 
 =head2 --json-per-file
 
-Flag.  Only makes sense if the pattern is a C<Callable>.  If specified with
-a C<True> value, indicates that each selected file will be interpreted
-as JSON, and if valid, will then be given to the pattern for introspection.
-If the Callable returns a true value, the filename will be shown.  If
-the returned value is a string, that string will also be mentioned.
-For example:
+Flag.  Only makes sense if the pattern is a C<Callable>.  If specified,
+indicates that each selected file will be interpreted as JSON, and if valid,
+will then be given to the pattern for introspection.  If the Callable
+returns C<True>, the filename will be produced.  If anything else is
+returned, then the stringification of that object will be produced.  For
+example:
 
 =begin code :lang<bash>
 
-$ rak '{ $_ with .<auth> }' --json-per-file
+# show the "auth" value from all JSON files
+$ rak '*<auth> // False' --json-per-file
 
 =end code
 
 =head2 --json-per-line
 
-Flag.  Only makes sense if the pattern is a C<Callable>.  If specified with
-a C<True> value, indicates that each line from the selected files will be
-interpreted as JSON, and if valid, will then be given to the pattern for
-introspection.  If the Callable returns a true value, the filename and
-line number will be shown.  If the returned value is a string, that
-string will also be mentioned.  For example:
+Flag.  Only makes sense if the pattern is a C<Callable>.  If specified,
+indicates that each line from the selected files will be interpreted as
+JSON, and if valid, will then be given to the pattern for introspection.
+If the Callable returns C<True>, the filename and line number will be
+produced.  If the returned value is anything else, then the stringification
+of that object will be be produced.  For example:
 
 =begin code :lang<bash>
 
+# show the "auth" value from the JSON blob on each line
 $ rak '{ $_ with .<auth> }' --json-per-line
 
 =end code
 
 =head2 --keep-meta
 
-Only applicable if C<--csv-per-line> has been specified.  Flag.  If specified,
+Flag.  Only applicable if C<--csv-per-line> has been specified.  If specified,
 indicates that meta-information will be kept for each field, by presenting
 each field as a C<CSV::Field|https://github.com/Tux/CSV/blob/master/doc/Text-CSV.md#csvfield>
 object rather than as a string.  The most important methods that can be called
@@ -867,34 +902,40 @@ watching (aka STDOUT is connected to a terminal).
 
 =head2 --list-custom-options
 
+Flag.  If specified as the only option, will list all additional options
+previously saved with C<--save>.
+
 =begin code :lang<bash>
 
+# show all of the custom options
 $ rak --list-custom-options
 fs: --'follow-symlinks'
 im: --ignorecase --ignoremark
 
 =end code
 
-Flag.  If specified with a true value and as the only option, will list all
-additional options previously saved with C<--save>.
-
 =head2 --list-expanded-options
+
+Flag.  If specified, will show all actual options being activated after
+having been recursively expanded, and then exit.  Intended as a debugging
+aid if you have many custom options defined.
 
 =begin code :lang<bash>
 
+# show how custom option "--im" expands
 $ rak --im --list-expanded-options
 --ignorecase --ignoremark
 
 =end code
 
-Flag.  If specified with a true value, will show all actual options being
-activated after having been recursively expanded, and then exit.
-Intended as a debugging aid if you have many custom options defined.
-
 =head2 --list-known-extensions
+
+Flag.  If specified, will show all known extension groups and the extensions
+they represent.  Intended as an informational aid.
 
 =begin code :lang<bash>
 
+# show the filename extensions that "rak" knows about
 $ rak --list-known-extensions
        #c: c h hdl
      #c++: cpp cxx hpp hxx
@@ -908,10 +949,6 @@ $ rak --list-known-extensions
     #yaml: yaml yml
 
 =end code
-
-Flag.  If specified with a true value, will show all known extension
-groups and the extensions they represent.  Intended as an informational
-aid.
 
 =head2 --matches-only
 
@@ -994,6 +1031,7 @@ only change the string "foo" into "bar" if the line starts with "#":
 
 =begin code :lang<bash>
 
+# replace "foo" by "bar" in all comment lines
 $ rak '{ .subst("foo","bar") if .starts-with("#") }' --modify-files
 
 =end code
@@ -1001,12 +1039,12 @@ $ rak '{ .subst("foo","bar") if .starts-with("#") }' --modify-files
 =head3 any other value
 
 Inserts this value in the file instead of the given line.  The value can
-either be a string, or a list of strings.
+either be a string, or a list of strings (which would add lines to the file).
 
 =head2 --module=Foo
 
 Indicate the Raku module that should be loaded.  Only makes sense if the
-pattern is executable code.
+pattern is a C<Callable>.
 
 =head2 --output-file=filename
 
@@ -1022,8 +1060,10 @@ run.
 
 =begin code :lang<bash>
 
+# use the "more" pager to page the output
 $ RAK_PAGER='more -r' rak foo
 
+# use the "less" pager to page the output
 $ rak foo --pager='less -r'
 
 =end code
@@ -1031,7 +1071,11 @@ $ rak foo --pager='less -r'
 =head2 --paragraph-context
 
 Flag.  Indicate all lines that are part of the same paragraph B<around>
-any line that matches.  Defaults to C<False>.
+any line that matches.  Defaults to C<False>.  Paragraph boundaries are:
+
+=item the start of the file
+=item an empty line
+=item the end of the file
 
 =head2 --passthru
 
@@ -1040,14 +1084,14 @@ Highlighting will still be performed, if so (implicitely) specified.
 
 =begin code :lang<bash>
 
-# Watch a log file, and highlight a certain IP address.
+# watch a log file, and highlight a IP address 123.45.67.89
 $ tail -f ~/access.log | rak --passthru 123.45.67.89
 
 =end code
 
 =head2 --passthru-context
 
-Flag.  Indicate whether B<all> lines from source should be shown if at
+Flag.  Indicate whether B<all> lines from source should be produced if at
 least one line matches.  Highlighting will still be performed, if so
 (implicitely) specified.
 
@@ -1068,7 +1112,8 @@ specifications from STDIN.
 Alternative way to specify the pattern to search for.  If (implicitly)
 specified, will assume the first positional parameter specified is
 actually a path specification, rather than a pattern.  This allows
-the pattern to be searched for to be saved with C<--save>.
+the pattern to be saved with C<--save>, and thus freeze a specific
+pattern as part of a custom option.
 
 =head2 --per-file[=code]
 
@@ -1108,13 +1153,14 @@ $ rak foo --per-line='*.lines.tail(10)'
 Indicates whether matched lines should be grouped together that are within
 N lines of each other. This is useful for visually picking out matches that
 appear close to other matches.  If specified as a flag, indicates a
-proximation of B<1>.  Defaults to B<0>, indication no proximation.
+proximation of B<1>.  Defaults to B<1> if a human is watching, to <0>
+otherwise (indication no proximation check to be performed).
 
 =head2 --quietly
 
-Flag.  Only makes sense if the pattern is a C<Callable>.  If specified
-with a true value, will catch all B<warnings> that are emitted when executing
-the pattern's C<Callable>.  Defaults to False.
+Flag.  Only makes sense if the pattern is a C<Callable>.  If specified,
+will catch all B<warnings> that are emitted when executing the pattern's
+C<Callable>.  Defaults to C<False>.
 
 =head2 --quote=["]
 
@@ -1123,16 +1169,16 @@ character that should be used for quoting fields.  Defaults to B<double quote>.
 
 =head2 --rak
 
-Flag.  Intended for debugging purposes only.  When specified with a trueish
-value, will show the named arguments sent to the C<rak> subroutine just
-before it is being called.
+Flag.  Intended for debugging purposes only.  When specified, will show the
+named arguments sent to the C<rak> plumbing subroutine just before it isi
+being called.
 
 =head2 --recurse-unmatched-dir
 
 Flag.  Indicate whether directories that didn't match the C<--dir>
 specification, should be recursed into anyway.  Will not produce files
 from such directories, but may recurse further if directories are
-encountered. Defaults to C<False>.
+encountered.  Defaults to C<False>.
 
 =head2 --recurse-symlinked-dir
 
@@ -1187,6 +1233,7 @@ extension.
 
 =begin code :lang<bash>
 
+# change the extension of all .t files to .rakutest
 $ rak '*.subst(/ \.t $/,".rakutest")' --rename-files
 
 =end code
@@ -1199,19 +1246,6 @@ C<git mv>: if that fails for any reason, a normal rename will be performed.
 Indicate the directory that should be searched for Raku module loading.
 Only makes sense if the pattern is executable code.
 
-Note that you can create a familiar shortcut for the most common arguments of
-the C<--repository> option:
-
-=begin code :lang<bash>
-
-$ rak --repository=. --save=I.
-Saved option '--I.' as: --repository='.'
-
-$ rak --repository=lib --save=Ilib
-Saved option '--Ilib' as: --repository=lib
-
-=end code
-
 =head2 --save=shortcut-name
 
 Save all options with the given name in the configuration file
@@ -1223,21 +1257,26 @@ or just as a convenient way to combine often used options, or both.
 
 =begin code :lang<bash>
 
+# save options as "--im"
 $ rak --ignorecase --ignoremark --save=im
 Saved option '--im' as: --ignorecase --ignoremark
 
-# same as --ignorecase --ignoremark
+# can use shortcut to --ignorecase --ignoremark
 $ rak foo --im
 
+# save options as "--rsd"
 $ rak --recurse-symlinked-dir --save=rsd
 Saved option '--rsd' as: --recurse-symlinked-dir
 
+# save as "--B" with a default of '---'
 $ rak --break='[---]' --save=B
 Saved option '--B' as: --break='[---]'
 
+# save as "--P" requiring a value
 $ rak --pattern=! --save=P
 Saved option '--P' as: --pattern='!'
 
+# remove shortcut "--foo"
 $ rak --save=foo
 Removed configuration for 'foo'
 
@@ -1310,9 +1349,9 @@ C<--count-only>.
 
 =head2 --strict
 
-Only applicable if C<--csv-per-line> has been specified.  Flag.  If
-specified with a trueish value, then each line in the CSV file B<must> have
-the same number of fields.  Default is to allow different numbers of fields.
+Flag. Only applicable if C<--csv-per-line> has been specified.  If
+specified, then each line in the CSV file B<must> have the same number
+of fields.  Default is to allow different numbers of fields.
 
 =head2 --summary-if-larger-than=N
 
@@ -1323,11 +1362,11 @@ no summarization will ever occur).
 
 =item --type=words|starts-with|ends-with|contains
 
-Only makes sense if the pattern is a string.  With C<words> specified,
+Only makes sense if the pattern is a literal string.  With C<words> specified,
 will look for pattern as a word in a line, with C<starts-with> will
 look for the pattern at the beginning of a line, with C<ends-with>
 will look for the pattern at the end of a line, with C<contains> will
-look for the pattern at any position in a line.
+look for the pattern at any position in a line (which is the default).
 
 =head2 --trim
 
@@ -1337,17 +1376,17 @@ C<True> if no context for lines was specified, else defaults to C<False>.
 
 =head2 --uid=condition
 
-If specified, indicates the C<Callable> that should return True to include a
-file in the selection of files to be checked.  The numeric C<uid> of the file
-will be passed as the only argument.  Can also be specified as a single
+If specified, indicates the C<Callable> that should return C<True> to include
+a file in the selection of files to be checked.  The numeric C<uid> of the
+file will be passed as the only argument.  Can also be specified as a single
 numeric argument.  See also C<--user>.
 
 =begin code :lang<bash>
 
-# show files of which the numeric user id is greater than 500
+# select files of which the numeric user id is greater than 500
 $ rak --find --uid='* > 500'
 
-# show files of which the numeric user id is 501
+# select files of which the numeric user id is 501
 $ rak --find --uid=501
 
 =end code
@@ -1358,25 +1397,25 @@ the current operating system.
 =head2 --under-version-control[=git]
 
 Indicate whether to only select files that are under some form of version
-control.  If specified with a trueish value, will assume files that are
-under C<git> version control.  Can also specify the name of the version
-control system as the value: currently only B<git> is supported.
+control.  If specified as a flag, will assume files that are under C<git>
+version control.  Can also specify the name of the version control system
+as the value: currently only B<git> is supported.
 
 =head2 --unicode
 
-Flag.  If specified with a true value, will search the unicode database
-for defined codepoints by name.  Default is C<False>.
+Flag.  If specified, will search the unicode database for defined codepoints
+by name.  Default is C<False>.
 
 =head2 --unique
 
-Flag.  If specified with a true value, will only produce unique lines of
-output.  Default is C<False>.  See also C<--frequencies>.
+Flag.  If specified, will only produce unique lines of output.  Default is
+C<False>.  See also C<--frequencies>.
 
 =head2 --user=condition
 
-If specified, indicates the C<Callable> that should return True to include a
-file in the selection of files to be checked.  The user name associated with
-the C<uid> of the file will be passed as the only argument.
+If specified, indicates the C<Callable> that should return C<True> to include
+a file in the selection of files to be checked.  The user name associated
+with the C<uid> of the file will be passed as the only argument.
 
 Can also be specified as a list of comma separated names to (not) select on.
 To select all names B<except> the listed named, prefix with a C<!>.
@@ -1389,10 +1428,10 @@ L<P5getpwnam|https://raku.land/zef:lizmat/P5getpwnam> module to be installed.
 # files of which the name associated with the user id starts with underscore
 $ rak --find --user='*.starts-with("_")'
 
-# show files of which the owner is liz or wendy
+# select files of which the owner is liz or wendy
 $ rak --find --user=liz,wendy
 
-# show files of which the owner is NOT liz or wendy
+# select files of which the owner is NOT liz or wendy
 $ rak --find --user='!liz,wendy'
 
 =end code
@@ -1408,9 +1447,9 @@ information.
 
 =head2 --vimgrep
 
-Flag.  If specified with a true value, will output search results in the
-format "filename:linenumber:column:line".  This allows integration with
-the C<:grep> action in vim-like editors.
+Flag.  If specified, will output search results in the format
+"filename:linenumber:column:line".  This allows integration with the
+C<:grep> action in vim-like editors.
 
 =head1 CHECKING TIMES ON FILES
 
@@ -1455,13 +1494,13 @@ C<.changed> as methods.
 
 =begin code :lang<bash>
 
-# all files that were modified later than an hour ago
+# select all files that were modified later than an hour ago
 $ rak --find --modified='* > "1h".ago'
 
-# all files that were created before 2.5 hours ago
+# select all files that were created before 2.5 hours ago
 $ rak --find --created='* < "2h30m".ago'
 
-# all files that were modified after "Changes" was created
+# select all files that were modified after "Changes" was created
 $ rak --find --modified='* > "Changes".IO.created'
 
 =end code
