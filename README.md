@@ -300,13 +300,13 @@ Flag. Indicate to **not** actually make any changes to any content modification 
 
 Indicate whether the patterns found should be fed into an editor for inspection and/or changes. Defaults to `False`. Optionally takes the name of the editor to be used. If no editor is specified, will use what is in the `EDITOR` environment variable. If that is not specified either, will call "vim".
 
---eol=[lf|cr|crlf]
-------------------
+--eol=lf|cr|crlf
+----------------
 
 Only applicable if `--csv-per-line` has been specified. Indicate a line ending different from the standard line ending assumed by the system. Can be specified as `lf` for a single LineFeed character, `cr` for a single CarriageReturn character, or `crlf` for a combination of a CarriageReturn and a LineFeed character.
 
---escape=["]
-------------
+--escape=char
+-------------
 
 Only applicable if `--csv-per-line` has been specified. Indicates the escape character to be used to escape characters in a field. Defaults to **double quote**.
 
@@ -1039,8 +1039,8 @@ One option can be marked as requiring a value to be specified (with "!") or have
 
 To remove a saved set of options, use `--save`=foo as the only option to remove the "foo" set of options.
 
---sep=[,]
----------
+--sep=,
+-------
 
 Only applicable if `--csv-per-line` has been specified. Indicates the character to indicate the field separator. Defaults to the **comma**.
 

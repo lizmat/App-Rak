@@ -390,7 +390,7 @@ name of the editor to be used.  If no editor is specified, will use what
 is in the C<EDITOR> environment variable.  If that is not specified either,
 will call "vim".
 
-=head2 --eol=[lf|cr|crlf]
+=head2 --eol=lf|cr|crlf
 
 Only applicable if C<--csv-per-line> has been specified.  Indicate a
 line ending different from the standard line ending assumed by the system.
@@ -398,7 +398,7 @@ Can be specified as C<lf> for a single LineFeed character, C<cr> for a
 single CarriageReturn character, or C<crlf> for a combination of a
 CarriageReturn and a LineFeed character.
 
-=head2 --escape=["]
+=head2 --escape=char
 
 Only applicable if C<--csv-per-line> has been specified.  Indicates the
 escape character to be used to escape characters in a field.  Defaults to
@@ -1292,7 +1292,7 @@ or have a default value (with "[default-value]").
 To remove a saved set of options, use C<--save>=foo as the only option
 to remove the "foo" set of options.
 
-=head2 --sep=[,]
+=head2 --sep=,
 
 Only applicable if C<--csv-per-line> has been specified.  Indicates the
 character to indicate the field separator.  Defaults to the B<comma>.
