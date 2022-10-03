@@ -1191,7 +1191,9 @@ my sub option-csv-per-line($value --> Nil) {
 }
 
 my sub option-degree($value --> Nil) {
-    my $code := convert-to-simple-Callable($value, 'degree');
+    my $code;
+    $code := convert-to-simple-Callable($value, 'degree')
+      unless Bool.ACCEPTS($value);
     my $integer := Callable.ACCEPTS($code)
       ?? $code(Kernel.cpu-cores).Int
       !! $value.Int;
