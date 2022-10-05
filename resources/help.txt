@@ -135,6 +135,7 @@ Special options:
  --vimgrep          Produce output in :vimgrep format
  --checkout=string  Checkout branch if pattern matches single branch name
  --sourcery         Treat pattern as code indicating candidates for inspection
+ --ecosystem        Inspect a Raku ecosystem's module's META information
 
 Option management:
  --save=name            Translate --name to all other options specified,

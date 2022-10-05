@@ -295,6 +295,28 @@ Flag. If specified as a flag, will **not** catch any error during processing, bu
 
 Flag. Indicate to **not** actually make any changes to any content modification if specified with a `True` value. Only makes sense together with the `--modify-files` and the `--rename-files` option.
 
+--ecosystem[=name]
+------------------
+
+Intended to be used by Raku ecosystem maintainers. Indicates the name of the Raku ecosystem of which to inspect the `META6.json` information of all its modules. Currently supported names are:
+
+  * p6c - the original git ecosystem (deprecated)
+
+  * cpan - the ecosystem piggybacking on PAUSE / CPAN (deprecated)
+
+  * fez - the currently recommended ecosystem for new modules / updates
+
+  * rea - the Raku Ecosystem Archive
+
+Defaults to `rea` if specified as a flag. Implies `--json-per-elem`.
+
+```bash
+# show all unique module names by an author
+$ rak '{ .author eq "Scooby Doo" }' --blame-per-line
+```
+
+Assumes `zef` is installed and its meta information is available.
+
 --edit[=editor]
 ---------------
 

@@ -14,9 +14,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-09-27T22:55:07+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-10-05T14:37:05+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dont-catch dryrun edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -1233,6 +1233,15 @@ my sub option-dryrun($value --> Nil) {
       !! meh "'--dryrun' can only be specified as a flag";
 }
 
+my sub option-ecosystem($value --> Nil) {
+    %result<ecosystem> := $value<> =:= True
+      ?? "rea"
+      !! $value (elem) <p6c cpan fez rea>
+        ?? $value
+        !! meh "Must specify one of p6c cpan fez rea with --ecosystem, not: $value";
+    set-action('json-per-elem', True);
+}
+
 my sub option-edit($value --> Nil) {
     check-EditFiles('edit');
     set-action('edit', $value);
@@ -2193,27 +2202,25 @@ my sub action-json-per-file(--> Nil) {
 my sub action-json-per-elem(--> Nil) {
     meh-for 'json-per-elem', <csv modify>;
 
-    prepare-needle;
-    %filesystem<file> //= codify-extensions %exts<#json>
-      unless $reading-from-stdin;
-    move-filesystem-options-to-rak;
-    move-result-options-to-rak;
+    if %result<ecosystem>:delete -> $ecosystem {
+        meh-for 'ecosystem', <filesystem>;
+        my @sources = ($*HOME // $*TMPDIR)
+          .add(".zef").add("store").add($ecosystem).add("$ecosystem.json");
+        %rak<sources> := @sources;
+        %listing<show-filename> := False
+          if %listing<show-filename>:!exists;
+    }
 
-    if %listing<show-item-number>:delete {
-        # no action needed
-    }
-    elsif %listing<files-with-matches>:delete {
-        %rak<sources-only> := True;
-    }
-    elsif %result<unique>:delete {
-        %rak<unique> := True;
-    }
-    elsif %result<frequencies>:delete {
-        %rak<frequencies> := True;
-    }
+    # Normal json-per-elem handling
     else {
-        %rak<omit-item-number> := True;
+        %filesystem<file> //= codify-extensions %exts<#json>
+          unless $reading-from-stdin;
+        move-filesystem-options-to-rak;
     }
+
+    move-result-options-to-rak;
+    %rak<omit-item-number> := True
+      unless %rak<unique frequencies omit-item-number>:k;
 
     my $enc := %rak<encoding>:delete // 'utf8-c8';
     %rak<produce-many> := -> $io {
@@ -2222,6 +2229,7 @@ my sub action-json-per-elem(--> Nil) {
         }
     }
 
+    prepare-needle;
     activate-output-options;
     run-rak;
     rak-results;
@@ -2236,22 +2244,8 @@ my sub action-json-per-line(--> Nil) {
       unless $reading-from-stdin;
     move-filesystem-options-to-rak;
     move-result-options-to-rak;
-
-    if %listing<show-item-number>:delete {
-        # no action needed
-    }
-    elsif %listing<files-with-matches>:delete {
-        %rak<sources-only> := True;
-    }
-    elsif %result<unique>:delete {
-        %rak<unique> := True;
-    }
-    elsif %result<frequencies>:delete {
-        %rak<frequencies> := True;
-    }
-    else {
-        %rak<omit-item-number> := True;
-    }
+    %rak<omit-item-number> := True
+      unless %rak<unique frequencies omit-item-number>:k;
 
     my $enc := %rak<encoding>:delete // 'utf8-c8';
     %rak<produce-many> := -> $io {
