@@ -1084,6 +1084,20 @@ Flag and option. Only applicable if the pattern is a `Callable`. Indicates wheth
 
 Flag. An intelligent version of `--ignorecase`. If the pattern does **not** contain any uppercase characters, it will act as if `--ignorecase` was specified. Otherwise it is ignored.
 
+--sourcery
+----------
+
+Flag. Mainly intended for Raku Programming Language core developers. If specified, indicates that the pattern should be interpreted as code specifying a simple call to a subroutine, or a simple call to a method, optionally with arguments. The search result will then contain the source locations of subroutine / method that is expected to be able to handle that call.
+
+Compatible with the `--edit`, `--vimgrep` and the implicit `per-line` option.
+
+```bash
+# edit the location(s) of the "say" sub handling a single string
+$ rak --sourcery 'say "foo"' --edit
+```
+
+Requires that the [`sourcery`](https://raku.land/zef:lizmat/sourcery) module is installed.
+
 --stats
 -------
 

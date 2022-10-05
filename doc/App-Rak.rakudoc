@@ -1337,6 +1337,28 @@ Flag.  An intelligent version of C<--ignorecase>.  If the pattern does
 B<not> contain any uppercase characters, it will act as if C<--ignorecase>
 was specified.  Otherwise it is ignored.
 
+=head2 --sourcery
+
+Flag.  Mainly intended for Raku Programming Language core developers.
+If specified, indicates that the pattern should be interpreted as code
+specifying a simple call to a subroutine, or a simple call to a method,
+optionally with arguments.  The search result will then contain the source
+locations of subroutine / method that is expected to be able to handle that
+call.
+
+Compatible with the C<--edit>, C<--vimgrep> and the implicit C<per-line>
+option.
+
+=begin code :lang<bash>
+
+# edit the location(s) of the "say" sub handling a single string
+$ rak --sourcery 'say "foo"' --edit
+
+=end code
+
+Requires that the L<C<sourcery>|https://raku.land/zef:lizmat/sourcery> module
+is installed.
+
 =head2 --stats
 
 Flag.  Also show statistics about the search operation after having shown

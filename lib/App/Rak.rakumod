@@ -155,6 +155,8 @@ my $config-file := $*HOME.add('.rak-config.json');
 my $GitBlameFile;
 my $TextCSV;
 my &edit-files;
+my &sourcery;
+my &sourcery-pattern;
 
 # Variables for grouping options given
 my $verbose;      # process verbose
@@ -989,6 +991,15 @@ my sub external-execution(str $name, $value --> Nil) {
       !! (%filesystem{$name} := $value);
 }
 
+# check sourcery availability
+my sub check-sourcery(str $name) {
+    unless &edit-files {
+        CATCH { meh-not-installed 'sourcery', $name }
+        (&sourcery, &sourcery-pattern) =
+          "use sourcery; &sourcery, &needle".EVAL;
+    }
+}
+
 # check Edit::Files availability
 my sub check-EditFiles(str $name) {
     unless &edit-files {
@@ -1653,6 +1664,11 @@ my sub option-smartcase($value --> Nil) {
     set-global-flag('smartcase', $value);
 }
 
+my sub option-sourcery($value --> Nil) {
+    check-sourcery('sourcery');
+    set-result-flag('sourcery', $value);
+}
+
 my sub option-stats($value --> Nil) {
     set-rak-flag('stats', $value);
 }
@@ -2098,6 +2114,13 @@ my sub action-csv-per-line(--> Nil) {
 }
 
 my sub action-edit(--> Nil) {
+
+    if %result<sourcery>:delete {
+        meh-for 'edit', <output-file pager result filesystem modify csv>;
+        edit-files sourcery $pattern.trim;
+        return;
+    }
+
     %rak<max-matches-per-source> := $_
       with %result<max-matches-per-file>:delete;
     my $find := %result<find>:delete;
@@ -2363,14 +2386,39 @@ my sub action-per-file(--> Nil) {
 my sub action-per-line(--> Nil) {
     meh-for 'per-line', <csv modify>;
 
-    prepare-needle;
-    move-filesystem-options-to-rak;
+    if %result<sourcery>:delete {
+        meh-for 'sourcery', <filesystem>;
+
+        $pattern     := $pattern.trim;
+        my $sourcery := sourcery $pattern;
+
+        # normalize the sourcery results
+        my %result;
+        for $sourcery -> (:key($file), :value($linenumber)) {
+            (%result{$file} // (%result{$file} := [])).push: $linenumber;
+        }
+
+        # Decide on whether it's a match by the line number for that file
+        my @sources = %result.keys>>.IO;
+        my %linenrs = @sources.map: * => 0;
+        $needle := -> $ {
+            ++%linenrs{$*SOURCE} (elem) %result{$*SOURCE}
+        }
+        $pattern      := sourcery-pattern $pattern;  # for highlighting
+        %rak<sources> := @sources;                   # only these files
+    }
+
+    else {
+        prepare-needle;
+        move-filesystem-options-to-rak;
+
+        # The default in rak already does the right thing
+        %rak<produce-many> := $action
+          if $action.defined && !($action<> =:= True);
+
+    }
+
     move-result-options-to-rak;
-
-    # The default in rak already does the right thing
-    %rak<produce-many> := $action
-      if $action.defined && !($action<> =:= True);
-
     run-rak;
     rak-results;
     rak-stats;
@@ -2506,9 +2554,15 @@ my sub action-version(--> Nil) {
 }
 
 my sub action-vimgrep(--> Nil) {
+
+    if %result<sourcery>:delete {
+        meh-for 'vimgrep', <output-file pager result filesystem modify csv>;
+        sayer "$_.key():$_.value()::" for sourcery $pattern.trim;
+        return;
+    }
+
     %rak<max-matches-per-source> := $_
       with %result<max-matches-per-file>:delete;
-
     meh-for 'vimgrep', <result modify csv>;
 
     prepare-needle;
