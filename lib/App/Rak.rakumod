@@ -415,7 +415,7 @@ my sub codify(Str:D $code) {
 
     $code eq '*.defined'
       ?? &defined
-      !! $code.starts-with('/') && $code.ends-with('/')
+      !! $code.starts-with('/') && $code.ends-with('/') && $code ne '/'
         ?? regexify($code)
         !! $code.starts-with('{') && $code.ends-with('}')
           ?? (prelude() ~ 'my $ := -> $_ ' ~ $code).EVAL
@@ -469,11 +469,11 @@ my sub needleify($pattern) {
     elsif $type eq 'words' {
         $ignorecase
           ?? $ignoremark
-            ?? *.&has-word($pattern, :i, :m)
-            !! *.&has-word($pattern, :i)
+            ?? *.Str.&has-word($pattern, :i, :m)
+            !! *.Str.&has-word($pattern, :i)
           !! $ignoremark
-            ?? *.&has-word($pattern, :m)
-            !! *.&has-word($pattern)
+            ?? *.Str.&has-word($pattern, :m)
+            !! *.Str.&has-word($pattern)
     }
     elsif $type eq 'starts-with' {
         $ignorecase
