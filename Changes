@@ -1,8 +1,16 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.1.1  2022-10-06T14:35:22+02:00
      - Add support for --sourcery
      - Add support for --ecosystem
+     - Fix issue with --list-custom-options
+     - Fix issue with some custom options being saved incorrectly
+     - Allow for negation of custom options that were saved as False
+     - Bump dependency on rak to have --find not be eagerized. Unfortunately,
+       this still doesn't solve the issue of the iterator being held up
+       somewhere / somehow until all values have been produced
 
 0.1  2022-10-02T20:04:39+02:00
      - The first official beta-version of App::Rak.  With fleshed

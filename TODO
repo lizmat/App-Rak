@@ -2,5 +2,12 @@ Ideas / Todo's
 ==============
 
 - run a raku program and interpret the execution error as an --edit
-- expose mapper
+- expose mapper functionality
 - create plugin structure
+- modify files met csv-per-line
+- XPath en XML file support
+- support voor urls as file indicators, fetch using curl
+- support for timezones, selecting on name, but also on properties
+- some form if binary support
+- search spesh log
+- watch file support
