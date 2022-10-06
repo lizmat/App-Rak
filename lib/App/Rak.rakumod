@@ -199,7 +199,14 @@ my &sayer = do {
 my %config := do {
     if $config-file.e {
         my %hash := from-json($config-file.slurp);
-        for %hash.values { $_ = .pairs.List if Map.ACCEPTS($_) }
+
+        # fix various save snafus and content changes
+        for %hash.values {
+            $_ = .pairs.List if Hash.ACCEPTS($_);
+            if Array.ACCEPTS($_) {
+                $_ = .map(*.pairs.Slip).List;
+            }
+        }
         %hash
     }
     else {
@@ -2264,7 +2271,7 @@ my sub action-list-custom-options(--> Nil) {
     meh-for 'list-custom-options', <filesystem listing modify csv>;
 
     activate-output-options;
-    my $format := '%' ~ %config.keys>>.chars.max ~ 's: %s';
+    my $format := '%' ~ %config.keys>>.chars.max ~ "s: %s\n";
     for %config.sort(*.key.fc) -> (:$key, :value(@args)) {
         printf $format, $key, as-cli-arguments(@args);
     }
@@ -2608,9 +2615,20 @@ my sub named($original-name, $original-value, :$recurse = True) {
                     );
                 }
             }
+
+            # specified as negation
+            else {
+                for @expanded -> (:key($name), :$value)  {
+                    # only negate Bools, ignore others because negation of
+                    # other values doesn't make sense other than it not
+                    # being specified
+                    named($name, !$value, :recurse($name ne $original-name))
+                      if Bool.ACCEPTS($value);
+                }
+            }
         }
 
-        # Git a value
+        # Got a value
         else {
             for @expanded -> (:key($name), :$value)  {
                 named(
@@ -2725,11 +2743,8 @@ my sub prepare-needle(:$allow-matches-only = True) {
               !! ($ignorecase := !$pattern.contains(/ <:upper> /));
         }
     }
-    elsif %result<find> {         # no explicit pattern, but using find
-        $pattern := '*.defined';  # put in a basic noop
-    }
     else {
-        meh "Must at least specify a pattern";
+        $pattern := '*.defined';  # put in a basic noop
     }
 
     # first attempt at codifying pattern
@@ -2784,7 +2799,7 @@ my sub as-options() {
     add('paths', @positionals.join(',')) if @positionals;
     add($action-for, $action)            if $action-for;
 
-    @options.append: $_ for
+    @options.append: .pairs for
       %global, %filesystem, %csv, %listing, %modify;
 
     add('verbose', $verbose) if $verbose;
