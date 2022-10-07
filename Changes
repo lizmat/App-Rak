@@ -1,7 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
-     - Bump dependency on rak to get URL fetching support
+     - Bump dependency on rak to get URL support as file specification, and
+       support for --accept and --deny
      - Allow for multiple ecosystem specs with --ecosystem
      - Add support for --description
 

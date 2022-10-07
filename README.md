@@ -144,6 +144,16 @@ SUPPORTED OPTIONS
 
 All options are optional. Any unexpected options, will cause an exception to be thrown with the unexpected options listed and possible alternatives mentioned. Unless specifically indicated otherwise, using the negation of a flag has the same effect as **not** specifying it.
 
+--accept=code
+-------------
+
+Specifies the code that should be executed that should return `True` if the path is acceptable, given an `IO::Path` object of the path. See also `--deny`.
+
+```bash
+# Include files that have "use Test" in them
+$ rak --accept='*.slurp.contains("use Test")'
+```
+
 --accessed=condition
 --------------------
 
@@ -274,6 +284,16 @@ More documentation can be found with the [Text::CSV](https://raku.land/github:Tu
 -------------------
 
 Indicate the number of worker threads that should be maximally. Defaults to the number of cores minus 1 if not specified. Assumes `1` if specified as a flag. Can also take a `Callable` specification, in which case the number of CPU cores will be presented to that Callable as the only argument. See also <--batch>.
+
+--deny=code
+-----------
+
+Specifies the code that should be executed that should return `True` if the path is **NOT** acceptable, given an `IO::Path` object of the path. See also `--accept`.
+
+```bash
+# Include files that **NOT** have "use Test" in them
+$ rak --deny='*.slurp.contains("use Test")'
+```
 
 --description=text
 ------------------

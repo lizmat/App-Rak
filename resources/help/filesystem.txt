@@ -51,6 +51,26 @@ Flag.  If specified with a True value, will only accept files of which
 the extension is an extension of any of the predefined extension groups.
 Conflicts with --file, --find-all or --extensions.
 
+Refining by content:
+
+--accept=code
+
+Specifies the code that should be executed that should return True if
+the path is acceptable, given an IO::Path object of the path.
+
+Example:
+# Include files that have "use Test" in them
+$ rak --accept='*.slurp.contains("use Test")'
+
+--deny=code
+
+Specifies the code that should be executed that should return True if
+the path is **NOT** acceptable, given an IO::Path object of the path.
+
+Example:
+# Include files that **NOT** have "use Test" in them
+$ rak --deny='*.slurp.contains("use Test")'
+
 Refining by epoch:
 
 These arguments expect a Callable that will be given the associated

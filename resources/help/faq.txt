@@ -1,4 +1,11 @@
 Frequently Asked Questions:
 ‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
 
-There are no frequently asked questions yet.
+Q: How can I limit to files with a certain extension?
+A: Use "--extensions=name" where "name" is the actual extension.  Note that
+   a period will be added for the actual comparisons.
+
+Q: How can I limit to files without extension?
+A: Use "--extensions=,".  This works because the comma is used to indicate
+   multiple extensions to accept.  In this case, since there are no letters
+   between the "=" and the ",", it specifies a zero character extension.

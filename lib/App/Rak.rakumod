@@ -3,7 +3,7 @@ use as-cli-arguments:ver<0.0.6>:auth<zef:lizmat>;  # as-cli-arguments
 use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.15>:auth<zef:lizmat>;      # columns highlighter matches
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
-use rak:ver<0.0.32>:auth<zef:lizmat>;              # rak
+use rak:ver<0.0.33>:auth<zef:lizmat>;              # rak
 use String::Utils:ver<0.0.12>:auth<zef:lizmat> <after before between is-sha1>;
 
 # The epoch value when process started
@@ -14,9 +14,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-10-07T16:08:12+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-10-07T22:50:16+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -68,6 +68,7 @@ my constant %falsies =
   TYPE             => 'extensions',
   v                => 'invert-match',
   x                => 'files-from',
+  1                => 'only-first',
 
 # from ag
   a                => 'find-all',
@@ -999,6 +1000,13 @@ my sub set-filesystem-name(str $name, $value, $name-getter, $id-getter --> Nil) 
     }
 }
 
+# handle file attributes that need a callable
+my sub set-filesystem-callable(str $name, $value --> Nil) {
+    Bool.ACCEPTS($value)
+      ?? meh "--$name cannot be specified as a flag"
+      !! (%filesystem{$name} := convert-to-simple-Callable($value, $name));
+}
+
 # handle external execution
 my sub external-execution(str $name, $value --> Nil) {
     Bool.ACCEPTS($value)
@@ -1129,6 +1137,10 @@ my sub option-absolute($value --> Nil) {
     set-listing-flag('absolute', $value)
 }
 
+my sub option-accept($value --> Nil) {
+    set-filesystem-callable('accept', $value)
+}
+
 my sub option-accessed($value --> Nil) {
     set-filesystem-Instant('accessed', $value)
 }
@@ -1226,6 +1238,10 @@ my sub option-degree($value --> Nil) {
     Int.ACCEPTS($integer)
       ?? (%rak<degree> := $integer)
       !! meh "'--degree' must be an integer, or a Callable, not '$value'";
+}
+
+my sub option-deny($value --> Nil) {
+    set-filesystem-callable('deny', $value)
 }
 
 my sub option-description($value --> Nil) {
@@ -1869,9 +1885,8 @@ my sub move-filesystem-options-to-rak(--> Nil) {
         %rak ,= %filesystem;
         %filesystem = ();
     }
-    else {
-        %rak<file> := codify-extensions @known-extensions;
-    }
+
+    %rak<file> := codify-extensions @known-extensions unless %rak<file>:exists;
 }
 
 my sub move-result-options-to-rak(--> Nil) {

@@ -178,6 +178,19 @@ to be thrown with the unexpected options listed and possible alternatives
 mentioned.  Unless specifically indicated otherwise, using the negation of
 a flag has the same effect as B<not> specifying it.
 
+=head2 --accept=code
+
+Specifies the code that should be executed that should return C<True> if
+the path is acceptable, given an C<IO::Path> object of the path.  See also
+C<--deny>.
+
+=begin code :lang<bash>
+
+# Include files that have "use Test" in them
+$ rak --accept='*.slurp.contains("use Test")'
+
+=end code
+
 =head2 --accessed=condition
 
 If specified, indicates the C<Callable> that should return True to include a
@@ -355,6 +368,19 @@ to the number of cores minus 1 if not specified.  Assumes C<1> if specified
 as a flag.  Can also take a C<Callable> specification, in which case the
 number of CPU cores will be presented to that Callable as the only argument.
 See also <--batch>.
+
+=head2 --deny=code
+
+Specifies the code that should be executed that should return C<True> if
+the path is B<NOT> acceptable, given an C<IO::Path> object of the path.
+See also C<--accept>.
+
+=begin code :lang<bash>
+
+# Include files that **NOT** have "use Test" in them
+$ rak --deny='*.slurp.contains("use Test")'
+
+=end code
 
 =head2 --description=text
 

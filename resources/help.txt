@@ -46,8 +46,10 @@ Haystack specification:
 
 Filesystem filters:
  --accessed=condition    Check on epoch when file was last accessed
+ --accept=code           Given an IO of a file, return if file acceptable
  --blocks=condition      Number of filesystem blocks used by file
  --created=condition     Check on epoch when file was created
+ --deny=code             Given an IO of a file, return if **NOT** acceptable
  --device-number         Number of device on which file is located
  --dir=expression        Directory basename filter, default: not ^.
  --exec=program          Run program, include if successful
