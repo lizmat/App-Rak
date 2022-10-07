@@ -615,6 +615,47 @@ nine
 10:ne
 OK
 
+# This check is a little brittle
+query-ok '--ecosystem', q/{ .<name> eq "eigenstates" && .<version> }/,
+  :!add-paths, ok => q:to/OK/;
+0.0.10
+0.0.9
+0.0.8
+0.0.7
+0.0.6
+0.0.5
+0.0.4
+0.0.3
+0.0.2
+0.0.1
+OK
+
+# This check is a little brittle
+query-ok '--ecosystem=fez', q/{ .<name> eq "eigenstates" && .<version> }/,
+  :!add-paths, ok => q:to/OK/;
+0.0.6
+0.0.7
+0.0.8
+0.0.9
+0.0.10
+OK
+
+# This check is a little brittle
+query-ok '--sourcery', 'say "foo"', <--/show-item-number --/show-filename>,
+  ok => 'multi ' ~ BON ~ 'sub say' ~ BOFF ~ '(\x) {' ~ "\n"
+      ~ 'multi ' ~ BON ~ 'sub say' ~ BOFF ~ '(|) {';
+
+# This check is a little brittle
+query-ok '--json-per-elem', q/{ .<version> if .<name> eq 'eigenstates' }/,
+  <https://360.zef.pm --show-filename>, :!add-paths, :head(2), ok => q:to/OK/;
+https://360.zef.pm
+0.0.6
+0.0.7
+0.0.8
+0.0.9
+0.0.10
+OK
+
 done-testing;
 
 # vim: expandtab shiftwidth=4
