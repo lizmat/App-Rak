@@ -275,6 +275,11 @@ More documentation can be found with the [Text::CSV](https://raku.land/github:Tu
 
 Indicate the number of worker threads that should be maximally. Defaults to the number of cores minus 1 if not specified. Assumes `1` if specified as a flag. Can also take a `Callable` specification, in which case the number of CPU cores will be presented to that Callable as the only argument. See also <--batch>.
 
+--description=text
+------------------
+
+Specify a description to be saved with the custom option. This will be shown prominently with --list-custom-options. If it is the only argument apart from --save, then the discription will be added (if there was no description yet) or replace the current description of the option.
+
 --device-number=condition
 -------------------------
 

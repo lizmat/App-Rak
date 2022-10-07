@@ -356,6 +356,13 @@ as a flag.  Can also take a C<Callable> specification, in which case the
 number of CPU cores will be presented to that Callable as the only argument.
 See also <--batch>.
 
+=head2 --description=text
+
+Specify a description to be saved with the custom option.  This will be
+shown prominently with --list-custom-options.  If it is the only argument
+apart from --save, then the discription will be added (if there was no
+description yet) or replace the current description of the option.
+
 =head2 --device-number=condition
 
 If specified, indicates the C<Callable> that should return True to include a

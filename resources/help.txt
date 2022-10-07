@@ -140,6 +140,7 @@ Special options:
 Option management:
  --save=name            Translate --name to all other options specified,
                         remove if --save was the only option specified
+ --description=text     Add description to custom option
  --list-custom-options  List all previously saved options
 
 General options:

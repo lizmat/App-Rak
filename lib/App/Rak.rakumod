@@ -14,9 +14,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-10-07T12:37:23+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-10-07T16:08:12+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -297,22 +297,30 @@ my sub main(@ARGS) is export {
     $pattern := @positionals.shift if !$pattern.defined && @positionals;
 
     # Save current setting
-    if %global<save>:delete -> $save {
-        my @options := as-options;
+    if %global<save>:delete -> $name {
+        my @opts := as-options;
 
-        @options
-          ?? (%config{$save} := @options)
-          !! (%config{$save}:delete);
+        if @opts {
+            %config{$name} := @opts == 1 && @opts.head.key eq 'description'
+              ?? (|%config{$name}, @opts.head)
+              !! @opts;
+        }
+        else {
+            %config{$name}:delete;
+        }
 
         $config-file.spurt: to-json %config, :!pretty, :sorted-keys;
 
         say @options
-          ?? "Saved '&as-cli-arguments(@options)' as: -$save"
-          !! "Removed custom option '--$save'";
+          ?? "Saved '&as-cli-arguments(@opts)' as: -$name"
+          !! "Removed custom option '--$name'";
         exit;
     }
 
-    elsif %global<list-expanded-options>:delete {
+    # from here on out, description is a noop
+    %global<description>:delete;
+
+    if %global<list-expanded-options>:delete {
         if $verbose {
             for as-options() {
                 if description(.key) -> $description {
@@ -1218,6 +1226,12 @@ my sub option-degree($value --> Nil) {
     Int.ACCEPTS($integer)
       ?? (%rak<degree> := $integer)
       !! meh "'--degree' must be an integer, or a Callable, not '$value'";
+}
+
+my sub option-description($value --> Nil) {
+    Bool.ACCEPTS($value)
+      ?? meh "'--description' can only be specified as a string"
+      !! (%global<description> := $value);
 }
 
 my sub option-device-number($value --> Nil) {
@@ -2270,9 +2284,44 @@ my sub action-list-custom-options(--> Nil) {
     meh-for 'list-custom-options', <filesystem listing modify csv>;
 
     activate-output-options;
-    my $format := '%' ~ %config.keys>>.chars.max ~ "s: %s\n";
-    for %config.sort(*.key.fc) -> (:$key, :value(@args)) {
-        printf $format, $key, as-cli-arguments(@args);
+    if %config {
+        my @with;
+        my @without;
+
+        # find the ones with and without description
+        for %config.sort(*.key.fc) -> (:$key, :value(@args)) {
+            my $description;
+            my @nodesc = @args.map: {
+                if .key eq 'description' {
+                    $description := .value;
+                    Empty
+                }
+                else {
+                    $_
+                }
+            }
+            $description
+              ?? (@with.push: Pair.new: $key, Pair.new: $description, @nodesc)
+              !! (@without.push: Pair.new: $key, @args)
+        }
+
+        if @with {
+            for @with -> (:key($option), :value($_)) {
+                say "--$option: $_.key()";
+                say "  &as-cli-arguments(.value)";
+            }
+        }
+        if @without {
+            say "\nOther options without description:" if @with;
+            my $format := '%' ~ (@without.map(*.key.chars).max + 2) ~ "s: %s\n";
+            for @without -> (:key($option), :value(@valid)) {
+                printf $format, "--$option", as-cli-arguments(@valid);
+            }
+        }
+    }
+
+    else {
+        say "No custom options where found in '$config-file'";
     }
 }
 

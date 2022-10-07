@@ -3,6 +3,7 @@ Revision history for App-Rak
 {{$NEXT}}
      - Bump dependency on rak to get URL fetching support
      - Allow for multiple ecosystem specs with --ecosystem
+     - Add support for --description
 
 0.1.1  2022-10-06T14:35:22+02:00
      - Add support for --sourcery

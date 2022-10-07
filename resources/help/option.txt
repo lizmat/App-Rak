@@ -53,9 +53,23 @@ $ rak -x=dat foo
 To remove a custom option, just specify the --save argument with
 the name of the custom option you would like to remove.
 
-# Example:
+Example:
 # Remove the '--ex' custom option
 $ rak --save=ex
+
+--description=text
+
+Specify a description to be saved with the custom option.  This will be
+shown prominently with --list-custom-options.  If it is the only argument
+apart from --save, then the discription will be added (if there was no
+description yet) or replace the current description of the option.
+
+Examples:
+# Add description to --i custom option
+$ rak --description="Perform search without regards to case" --save=i
+
+# Add custom option --y with description
+$ rak --description='Yep, there is a codepoint for it' --unicode --save=y
 
 --list-custom-options
 
