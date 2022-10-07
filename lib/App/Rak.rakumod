@@ -3,7 +3,7 @@ use as-cli-arguments:ver<0.0.6>:auth<zef:lizmat>;  # as-cli-arguments
 use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.15>:auth<zef:lizmat>;      # columns highlighter matches
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
-use rak:ver<0.0.31>:auth<zef:lizmat>;              # rak
+use rak:ver<0.0.32>:auth<zef:lizmat>;              # rak
 use String::Utils:ver<0.0.12>:auth<zef:lizmat> <after before between is-sha1>;
 
 # The epoch value when process started
@@ -14,7 +14,7 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-10-05T14:37:05+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-10-07T12:37:23+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
 my str @options = <absolute accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
@@ -653,7 +653,7 @@ my sub rak-results() {
     my &path-stringify :=
       IO::Path.^find_method($absolute ?? "absolute" !! "relative");
     my sub stringify($value) {
-        IO::Path.ACCEPTS($value)
+        $value.WHAT =:= IO::Path  # only "pure" IO::Path objects
           ?? path-stringify($value)
           !! Buf.ACCEPTS($value)
             ?? $value.List.Str
@@ -1242,9 +1242,9 @@ my sub option-dryrun($value --> Nil) {
 
 my sub option-ecosystem($value --> Nil) {
     %result<ecosystem> := $value<> =:= True
-      ?? "rea"
-      !! $value (elem) <p6c cpan fez rea>
-        ?? $value
+      ?? ("rea",)
+      !! (my @ecos is List = $value.split(',')).all (elem) <p6c cpan fez rea>
+        ?? @ecos
         !! meh "Must specify one of p6c cpan fez rea with --ecosystem, not: $value";
     set-action('json-per-elem', True);
 }
@@ -2209,11 +2209,10 @@ my sub action-json-per-file(--> Nil) {
 my sub action-json-per-elem(--> Nil) {
     meh-for 'json-per-elem', <csv modify>;
 
-    if %result<ecosystem>:delete -> $ecosystem {
+    if %result<ecosystem>:delete -> @ecosystems {
         meh-for 'ecosystem', <filesystem>;
-        my @sources = ($*HOME // $*TMPDIR)
-          .add(".zef").add("store").add($ecosystem).add("$ecosystem.json");
-        %rak<sources> := @sources;
+        my $dir := ($*HOME // $*TMPDIR).add('.zef').add('store');
+        %rak<sources> := @ecosystems.map: { $dir.add($_).add("$_.json") }
         %listing<show-filename> := False
           if %listing<show-filename>:!exists;
     }

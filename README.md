@@ -50,7 +50,7 @@ If the pattern is a `Callable`, then the dynamic variable `$*SOURCE` will contai
 path(s)
 -------
 
-Optional. Either indicates the path of the directory (and its sub-directories), or the file that will be searched. By default, all directories that do not start with a period, and which are not symbolic links, will be recursed into (but this can be changed with the `--dir` option).
+Optional. Either indicates the path of the directory (and its sub-directories), or the file that will be searched, or a URL that will produce a file to be searched. By default, all directories that do not start with a period, and which are not symbolic links, will be recursed into (but this can be changed with the `--dir` option).
 
 By default, all files with known extensions will be searched in the directories. This can be changed with the `--file` option, or specialized version of that like `--extensions`.
 
@@ -295,10 +295,10 @@ Flag. If specified as a flag, will **not** catch any error during processing, bu
 
 Flag. Indicate to **not** actually make any changes to any content modification if specified with a `True` value. Only makes sense together with the `--modify-files` and the `--rename-files` option.
 
---ecosystem[=name]
-------------------
+--ecosystem[=name1,name2]
+-------------------------
 
-Intended to be used by Raku ecosystem maintainers. Indicates the name of the Raku ecosystem of which to inspect the `META6.json` information of all its modules. Currently supported names are:
+Intended to be used by Raku ecosystem maintainers. Indicates the name of zero or more Raku ecosystems of which to inspect the `META6.json` information of all its modules. Currently supported names are:
 
   * p6c - the original git ecosystem (deprecated)
 
@@ -311,8 +311,11 @@ Intended to be used by Raku ecosystem maintainers. Indicates the name of the Rak
 Defaults to `rea` if specified as a flag. Implies `--json-per-elem`.
 
 ```bash
-# show all unique module names by an author
-$ rak '{ .author eq "Scooby Doo" }' --blame-per-line
+# show all unique module names by an author from the REA
+$ rak '{ .author eq "Scooby Doo" }' --ecosystem
+
+# same, but now from the p6c and cpan ecosystems
+$ rak '{ .author eq "Scooby Doo" }' --ecosystem=p6c,cpan
 ```
 
 Assumes `zef` is installed and its meta information is available.

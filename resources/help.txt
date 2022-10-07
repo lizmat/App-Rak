@@ -131,11 +131,11 @@ Resource usage:
  --degree[=N | code]  Max workers to use for processing (default: cores - 1)
 
 Special options:
- --edit[=editor]    Go edit the result in an editor, (default EDITOR or vim)
- --vimgrep          Produce output in :vimgrep format
- --checkout=string  Checkout branch if pattern matches single branch name
- --sourcery         Treat pattern as code indicating candidates for inspection
- --ecosystem        Inspect a Raku ecosystem's module's META information
+ --edit[=editor]     Go edit the result in an editor, (default EDITOR or vim)
+ --vimgrep           Produce output in :vimgrep format
+ --checkout=string   Checkout branch if pattern matches single branch name
+ --sourcery          Treat pattern as code indicating candidates for inspection
+ --ecosystem[=name]  Inspect one or more Raku ecosystem's module's META
 
 Option management:
  --save=name            Translate --name to all other options specified,
