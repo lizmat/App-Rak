@@ -10,3 +10,5 @@ Ideas / Todo's
 - some form if binary support
 - search spesh log
 - watch file support
+- also include custom options in lookup of alternatives on error,
+  possibly with description!
