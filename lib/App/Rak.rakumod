@@ -1905,7 +1905,7 @@ my sub move-result-options-to-rak(--> Nil) {
         maybe-meh-together %result<unique frequencies>:k;
         maybe-meh-together %result<count-only stats-only>:k;
 
-        # Seem to only want file infromation
+        # Seem to only want file information
         if %result<files-with-matches files-without-matches>:k -> @keys {
             maybe-meh-together @keys;
             maybe-meh-together @keys, %result<
@@ -1954,6 +1954,7 @@ my sub move-result-options-to-rak(--> Nil) {
             }
         }
 
+        # Want all information
         else {
             if %result<max-matches-per-file>:delete -> $max {
                 %rak<max-matches-per-source> := $max;
