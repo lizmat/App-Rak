@@ -4,7 +4,7 @@ use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.15>:auth<zef:lizmat>;      # columns highlighter matches
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
 use rak:ver<0.0.33>:auth<zef:lizmat>;              # rak
-use String::Utils:ver<0.0.12>:auth<zef:lizmat> <after before between is-sha1>;
+use String::Utils:ver<0.0.13>:auth<zef:lizmat> <after before between is-sha1>;
 
 # The epoch value when process started
 my $init-epoch = $*INIT-INSTANT.to-posix.head;
@@ -2722,6 +2722,9 @@ my sub description($name) {
     elsif %?RESOURCES<help.txt>.lines.first(*.starts-with(" --$name ")) -> $line {
         $line.substr(1).split(/ \s+ /, 2).tail
     }
+    elsif %config{$name} -> @args {
+        @args.map({ .value if .key eq 'description' }).head // ""
+    }
     else {
         ""
     }
@@ -2756,7 +2759,7 @@ TEXT
         else {
             my int $cutoff = ($option.chars / 2).Int;
 
-            if @options.map(-> $after {
+            if (|@options,|%config.keys).map(-> $after {
                 my $distance := StrDistance.new(:before($option), :$after).Int;
                 Pair.new($after, $distance) if $distance <= $cutoff
             }).sort(*.value).head(5).List -> @suggestions {

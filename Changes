@@ -1,6 +1,7 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Bump dependency on String::Utils to get support for ngram
 
 0.1.2  2022-10-08T23:57:41+02:00
      - Bump dependency on rak to get URL support as file specification, and

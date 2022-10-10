@@ -10,5 +10,6 @@ Ideas / Todo's
 - some form if binary support
 - search spesh log
 - watch file support
-- also include custom options in lookup of alternatives on error,
-  possibly with description!
+- add --tar=name option to create tar-file from files with matches
+- add --gist=title option to save search result
+- now that we have ngram, perhaps allow for some fuzzy searching?
