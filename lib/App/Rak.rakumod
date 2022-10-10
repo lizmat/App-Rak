@@ -1886,7 +1886,8 @@ my sub move-filesystem-options-to-rak(--> Nil) {
         %filesystem = ();
     }
 
-    %rak<file> := codify-extensions @known-extensions unless %rak<file>:exists;
+    %rak<file> := codify-extensions @known-extensions
+      unless %rak<file under-version-control>:exists;
 }
 
 my sub move-result-options-to-rak(--> Nil) {
