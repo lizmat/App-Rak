@@ -1995,16 +1995,13 @@ my sub move-result-options-to-rak(--> Nil) {
                 %rak<eager>  := True;
                 %rak<mapper> := -> $io, @matches --> Empty {
                     LAST {
-                        if @files == 0 {
-                            sayer "No files with matches";
-                        }
-                        elsif $verbose {
+                        if $verbose {
                             sayer "$_.key() has $_.value() match{"es" if .value > 1}"
                               for @files;
                         }
-                        else {
-                            sayer "@files.map(*.value).sum() matches in @files.elems() files";
-                        }
+                        sayer @files
+                          ?? "@files.map(*.value).sum() matches in @files.elems() files"
+                          !! "No files with matches";
                     }
                     @files.push: Pair.new: stringify($io), @matches.elems;
                 }
