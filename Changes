@@ -1,7 +1,11 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.1.3  2022-10-11T15:46:55+02:00
      - Bump dependency on String::Utils to get support for ngram
+     - Bump dependency on rak to get :classify and :categorize support
+     - Add support for --classify and --categorize
 
 0.1.2  2022-10-08T23:57:41+02:00
      - Bump dependency on rak to get URL support as file specification, and

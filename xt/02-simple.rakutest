@@ -656,6 +656,41 @@ https://360.zef.pm
 0.0.10
 OK
 
+query-ok '*.substr(0,1) eq "f"', '--classify=*.substr(0,1)', :head(2),
+  ok => q:to/OK/;
+f
+four
+four
+five
+four
+five
+four
+five
+four
+five
+four
+five
+OK
+
+query-ok '*.chars == 5', '--categorize={ .substr(0,2).comb if $_ }', :head(2),
+  ok => q:to/OK/;
+e
+seven
+seven
+eight
+seven
+eight
+
+s
+seven
+seven
+seven
+
+i
+eight
+eight
+OK
+
 done-testing;
 
 # vim: expandtab shiftwidth=4

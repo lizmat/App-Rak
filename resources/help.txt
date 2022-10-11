@@ -101,6 +101,8 @@ Result modifiers:
  --matches-only            Only produce the actual matches
  --unique                  Only return unique lines
  --frequencies             Only return lines and their frequencies
+ --classify=classifier     Classify lines by a key (or not)
+ --categorize=categorizer  Classify lines by zero or more keys
 
 Listing modifiers:
  --human                     Force defaults as if a human is watching

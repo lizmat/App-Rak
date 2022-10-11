@@ -3,7 +3,7 @@ use as-cli-arguments:ver<0.0.6>:auth<zef:lizmat>;  # as-cli-arguments
 use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.15>:auth<zef:lizmat>;      # columns highlighter matches
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
-use rak:ver<0.0.33>:auth<zef:lizmat>;              # rak
+use rak:ver<0.0.34>:auth<zef:lizmat>;              # rak
 use String::Utils:ver<0.0.13>:auth<zef:lizmat> <after before between is-sha1>;
 
 # The epoch value when process started
@@ -14,9 +14,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-10-07T22:50:16+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-10-11T15:27:34+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -351,7 +351,8 @@ my sub main(@ARGS) is export {
     }
     elsif @positionals == 1 && @positionals.head.IO.f {
         %listing<show-filename> := False
-          if %listing<show-filename>:!exists;
+          if %listing<show-filename>:!exists
+          && !(%result<categorize classify>:exists);
     }
     elsif $reading-from-stdin {
         %result<show-item-number> := False
@@ -1099,6 +1100,11 @@ my sub set-result-flag-or-Int(str $name, $value --> Nil) {
         meh "'--$name' must either be an integer or a flag";
     }
 }
+my sub set-result-Callable(str $name, $value --> Nil) {
+    Bool.ACCEPTS($value)
+      ?? meh("'--$name' can *not* be specified as a flag")
+      !! (%result{$name} := convert-to-simple-Callable($value, $name));
+}
 
 # Set listing options
 my sub set-listing-flag(str $name, $value --> Nil) {
@@ -1209,6 +1215,14 @@ my sub option-break($value --> Nil) {
 
 my sub option-checkout($value --> Nil) {
     set-action('checkout', $value);
+}
+
+my sub option-classify($value --> Nil) {
+    set-result-Callable('classify', $value);
+}
+
+my sub option-categorize($value --> Nil) {
+    set-result-Callable('categorize', $value);
 }
 
 my sub option-context($value --> Nil) {

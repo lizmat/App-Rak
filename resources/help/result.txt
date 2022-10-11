@@ -14,6 +14,27 @@ items after any item with a match.
 Also produce N items before any item with a match.  Defaults to *no*
 items before any item with a match.
 
+--categorize=categorizer
+
+If specified, indicates the Callable that should return zero or more
+keysfor a given line to have it categorized.  This effectively replaces
+the filename if a line by its key in the result.  See also --classify.
+
+Example:
+# categorize by the first two letters of a line
+$ rak --categorize='*.substr(0,2).comb'
+
+
+--classify=classifier
+
+If specified, indicates the Callable that should return a key for a
+given line to have it classified.  This effectively replaces the filename
+if a line by its key in the result.  See also --categorize.
+
+Example:
+# classify by the last letter of a line
+$ rak --classify='*.substr(*-1)'
+
 --context=N
 
 Also produce N items before and after any item with a match.

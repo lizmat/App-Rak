@@ -323,6 +323,32 @@ the branch to checkout by the general matching logic of App::Rak.  Will
 produce listing of matching branches if more than one, or say that there
 is no match.  Branches need not have been checked out locally yet.
 
+=head2 --categorize=categorizer
+
+If specified, indicates the C<Callable> that should return zero or more
+keysfor a given line to have it categorized.  This effectively replaces
+the filename if a line by its key in the result.  See also C<--classify>.
+
+=begin code :lang<bash>
+
+# categorize by the first two letters of a line
+$ rak --categorize='*.substr(0,2).comb'
+
+=end code
+
+=head2 --classify=classifier
+
+If specified, indicates the C<Callable> that should return a key for a
+given line to have it classified.  This effectively replaces the filename
+if a line by its key in the result.  See also C<--categorize>.
+
+=begin code :lang<bash>
+
+# classify by the last letter of a line
+$ rak --classify='*.substr(*-1)'
+
+=end code
+
 =head2 --context=N
 
 Indicate the number of lines that should be produced B<around> any line that

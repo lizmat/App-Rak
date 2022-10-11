@@ -254,6 +254,26 @@ Indicate whether there should be a visible division between matches of different
 
 Only valid if the current directory is under git version control. Indicate the branch to checkout by the general matching logic of App::Rak. Will produce listing of matching branches if more than one, or say that there is no match. Branches need not have been checked out locally yet.
 
+--categorize=categorizer
+------------------------
+
+If specified, indicates the `Callable` that should return zero or more keysfor a given line to have it categorized. This effectively replaces the filename if a line by its key in the result. See also `--classify`.
+
+```bash
+# categorize by the first two letters of a line
+$ rak --categorize='*.substr(0,2).comb'
+```
+
+--classify=classifier
+---------------------
+
+If specified, indicates the `Callable` that should return a key for a given line to have it classified. This effectively replaces the filename if a line by its key in the result. See also `--categorize`.
+
+```bash
+# classify by the last letter of a line
+$ rak --classify='*.substr(*-1)'
+```
+
 --context=N
 -----------
 
