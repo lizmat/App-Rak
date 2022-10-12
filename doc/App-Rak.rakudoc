@@ -1130,6 +1130,15 @@ either be a string, or a list of strings (which would add lines to the file).
 Indicate the Raku module that should be loaded.  Only makes sense if the
 pattern is a C<Callable>.
 
+=head2 --output-dir=directory
+
+Specify the name of the directory to store the results in.  For each group,
+a separate file will be created.  Usually used in conjunction with
+C<--classify> or C<--categorize>, but can also be used for normal search
+results.  In that case, the basename of a file with results, will be taken
+as the name of the file to create in that output directory.  The directory
+must B<not> exist beforehand.
+
 =head2 --output-file=filename
 
 Indicate the path of the file in which the result of the search should

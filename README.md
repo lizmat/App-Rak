@@ -913,6 +913,11 @@ Inserts this value in the file instead of the given line. The value can either b
 
 Indicate the Raku module that should be loaded. Only makes sense if the pattern is a `Callable`.
 
+--output-dir=directory
+----------------------
+
+Specify the name of the directory to store the results in. For each group, a separate file will be created. Usually used in conjunction with `--classify` or `--categorize`, but can also be used for normal search results. In that case, the basename of a file with results, will be taken as the name of the file to create in that output directory. The directory must **not** exist beforehand.
+
 --output-file=filename
 ----------------------
 

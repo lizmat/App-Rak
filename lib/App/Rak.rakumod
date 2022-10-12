@@ -3,7 +3,7 @@ use as-cli-arguments:ver<0.0.6>:auth<zef:lizmat>;  # as-cli-arguments
 use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.15>:auth<zef:lizmat>;      # columns highlighter matches
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
-use rak:ver<0.0.34>:auth<zef:lizmat>;              # rak
+use rak:ver<0.0.35>:auth<zef:lizmat>;              # rak
 use String::Utils:ver<0.0.13>:auth<zef:lizmat> <after before between is-sha1>;
 
 # The epoch value when process started
@@ -14,9 +14,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-10-11T15:27:34+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-10-12T13:56:46+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -163,6 +163,7 @@ my &sourcery-pattern;
 my $verbose;      # process verbose
 my $pager;        # process pager if defined
 my $output-file;  # process output file if defined
+my $output-dir;   # process output directory if defined
 my $debug-rak;    # process show rak args
 
 my $pattern;     # the pattern specified (if any)
@@ -567,7 +568,7 @@ my sub HELP($text, @keys, :$verbose) {
 #-------------------------------------------------------------------------------
 
 # Run the query
-my sub run-rak(:$eagerly) {
+my sub run-rak(:$eagerly --> Nil) {
     if $debug-rak {
         note .key ~ ': ' ~ .value.raku for %rak.sort(*.key);
     }
@@ -587,9 +588,36 @@ TEXT
     note "Unexpected leftovers: %rak.raku()" if %rak;
 }
 
-# Show the results
-my sub rak-results() {
+# Process the results
+my sub rak-results(--> Nil) {
+    $output-dir ?? output-dir-results() !! show-results();
+}
 
+# Wanna save the classification / categorization
+my sub output-dir-results(--> Nil) {
+    my @keys;
+    for $rak.result {
+        if Pair.ACCEPTS($_) {
+            if .value -> @matches {
+                my $filename := (.key || '(empty)').IO.basename;
+                @keys.push: $filename;
+                $output-dir.add($filename).spurt(@matches.join("\n"));
+            }
+        }
+        else {
+            die $_;  # huh?
+        }
+    }
+    if $verbose {
+        sayer "Created @keys.elems() file&s(@keys) in '$output-dir':\n  @keys.join("\n  ")";
+    }
+    else {
+        sayer "Created @keys.elems() file&s(@keys) in '$output-dir'";
+    }
+}
+
+# Showing results the normal way
+my sub show-results(--> Nil) {
     my $human         := %listing<human>:delete // $writing-to-stdout;
     my $show-filename := %listing<show-filename>:delete // True;
     my $absolute      := %listing<absolute>:delete;
@@ -689,7 +717,7 @@ my sub rak-results() {
             # Looks like normal search result
             elsif Iterable.ACCEPTS($value) {
                 if $value -> @matches {
-                    my $source := stringify($key);
+                    my $source := stringify($key) || '(empty)';
                     sayer $break if $has-break && $seen;
 
                     if PairContext.ACCEPTS(@matches.head) {
@@ -817,7 +845,7 @@ my sub rak-results() {
 }
 
 # Statistics to show
-my sub rak-stats(:$count-only) {
+my sub rak-stats(:$count-only --> Nil) {
     if $rak.stats -> %s {
         if $count-only && !$verbose {
             sayer %s<nr-matches> + %s<nr-changes>
@@ -1595,6 +1623,19 @@ my sub option-only-first($value --> Nil) {
     set-listing-flag-or-Int('only-first', $value);
 }
 
+my sub option-output-dir($value --> Nil) {
+    meh "'--output-dir' expects a directory specification"
+      if Bool.ACCEPTS($value);
+
+    my $io := $value.IO;
+    meh "Directory '$io' with --output-dir must not exist" if $io.e;
+
+    mkdir $io;
+    $io.d
+      ?? ($output-dir := $io)
+      !! meh "Could not create directory '$output-dir' for --output-dir";
+}
+
 my sub option-output-file($value --> Nil) {
     Bool.ACCEPTS($value)
       ?? meh "'--output-file' expects a file specification"
@@ -1980,7 +2021,8 @@ my sub move-result-options-to-rak(--> Nil) {
 
             if %result<find>:delete {
                 %rak<find>             := True;
-                %rak<omit-item-number> := True unless %result<frequencies>;
+                %rak<omit-item-number> := True
+                  unless %result<frequencies classify categorize>:k;
 
                 # Only interested in number of files
                 if %result<count-only>:delete {

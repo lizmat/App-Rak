@@ -59,9 +59,19 @@ Specify the *total* number of lines that matched, to be shown.  Defaults
 to 1000 if a human is watching, else no limitation will be applied.  If
 specified as a flag, assumes 1.
 
+--output-dir=directory
+
+Specify the name of the directory to store the results in.  For each group,
+a separate file will be created.  Usually used in conjunction with
+--classify or --categorize, but can also be used for normal search results.
+In that case, the basename of a file with results will be taken as the name
+of the file to create in that output directory.  The directory must **not**
+exist beforehand.
+
 --output-file=filename
 
-Specify the name of the file to send the output to.  Defaults to STDOUT.
+Specify the name of the file to store the results in.  Defaults to sending
+results to STDOUT.
 
 --pager=program
 

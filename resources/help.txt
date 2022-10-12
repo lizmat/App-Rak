@@ -120,7 +120,8 @@ Listing modifiers:
  --highlight-after=yyy       String to put after match
  --proximate[=N]             Grouping of matched lines
  --only-first[=N]            Show only the N results, N defaults to 1
- --output-file=filename      Send output to indicated file (default: STDOUT)
+ --output-file=filename      Store output to indicated file (default: STDOUT)
+ --output-dir=directory      Store output ino indicated directory / group
  --pager                     Pager to use (default: ACK_PAGER // none)
  --stats                     Also show statistics
 
