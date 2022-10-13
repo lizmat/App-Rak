@@ -1,6 +1,14 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Bump dependency on as-cli-arguments for better quoting rules
+     - Fix issue with message when removing a custom option
+     - Show single letter custom options with a single dash
+     - Allow for saving default options to be activated on each run
+     - Introduce RAK_CONFIG environment variable for location of custom
+       options
+     - Added documentation section "On the interpretation of options"
+     - Expanded documentation section "Creating your own options"
 
 0.1.4  2022-10-12T14:55:51+02:00
      - Add support for --output-dir

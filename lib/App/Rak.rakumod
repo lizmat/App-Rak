@@ -1,5 +1,5 @@
 # The modules that we need here, with their full identities
-use as-cli-arguments:ver<0.0.6>:auth<zef:lizmat>;  # as-cli-arguments
+use as-cli-arguments:ver<0.0.7>:auth<zef:lizmat>;  # as-cli-arguments
 use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.15>:auth<zef:lizmat>;      # columns highlighter matches
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
@@ -150,7 +150,12 @@ my constant %exts =
 my constant @known-extensions = %exts.values.flat.unique.sort;
 
 # Place to keep tagged configurations
-my $config-file := $*HOME.add('.rak-config.json');
+my $config-file := do if %*ENV<RAK_CONFIG> -> $rak-config {
+    $rak-config.IO
+}
+else {
+    $*HOME.add('.rak-config.json')
+}
 
 # Links to optional classes
 my $GitBlameFile;
@@ -197,6 +202,9 @@ my &sayer = do {
     -> $_ { $out.say($_) }
 }
 
+# Role for marking default values in expanded parameters
+my role is-default-option { method gist(--> Nil) { } }
+
 # Fetch and normalize any config, we only do List of Pairs nowadays
 my %config := do {
     if $config-file.e {
@@ -209,12 +217,19 @@ my %config := do {
                 $_ = .map(*.pairs.Slip).List;
             }
         }
+        if %hash<(default)> -> @defaults {
+            $_ does is-default-option for @defaults.map(*.value);
+        }
         %hash
     }
     else {
         { }
     }
 }
+
+# Make sure defaults are activated unless we're saving
+named('(default)', True)
+  if %config<(default)>:exists && !@*ARGS.first: *.starts-with("--save=");
 
 my @positionals; # Positional arguments
 my @unexpected;  # Pairs of unexpected arguments and their value
@@ -231,10 +246,10 @@ my @unexpected;  # Pairs of unexpected arguments and their value
 # 3. Run the "action-$name" sub
 # 4. Close STDOUT if a pager was used
 
-my sub main(@ARGS) is export {
+my sub main() is export {
 
     # Do the actual argument parsing
-    for @ARGS {
+    for @*ARGS {
 
         # looks like an option
         if .starts-with('-') {
@@ -313,9 +328,9 @@ my sub main(@ARGS) is export {
 
         $config-file.spurt: to-json %config, :!pretty, :sorted-keys;
 
-        say @options
-          ?? "Saved '&as-cli-arguments(@opts)' as: -$name"
-          !! "Removed custom option '--$name'";
+        say @opts
+          ?? "Saved '&as-cli-arguments(@opts)' as: &o($name)"
+          !! "Removed custom option '&o($name)'";
         exit;
     }
 
@@ -323,18 +338,23 @@ my sub main(@ARGS) is export {
     %global<description>:delete;
 
     if %global<list-expanded-options>:delete {
-        if $verbose {
-            for as-options() {
-                if description(.key) -> $description {
-                    say "&as-cli-arguments($_): $description";
+        if as-options() -> @options {
+            if $verbose {
+                for @options {
+                    if description(.key) -> $description {
+                        say "&as-cli-arguments($_): $description";
+                    }
+                    else {
+                        say as-cli-arguments($_);
+                    }
                 }
-                else {
-                    say as-cli-arguments($_);
-                }
+            }
+            else {
+                say as-cli-arguments as-options;
             }
         }
         else {
-            say as-cli-arguments as-options;
+            say "No options found";
         }
         exit;
     }
@@ -370,6 +390,15 @@ my sub main(@ARGS) is export {
 
 # Return "s" if number is not 1, for error messages
 my sub s($elems) { $elems == 1 ?? "" !! "s" }
+
+# Properl show an option with one or two dashes
+sub o($option) {
+    $option eq '(default)'
+      ?? $option
+      !! $option.chars == 1
+        ?? "-$option"
+        !! "--$option"
+}
 
 # Return '--a, --b' for one or more names
 my sub mm(@names) { @names.map({"--$_"}).join(', ') }
@@ -918,7 +947,7 @@ my sub set-global-flag(str $name, $value --> Nil) {
     Bool.ACCEPTS($value)
       ?? $value
         ?? (%global{$name} := True)
-        !! Nil
+        !! (%global{$name}:delete)
       !! meh "'--$name' can only be specified as a flag";
 }
 
@@ -927,7 +956,7 @@ my sub set-rak-flag(str $name, $value --> Nil) {
     Bool.ACCEPTS($value)
       ?? $value
         ?? (%rak{$name} := True)
-        !! Nil
+        !! (%rak{$name}:delete)
       !! meh "'--$name' can only be specified as a flag";
 }
 
@@ -2383,7 +2412,7 @@ my sub action-list-custom-options(--> Nil) {
 
         if @with {
             for @with -> (:key($option), :value($_)) {
-                say "--$option: $_.key()";
+                say "&o($option): $_.key()";
                 say "  &as-cli-arguments(.value)";
             }
         }
@@ -2391,7 +2420,7 @@ my sub action-list-custom-options(--> Nil) {
             say "\nOther options without description:" if @with;
             my $format := '%' ~ (@without.map(*.key.chars).max + 2) ~ "s: %s\n";
             for @without -> (:key($option), :value(@valid)) {
-                printf $format, "--$option", as-cli-arguments(@valid);
+                printf $format, o($option), as-cli-arguments(@valid);
             }
         }
     }
@@ -2856,7 +2885,7 @@ TEXT
     }: @no-match.map({"--$_"})."
       if @no-match;
 
-    @text.push: "Use --help for an overview of available options.";
+    @text.push: "Specify --help for an overview of available options.";
     exit note @text.join("\n");
 }
 

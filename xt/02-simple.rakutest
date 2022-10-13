@@ -1,6 +1,9 @@
 BEGIN %*ENV<RAKU_TEST_DIE_ON_FAIL> = 1;
 use Test;
 
+%*ENV<RAK_CONFIG> := $*TMPDIR.add("rak-test-$*PID.json").absolute;
+END unlink %*ENV<RAK_CONFIG>;
+
 my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 

@@ -1,5 +1,5 @@
 use App::Rak;
 
-main(@*ARGS);
+main();
 
 # vim: expandtab shiftwidth=4

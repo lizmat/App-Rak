@@ -123,21 +123,103 @@ Note that the use of the `LAST` phaser will make the search run eagerly, meaning
 
 Any other phasers that do not require special attention by `App::Rak` are also supported in any code specified (such as `BEGIN` and `END`).
 
+ON THE INTERPRETATION OF OPTIONS
+================================
+
+All options when using App::Rak, start with either one dash `-` or two dashes `--`.
+
+If an option starts with two dashes, it is a so-called "long option". Any characters after the dashes are considered to be the single name of the option.
+
+If an option starts with a single dash, then it is considered to be a collection of "short options", each of 1 letter. If the number of short options is 1, then it can be followed by a numerical value (without equal sign).
+
+If the specification of the option does **not** contain an equal sign `=`, then the option is interpreted as a boolean option. By default, such a flag is considered to represent `True`. The value can be negated in two ways:
+
+  * a slash before the name
+
+  * the string "no-" before the name
+
+Some examples:
+
+  * -i option "i" is True
+
+  * -j5 option "j" has the value 5
+
+  * -im options "i" and "m" are True
+
+  * -/i option "i" is False
+
+  * -/im options "i" and "m" are False
+
+  * -no-i option "i" is False
+
+  * --foo option "foo" is True
+
+  * --/foo option "foo" is False
+
+  * --no-foo option "foo" is False
+
+If the specification of an option contains an equal sign after the name, then whatever follows that, is considered the value of that option. Whether or not that value needs to be quoted, and how they are to be quoted, really depends on the shell that you use to access `rak`. Generally, if the value consists of alphanumeric characters only, no quoting is necessary. Otherwise it's better to quote your values.
+
+Some examples:
+
+  * -s=foo option "s" has the value "foo"
+
+  * -t='foo bar' option "t" has the value "foo bar"
+
+  * --frobnicate=yes option "frobnicate" has the value "yes"
+
 CREATING YOUR OWN OPTIONS
 =========================
 
 App::Rak provides **many** options. If you are happy with a set of options for a certain workflow, You can use the `--save` option to save that set of options and than later access them with the given name:
 
 ```bash
-# create --im shortcut for ignoring case and accents
-$ rak --ignorecase --ignoremark --save=im
-Saved option '--im' as: --ignorecase --ignoremark
+# create -i shortcut for ignoring case
+$ rak --ignorecase --save=i
+Saved option '-i' as: --ignorecase
+
+# create -m shortcut for ignoring accents
+$ rak --ignoremark --save=m
+Saved option '-m' as: --ignoremark
 
 # same as --ignorecase --ignoremark
-$ rak foo --im
+$ rak foo -im
 ```
 
-You can use the `--list-custom-options` to see what options you have saved before.
+Generally speaking, the most used boolean options can be saved as single letter options: this allows multiple options to be specified in a single, short manner (as shown above).
+
+To better document / remember what a particular custom option is meant to do, you can add a description with the `--description` option.
+
+```bash
+# add a description to the -i custom option
+$ rak --description='Search without caring for uppercase' --save=i
+Saved '--description='Search without caring for uppercase'' as: -i
+
+# add an option -g for searching only git files
+$ rak --description='Committed files only' --under-version-control --save=g
+Saved '--description='Committed files only' --under-version-control' as: -g
+```
+
+There is also a special named option that indicates the options that will be automatically activated on any invocation: `(default)`.
+
+```bash
+# enable --smartcase by default on every run
+$ rak --smartcase --save='(default)'
+Saved '--smartcase' as: (default)
+
+=end
+
+You can use the C<--list-custom-options> to see what options you have saved
+before.
+
+Custom options are saved in C<~/.rak-config.json>.  You can override this
+by specifying the C<RAK_CONFIG> environment variable.
+
+=begin code :lang<bash>
+
+# read custom options from ".custom.json" (in the current directory)
+$ RAK_CONFIG=.custom.json rak foo
+```
 
 SUPPORTED OPTIONS
 =================
