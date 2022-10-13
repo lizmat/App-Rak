@@ -599,9 +599,15 @@ my sub output-dir-results(--> Nil) {
     for $rak.result {
         if Pair.ACCEPTS($_) {
             if .value -> @matches {
-                my $filename := (.key || '(empty)').IO.basename;
-                @keys.push: $filename;
-                $output-dir.add($filename).spurt(@matches.join("\n"));
+                my $file := .key;
+                my $id   := ($file || '(empty)').IO.basename;
+                @keys.push: $id;
+                my $io := $output-dir.add($id);
+                $io.spurt: ("\n\n" x $io.e)
+                  ~ (IO::Path.ACCEPTS($file) ?? $file.absolute !! $id)
+                  ~ "\n"
+                  ~ @matches.join("\n"),
+                  :append;
             }
         }
         else {
