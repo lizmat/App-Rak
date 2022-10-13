@@ -140,33 +140,57 @@ If the specification of the option does **not** contain an equal sign `=`, then 
 
 Some examples:
 
-  * -i option "i" is True
+  * -i
 
-  * -j5 option "j" has the value 5
+Option "i" is True.
 
-  * -im options "i" and "m" are True
+  * -j5
 
-  * -/i option "i" is False
+Option "j" has the value 5.
 
-  * -/im options "i" and "m" are False
+  * -im
 
-  * -no-i option "i" is False
+Options "i" and "m" are True.
 
-  * --foo option "foo" is True
+  * -/i
 
-  * --/foo option "foo" is False
+Option "i" is False.
 
-  * --no-foo option "foo" is False
+  * -/im
+
+Options "i" and "m" are False.
+
+  * -no-i
+
+Option "i" is False.
+
+  * --foo
+
+Option "foo" is True.
+
+  * --/foo
+
+Option "foo" is False.
+
+  * --no-foo
+
+Option "foo" is False.
 
 If the specification of an option contains an equal sign after the name, then whatever follows that, is considered the value of that option. Whether or not that value needs to be quoted, and how they are to be quoted, really depends on the shell that you use to access `rak`. Generally, if the value consists of alphanumeric characters only, no quoting is necessary. Otherwise it's better to quote your values.
 
 Some examples:
 
-  * -s=foo option "s" has the value "foo"
+  * -s=foo
 
-  * -t='foo bar' option "t" has the value "foo bar"
+Option "s" has the value "foo".
 
-  * --frobnicate=yes option "frobnicate" has the value "yes"
+  * -t='foo bar'
+
+Option "t" has the value "foo bar".
+
+  * --frobnicate=yes
+
+Option "frobnicate" has the value "yes".
 
 CREATING YOUR OWN OPTIONS
 =========================

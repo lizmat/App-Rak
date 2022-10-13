@@ -174,15 +174,41 @@ is considered to represent C<True>.  The value can be negated in two ways:
 
 Some examples:
 
-=item -i  option "i" is True
-=item -j5  option "j" has the value 5
-=item -im  options "i" and "m" are True
-=item -/i  option "i" is False
-=item -/im  options "i" and "m" are False
-=item -no-i  option "i" is False
-=item --foo  option "foo" is True
-=item --/foo  option "foo" is False
-=item --no-foo  option "foo" is False
+=item -i
+
+Option "i" is True.
+
+=item -j5
+
+Option "j" has the value 5.
+
+=item -im
+
+Options "i" and "m" are True.
+
+=item -/i
+
+Option "i" is False.
+
+=item -/im
+
+Options "i" and "m" are False.
+
+=item -no-i
+
+Option "i" is False.
+
+=item --foo
+
+Option "foo" is True.
+
+=item --/foo
+
+Option "foo" is False.
+
+=item --no-foo
+
+Option "foo" is False.
 
 If the specification of an option contains an equal sign after the name,
 then whatever follows that, is considered the value of that option.  Whether
@@ -193,9 +219,17 @@ it's better to quote your values.
 
 Some examples:
 
-=item -s=foo  option "s" has the value "foo"
-=item -t='foo bar'  option "t" has the value "foo bar"
-=item --frobnicate=yes  option "frobnicate" has the value "yes"
+=item -s=foo
+
+Option "s" has the value "foo".
+
+=item -t='foo bar'
+
+Option "t" has the value "foo bar".
+
+=item --frobnicate=yes
+
+Option "frobnicate" has the value "yes".
 
 =head1 CREATING YOUR OWN OPTIONS
 
