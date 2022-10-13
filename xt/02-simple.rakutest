@@ -47,10 +47,11 @@ my sub query-ok(
   :$ok is copy,        # the expected result
   :$head = 1,          # whether to do the --only-first test with this number
   :$add-paths = True,  # add paths specification
+  :$add-human = True,  # add human specification
 ) is test-assertion {
-    my @args = $*EXECUTABLE.absolute, "-I$dot", $rak, '--human',
-      @query.Slip, '--degree=1';
+    my @args = $*EXECUTABLE.absolute, "-I$dot", $rak, @query.Slip, '--degree=1';
     @args.push: "--paths-from=$paths" if $add-paths;
+    @args.push: "--human"             if $add-human;
     $ok .= chomp;
 
     # Logic to run the query
@@ -692,6 +693,47 @@ seven
 i
 eight
 eight
+OK
+
+query-ok <--ignorecase --save=i>, :!add-paths, :!add-human, :!head,
+  ok => qq:to/OK/;
+Saved '--ignorecase' as: -i
+OK
+
+query-ok <--ignoremark --save=m>, :!add-paths, :!add-human, :!head,
+  ok => qq:to/OK/;
+Saved '--ignoremark' as: -m
+OK
+
+query-ok <--list-custom-options>, :!add-paths, :!add-human, :!head,
+  ok => qq:to/OK/;
+ -i: --ignorecase
+ -m: --ignoremark
+OK
+
+query-ok <-im --list-expanded-options>, :!add-paths, :!add-human, :!head,
+  ok => qq:to/OK/;
+--ignorecase --ignoremark
+OK
+
+query-ok <--smartcase --save=(default)>, :!add-paths, :!add-human, :!head,
+  ok => qq:to/OK/;
+Saved '--smartcase' as: (default)
+OK
+
+query-ok <--list-expanded-options>, :!add-paths, :!add-human, :!head,
+  ok => qq:to/OK/;
+--smartcase
+OK
+
+query-ok <--save=(default)>, :!add-paths, :!add-human, :!head,
+  ok => qq:to/OK/;
+Removed custom option '(default)'
+OK
+
+query-ok <-/im --list-expanded-options>, :!add-paths, :!add-human, :!head,
+  ok => qq:to/OK/;
+No options found
 OK
 
 done-testing;

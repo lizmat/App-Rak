@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.1.5  2022-10-13T17:12:00+02:00
      - Bump dependency on as-cli-arguments for better quoting rules
      - Fix issue with message when removing a custom option
      - Show single letter custom options with a single dash
