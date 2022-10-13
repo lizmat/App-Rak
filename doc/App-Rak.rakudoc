@@ -280,7 +280,7 @@ be automatically activated on any invocation: C<(default)>.
 $ rak --smartcase --save='(default)'
 Saved '--smartcase' as: (default)
 
-=end
+=end code
 
 You can use the C<--list-custom-options> to see what options you have saved
 before.

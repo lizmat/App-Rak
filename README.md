@@ -230,17 +230,13 @@ There is also a special named option that indicates the options that will be aut
 # enable --smartcase by default on every run
 $ rak --smartcase --save='(default)'
 Saved '--smartcase' as: (default)
+```
 
-=end
+You can use the `--list-custom-options` to see what options you have saved before.
 
-You can use the C<--list-custom-options> to see what options you have saved
-before.
+Custom options are saved in `~/.rak-config.json`. You can override this by specifying the `RAK_CONFIG` environment variable.
 
-Custom options are saved in C<~/.rak-config.json>.  You can override this
-by specifying the C<RAK_CONFIG> environment variable.
-
-=begin code :lang<bash>
-
+```bash
 # read custom options from ".custom.json" (in the current directory)
 $ RAK_CONFIG=.custom.json rak foo
 ```
