@@ -43,15 +43,17 @@ END {
 }
 
 my sub query-ok(
-  *@query,             # the actual parameters
-  :$ok is copy,        # the expected result
-  :$head = 1,          # whether to do the --only-first test with this number
-  :$add-paths = True,  # add paths specification
-  :$add-human = True,  # add human specification
+  *@query,              # the actual parameters
+  :$ok is copy,         # the expected result
+  :$head = 1,           # whether to do the --only-first test with this number
+  :$add-paths  = True,  # add paths specification
+  :$add-human  = True,  # add human specification
+  :$add-degree = True,  # add degree specification
 ) is test-assertion {
-    my @args = $*EXECUTABLE.absolute, "-I$dot", $rak, @query.Slip, '--degree=1';
+    my @args = $*EXECUTABLE.absolute, "-I$dot", $rak, @query.Slip;
     @args.push: "--paths-from=$paths" if $add-paths;
     @args.push: "--human"             if $add-human;
+    @args.push: "--degree"            if $add-degree;
     $ok .= chomp;
 
     # Logic to run the query
@@ -695,44 +697,65 @@ eight
 eight
 OK
 
-query-ok <--ignorecase --save=i>, :!add-paths, :!add-human, :!head,
-  ok => qq:to/OK/;
+query-ok <--ignorecase --save=i>, :!add-paths, :!add-human, :!add-degree,
+  :!head, ok => qq:to/OK/;
 Saved '--ignorecase' as: -i
 OK
 
-query-ok <--ignoremark --save=m>, :!add-paths, :!add-human, :!head,
-  ok => qq:to/OK/;
+query-ok <--ignoremark --save=m>, :!add-paths, :!add-human, :!add-degree,
+  :!head, ok => qq:to/OK/;
 Saved '--ignoremark' as: -m
 OK
 
-query-ok <--list-custom-options>, :!add-paths, :!add-human, :!head,
-  ok => qq:to/OK/;
+query-ok <-im --list-expanded-options>, :!add-paths, :!add-human, :!add-degree,
+  :!head, ok => qq:to/OK/;
+--ignorecase --ignoremark
+OK
+
+query-ok <--before-context=! --save=B>, :!add-paths, :!add-human, :!add-degree,
+  :!head, ok => qq:to/OK/;
+Saved '--before-context=!' as: -B
+OK
+
+query-ok <--context=[2] --save=C>, :!add-paths, :!add-human, :!add-degree,
+  :!head, ok => qq:to/OK/;
+Saved '--context=[2]' as: -C
+OK
+
+query-ok <--smartcase --save=(default)>, :!add-paths, :!add-human, :!add-degree,
+  :!head, ok => qq:to/OK/;
+Saved '--smartcase' as: (default)
+OK
+
+query-ok <--list-custom-options>, :!add-paths, :!add-human, :!add-degree,
+  :!head, ok => qq:to/OK/;
+  (default): --smartcase
+         -B: --before-context=!
+         -C: --context=[2]
+         -i: --ignorecase
+         -m: --ignoremark
+OK
+
+query-ok <--list-expanded-options>, :!add-paths, :!add-human, :!add-degree,
+  :!head, ok => qq:to/OK/;
+--smartcase
+OK
+
+query-ok <--save=(default)>, :!add-paths, :!add-human, :!add-degree,
+  :!head, ok => qq:to/OK/;
+Removed custom option '(default)'
+OK
+
+query-ok <--list-custom-options>, :!add-paths, :!add-human, :!add-degree,
+  :!head, ok => qq:to/OK/;
+ -B: --before-context=!
+ -C: --context=[2]
  -i: --ignorecase
  -m: --ignoremark
 OK
 
-query-ok <-im --list-expanded-options>, :!add-paths, :!add-human, :!head,
-  ok => qq:to/OK/;
---ignorecase --ignoremark
-OK
-
-query-ok <--smartcase --save=(default)>, :!add-paths, :!add-human, :!head,
-  ok => qq:to/OK/;
-Saved '--smartcase' as: (default)
-OK
-
-query-ok <--list-expanded-options>, :!add-paths, :!add-human, :!head,
-  ok => qq:to/OK/;
---smartcase
-OK
-
-query-ok <--save=(default)>, :!add-paths, :!add-human, :!head,
-  ok => qq:to/OK/;
-Removed custom option '(default)'
-OK
-
-query-ok <-/im --list-expanded-options>, :!add-paths, :!add-human, :!head,
-  ok => qq:to/OK/;
+query-ok <-/im --list-expanded-options>, :!add-paths, :!add-human, :!add-degree,
+  :!head, ok => qq:to/OK/;
 No options found
 OK
 

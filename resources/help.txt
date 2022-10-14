@@ -115,7 +115,7 @@ Listing modifiers:
  --show-item-number          Show the item number in which match occurred
  --summary-if-larger-than=N  Summarize matching line if longer than N chars
  --trim                      Remove whitespace, true if no context
- --highlight                 Highlight matches if possible
+ --highlight                 Highlight any matches
  --highlight-before=xxx      String to put before match
  --highlight-after=yyy       String to put after match
  --proximate[=N]             Grouping of matched lines

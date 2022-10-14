@@ -295,6 +295,16 @@ $ RAK_CONFIG=.custom.json rak foo
 
 =end code
 
+You can also use the C<RAK_CONFIG> variable to disable loading any
+configuration by not specifying a value:
+
+=begin code :lang<bash>
+
+# start rak without any custom configuration
+$ RAK_CONFIG= rak foo
+
+=end code
+
 =head1 SUPPORTED OPTIONS
 
 All options are optional.  Any unexpected options, will cause an exception
@@ -711,6 +721,9 @@ Indicate the B<overall> number of matches to show.  If specified without a
 value, will default to B<1>.  Defaults to B<1000> if a human is watching,
 otherwise defaults to returning all possible matches.  Can be used to tweak
 search results, before letting it loose to get all possible results.
+
+Special values that are allowed to produce all possible results are C<∞>
+(aka C<221E INFINITY>), C<*> and C<Inf>.
 
 =head2 --formula=[none]
 

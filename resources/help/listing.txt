@@ -26,7 +26,7 @@ False.
 
 --highlight
 
-Highlight matches in strings if the pattern is not a Callable.
+Highlight any matches in strings if the pattern is not a Callable.
 Defaults to True if a human is watching, else False.
 
 --highlight-before=xxx

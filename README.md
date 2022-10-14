@@ -241,6 +241,13 @@ Custom options are saved in `~/.rak-config.json`. You can override this by speci
 $ RAK_CONFIG=.custom.json rak foo
 ```
 
+You can also use the `RAK_CONFIG` variable to disable loading any configuration by not specifying a value:
+
+```bash
+# start rak without any custom configuration
+$ RAK_CONFIG= rak foo
+```
+
 SUPPORTED OPTIONS
 =================
 
@@ -561,6 +568,8 @@ Flag. If specified, will override any file or directory filter settings and incl
 ----------------
 
 Indicate the **overall** number of matches to show. If specified without a value, will default to **1**. Defaults to **1000** if a human is watching, otherwise defaults to returning all possible matches. Can be used to tweak search results, before letting it loose to get all possible results.
+
+Special values that are allowed to produce all possible results are `∞` (aka `221E INFINITY`), `*` and `Inf`.
 
 --formula=[none]
 ----------------

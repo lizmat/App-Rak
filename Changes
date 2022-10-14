@@ -2,6 +2,15 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.1.6  2022-10-14T22:40:31+02:00
+     - Fixed various issues with saving custom options, specifically:
+       - not saving some flags
+       - not being able to indicate a required value (aka --foo=!)
+       - not being able to indicate a default value (aka --foo=[bar])
+     - Allow ∞, * and Inf with --only-first to indicate all possible results
+     - Fix issue with showing description on non-flag options
+     - Use RAK_CONFIG= to not load any custom options (including defaults)
+
 0.1.5  2022-10-13T17:12:00+02:00
      - Bump dependency on as-cli-arguments for better quoting rules
      - Fix issue with message when removing a custom option
@@ -23,8 +32,8 @@ Revision history for App-Rak
      - Add support for --classify and --categorize
 
 0.1.2  2022-10-08T23:57:41+02:00
-     - Bump dependency on rak to get URL support as file specification, and
-       support for --accept and --deny
+     - Bump dependency on rak to get URL support as file specification,
+       and support for --accept and --deny
      - Allow for multiple ecosystem specs with --ecosystem
      - Add support for --description
 
@@ -34,9 +43,10 @@ Revision history for App-Rak
      - Fix issue with --list-custom-options
      - Fix issue with some custom options being saved incorrectly
      - Allow for negation of custom options that were saved as False
-     - Bump dependency on rak to have --find not be eagerized. Unfortunately,
-       this still doesn't solve the issue of the iterator being held up
-       somewhere / somehow until all values have been produced
+     - Bump dependency on rak to have --find not be eagerized.
+       Unfortunately, this still doesn't solve the issue of the
+       iterator being held up somewhere / somehow until all values
+       have been produced
 
 0.1  2022-10-02T20:04:39+02:00
      - The first official beta-version of App::Rak.  With fleshed

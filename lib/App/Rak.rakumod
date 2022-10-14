@@ -153,7 +153,7 @@ my constant @known-extensions = %exts.values.flat.unique.sort;
 my $config-file := do if %*ENV<RAK_CONFIG> -> $rak-config {
     $rak-config.IO
 }
-else {
+elsif %*ENV<RAK_CONFIG>:!exists {  # want to have the default config
     $*HOME.add('.rak-config.json')
 }
 
@@ -207,7 +207,7 @@ my role is-default-option { method gist(--> Nil) { } }
 
 # Fetch and normalize any config, we only do List of Pairs nowadays
 my %config := do {
-    if $config-file.e {
+    if $config-file && $config-file.e {
         my %hash := from-json($config-file.slurp);
 
         # fix various save snafus and content changes
@@ -227,12 +227,60 @@ my %config := do {
     }
 }
 
-# Make sure defaults are activated unless we're saving
-named('(default)', True)
-  if %config<(default)>:exists && !@*ARGS.first: *.starts-with("--save=");
-
 my @positionals; # Positional arguments
 my @unexpected;  # Pairs of unexpected arguments and their value
+
+# Save current setting
+my constant $safe-marker = '--save=';
+if @*ARGS.first(*.starts-with($safe-marker)) -> $custom {
+
+    meh "Cannot save: configuration file location explicitely disabled"
+      unless $config-file;
+
+    my @opts;
+    for @*ARGS -> $arg {
+        if $arg.starts-with($safe-marker) {
+            # no action
+        }
+        elsif $arg eq '-' {
+            @positionals.push: $arg;
+        }
+        elsif $arg.match(
+          /^ '-' '-'? ('/' | 'no-')? (<-[=]>+) ('='?) (.*) /
+        ) -> $/ {
+            @opts.push: Pair.new: $1.Str, $2.Str ?? $3.Str !! $0.defined.not;
+        }
+        elsif $arg.starts-with('-') {
+            meh "Improperly formatted option: '$arg')";
+        }
+        else {
+            @positionals.push: $arg;
+        }
+    }
+    meh-unexpected if @unexpected;
+
+    my $name := $custom.substr($safe-marker.chars);
+    if @opts {
+        @opts.append: %config{$name}.grep(*.key ne 'description')
+          if @opts == 1 && @opts.head.key eq 'description';
+        %config{$name} := @opts;
+    }
+    else {
+        %config{$name}:delete;
+    }
+
+    $config-file.spurt: to-json %config, :!pretty, :sorted-keys;
+
+    say @opts
+          ?? "Saved '&as-cli-arguments(@opts)' as: &o($name)"
+          !! "Removed custom option '&o($name)'";
+        exit;
+}
+
+# Make sure defaults are activated unless we're saving
+elsif %config<(default)>:exists {
+    named('(default)', True);
+}
 
 #--------------------------------------------------------------------------------
 # Actually set up all variables from the arguments specified and run.
@@ -312,27 +360,6 @@ my sub main() is export {
 
     # Set up the pattern
     $pattern := @positionals.shift if !$pattern.defined && @positionals;
-
-    # Save current setting
-    if %global<save>:delete -> $name {
-        my @opts := as-options;
-
-        if @opts {
-            %config{$name} := @opts == 1 && @opts.head.key eq 'description'
-              ?? (|%config{$name}, @opts.head)
-              !! @opts;
-        }
-        else {
-            %config{$name}:delete;
-        }
-
-        $config-file.spurt: to-json %config, :!pretty, :sorted-keys;
-
-        say @opts
-          ?? "Saved '&as-cli-arguments(@opts)' as: &o($name)"
-          !! "Removed custom option '&o($name)'";
-        exit;
-    }
 
     # from here on out, description is a noop
     %global<description>:delete;
@@ -444,7 +471,7 @@ my sub named-args(%args, *%wanted) {
             Pair.new($name, %args.DELETE-KEY($keys.AT-POS($_)))
         }
         elsif %args.EXISTS-KEY($name) {
-            Pair.new($name, %args.DELETE-KEY($name))
+           Pair.new($name, %args.DELETE-KEY($name))
         }
     }
 }
@@ -877,6 +904,9 @@ my sub show-results(--> Nil) {
             last RESULT if ++$seen == $stop-after;
         }
     }
+
+    note "** Stopped showing results after $seen matches **"
+      if $seen > 1 && $seen == $stop-after;
 }
 
 # Statistics to show
@@ -1655,7 +1685,10 @@ my sub option-module($value --> Nil) {
 }
 
 my sub option-only-first($value --> Nil) {
-    set-listing-flag-or-Int('only-first', $value);
+    set-listing-flag-or-Int(
+      'only-first',
+      $value eq '∞' | '*' | 'Inf' ?? 0 !! $value
+    );
 }
 
 my sub option-output-dir($value --> Nil) {
@@ -2756,7 +2789,7 @@ my sub named($original-name, $original-value, :$recurse = True) {
         if Bool.ACCEPTS($original-value) {
             if $original-value {
                 for @expanded -> (:key($name), :$value)  {
-                    meh("Must specify a value for $original-name for $name")
+                    meh("Must specify a value for -$original-name to satisfy '$name'")
                       if $value eq '!';
 
                     named(
@@ -2809,7 +2842,7 @@ my sub description($name) {
     if $name eq 'help' | 'foo' | 'no-foo' {
         ""
     }
-    elsif %?RESOURCES<help.txt>.lines.first(*.starts-with(" --$name ")) -> $line {
+    elsif %?RESOURCES<help.txt>.lines.first(/ ' --' $name \W /) -> $line {
         $line.substr(1).split(/ \s+ /, 2).tail
     }
     elsif %config{$name} -> @args {
