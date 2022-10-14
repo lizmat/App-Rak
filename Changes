@@ -7,7 +7,8 @@ Revision history for App-Rak
        - not saving some flags
        - not being able to indicate a required value (aka --foo=!)
        - not being able to indicate a default value (aka --foo=[bar])
-     - Allow ∞, * and Inf with --only-first to indicate all possible results
+     - Allow ∞, * and Inf with --only-first to indicate all possible
+       results
      - Fix issue with showing description on non-flag options
      - Use RAK_CONFIG= to not load any custom options (including defaults)
 
@@ -109,7 +110,8 @@ Revision history for App-Rak
      - Document --only-first properly (instead of as --first-only)
 
 0.0.96  2022-09-12T12:07:41+02:00
-     - Fix snafu with argument parsing rework bleeding into the distribution
+     - Fix snafu with argument parsing rework bleeding into the
+       distribution
 
 0.0.95  2022-09-11T22:47:42+02:00
      - Fix issue with specifying --extensions, finanalyst++ for spotting
@@ -162,7 +164,8 @@ Revision history for App-Rak
       release.
 
 0.0.47  2022-08-09T12:59:56+02:00
-    - Make sure you can specify a ~/file with --files-from and --paths-from
+    - Make sure you can specify a ~/file with --files-from and
+      --paths-from
 
 0.0.46  2022-08-09T12:04:24+02:00
     - Allow for ~ to indicate home directory with specifications in
@@ -174,7 +177,8 @@ Revision history for App-Rak
     - Add --unique option to only show unique produced lines
     - Add --list-known-extensions option as an informational aid
     - Fleshed out the help/input section a bit
-    - Bumped dependency on CLI::Version to be more lenient with error checking
+    - Bumped dependency on CLI::Version to be more lenient with error
+      checking
 
 0.0.44  2022-08-07T13:50:07+02:00
     - Fix issue with just --quietly
@@ -197,11 +201,11 @@ Revision history for App-Rak
     - Fix some pod issues, Anton Antonov++
 
 0.0.41  2022-08-06T14:22:07+02:00
-    - Add --quietly to stop warnings in Callable needle execution.  For
-      now only in those options that require code needles
+    - Add --quietly to stop warnings in Callable needle execution.
+      For now only in those options that require code needles
     - Add dependency on Trap for --silently support
-    - Add --silently to stop any output in Callable needle execution.  For
-      now only in those options that require code needles
+    - Add --silently to stop any output in Callable needle execution.
+      For now only in those options that require code needles
 
 0.0.40  2022-08-05T17:12:19+02:00
     - Add dependency on String::Utils, for "is-sha1" and "before"
@@ -340,7 +344,8 @@ Revision history for App-Rak
     - Add dependency on META::constants 
     - Add dependency on CLI::Help to get --help support
     - Make sure that option replacements occur recursively
-    - Bump dependency on "Files::Containing" to get :count-only functionality
+    - Bump dependency on "Files::Containing" to get :count-only
+      functionality
     - Add support for --count-only functionality
     - Cleaned up Changes
 
@@ -365,7 +370,8 @@ Revision history for App-Rak
       without having to use --with
     - Bump dependency on "highlighter" to get colum fix for regexes
       and fix for highlighting on regexes issue
-    - Bump dependency on "Edit::Files" to not call editor if nothing to edit
+    - Bump dependency on "Edit::Files" to not call editor if nothing to
+      edit
 
 0.0.10  2022-07-15T23:39:04+02:00
     - Up dependency on "Edit::Files" in code as well  :-(
@@ -396,7 +402,8 @@ Revision history for App-Rak
 
 0.0.5  2022-07-10T15:26:55+02:00
     - No longer follow symlinked directories by default
-    - Bump dependency on Files::Containing to get :follow-symlinks capability
+    - Bump dependency on Files::Containing to get :follow-symlinks
+      capability
     - Add -S / --follow-symlinks arguments to follow symlinked directories
 
 0.0.4  2022-07-09T14:22:33+02:00
