@@ -2,6 +2,10 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.1.8  2022-10-15T21:39:16+02:00
+     - Bump dependency on rak to fix issue with testing that would
+       inhibit installing App::Rak
+
 0.1.7  2022-10-15T16:03:10+02:00
      - Refurbish the --help functionality by allowing it to search
        help subjects.

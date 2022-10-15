@@ -4,7 +4,7 @@ use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.15>:auth<zef:lizmat>;      # columns highlighter matches
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.35>:auth<zef:lizmat>;              # rak
+use rak:ver<0.0.36>:auth<zef:lizmat>;              # rak
 use String::Utils:ver<0.0.13>:auth<zef:lizmat> <after before between is-sha1>;
 
 # The epoch value when process started

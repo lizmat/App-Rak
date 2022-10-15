@@ -12,7 +12,7 @@
     "highlighter:ver<0.0.15>:auth<zef:lizmat>",
     "JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>",
     "META::constants:ver<0.0.3>:auth<zef:lizmat>",
-    "rak:ver<0.0.35>:auth<zef:lizmat>",
+    "rak:ver<0.0.36>:auth<zef:lizmat>",
     "String::Utils:ver<0.0.13>:auth<zef:lizmat>"
   ],
   "description": "21st century grep / find / ack / ag / rg on steroids",
@@ -57,5 +57,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.1.7"
+  "version": "0.1.8"
 }
