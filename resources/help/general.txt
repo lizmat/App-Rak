@@ -5,7 +5,7 @@ General options:
 
 Show an overview of all options of the "rak" command line interface.
 
---help subject
+--help=subject
 
 Show additional information about the given subject.  Possible subjects
 are (in alphabetical order):
@@ -28,6 +28,16 @@ are (in alphabetical order):
 - result      Result modifiers
 - special     Special options
 - string      String search pattern modifiers
+
+--help foo
+
+Show information about "foo" in all help subjects, and show the entire
+logical paragraph of any match.
+
+--help=faq foo
+
+Show information about "foo" in the given subject only, and show the entire
+logical paragraph of any match.
 
 --version
 

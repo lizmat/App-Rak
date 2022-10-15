@@ -149,13 +149,15 @@ Option management:
  --list-custom-options  List all previously saved options
 
 General options:
- --help      Show this
- --help foo  Show additional help about:
+ --help          Show this
+ --help=subject  Show additional help about subject, out of:
    argument   | code       | content  | debugging | examples | faq
    filesystem | general    | haystack | item      | listing  | option
    pattern    | philosophy | resource | result    | special  | string
- --version                Show version information
- --verbose                Be more verbose, if applicable
+ --help foo      Search for "foo" in all help subjects
+ --help=faq foo  Search for "foo" in subject "faq"
+ --version       Show version information
+ --verbose       Be more verbose, if applicable
 
 Debugging options:
  --dont-catch             Let code exceptions be thrown with backtrace

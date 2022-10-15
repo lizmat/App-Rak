@@ -366,7 +366,7 @@ Only valid if the current directory is under git version control. Indicate the b
 --categorize=categorizer
 ------------------------
 
-If specified, indicates the `Callable` that should return zero or more keysfor a given line to have it categorized. This effectively replaces the filename if a line by its key in the result. See also `--classify`.
+If specified, indicates the `Callable` that should return zero or more keys for a given line to have it categorized. This effectively replaces the filename if a line by its key in the result. See also `--classify`.
 
 ```bash
 # categorize by the first two letters of a line
@@ -650,7 +650,7 @@ Flag. If specified, will only select files that do have the SETUID bit set in th
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
---help [area-of-interest]
+--help[=area-of-interest]
 -------------------------
 
 Show argument documentation, possibly extended by giving the area of interest, which are:
@@ -690,6 +690,10 @@ Show argument documentation, possibly extended by giving the area of interest, w
   * special
 
   * string
+
+If no area of interest is given, then the overview will be shown.
+
+Any pattern specification will be used to search the help subjects, and only show the logical paragraphs with matches.
 
 --highlight
 -----------

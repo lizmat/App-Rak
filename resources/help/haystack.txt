@@ -8,21 +8,21 @@ in actual matching of the pattern.
 path1 path2 ...  OR  --paths=path1,path2
 
 The pattern to be used for matching is either specified with the
---pattern argument, or by the first positional argument.  All (other)
+ --pattern argument, or by the first positional argument.  All (other)
 positionals arguments are considered to be paths to be investigated
 for files and subdirectories.  If only a pattern has been specified
 then the current directory will be assumed.  Paths can also be
 specified with the --paths argument, which expects a comma separated
 list of paths to investigate.  Conflicts with --files-from,
---paths-from and --under-version-control.
+ --paths-from and --under-version-control.
 
 --files-from=file
 
 If specified, expects the name of file containing the names of the
 *files* to be examined.  Relative filenames will be assumed to be
 relative to the current directory.  Conflicts with --paths,
---paths-from, --recurse-symlinked-dir, --recurse-unmatched-dir and
---under-version-control.
+ --paths-from, --recurse-symlinked-dir, --recurse-unmatched-dir and
+ --under-version-control.
 
 --paths-from=file
 
@@ -44,8 +44,8 @@ If specified with a True value, will cause the file collection
 process to recurse into directories that did **NOT** satisfy the
 (implicit) --dir specification.  Default is False, so that
 recursion will only occur into directories that satisfy the
---dir specification.  Conflicts with --files-from and
---under-version.control.
+ --dir specification.  Conflicts with --files-from and
+ --under-version.control.
 
 --under-version-control[=git]
 
@@ -54,5 +54,5 @@ interrogated to find out which files are currently known to the
 version control system.  If specified with a True value, assumes
 "git" as the version control system.  Currently, this is the only
 version control system supported.  Conflicts with --paths,
---files-from, --paths-from, --recurse-symlinked-dir and
---recurse-unmatched-dir.
+ --files-from, --paths-from, --recurse-symlinked-dir and
+ --recurse-unmatched-dir.

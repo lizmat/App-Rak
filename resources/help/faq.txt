@@ -9,3 +9,4 @@ Q: How can I limit to files without extension?
 A: Use "--extensions=,".  This works because the comma is used to indicate
    multiple extensions to accept.  In this case, since there are no letters
    between the "=" and the ",", it specifies a zero character extension.
+

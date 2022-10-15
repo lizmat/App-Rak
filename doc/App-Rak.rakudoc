@@ -460,7 +460,7 @@ is no match.  Branches need not have been checked out locally yet.
 =head2 --categorize=categorizer
 
 If specified, indicates the C<Callable> that should return zero or more
-keysfor a given line to have it categorized.  This effectively replaces
+keys for a given line to have it categorized.  This effectively replaces
 the filename if a line by its key in the result.  See also C<--classify>.
 
 =begin code :lang<bash>
@@ -822,7 +822,7 @@ that do B<not> have the SETUID bit set.
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
-=head2 --help [area-of-interest]
+=head2 --help[=area-of-interest]
 
 Show argument documentation, possibly extended by giving the area of
 interest, which are:
@@ -845,6 +845,11 @@ interest, which are:
 =item result
 =item special
 =item string
+
+If no area of interest is given, then the overview will be shown.
+
+Any pattern specification will be used to search the help subjects, and only
+show the logical paragraphs with matches.
 
 =head2 --highlight
 

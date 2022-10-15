@@ -14,7 +14,7 @@ watching, or to no string to show between different files otherwise.
 --file-separator-null
 
 Only makes sense in combination with --files-with-matches or
---files-without-matches.  If specified, will separate filenames
+ --files-without-matches.  If specified, will separate filenames
 with null bytes, rather than with newlines.  Defaults to False.
 
 --group-matches
@@ -63,7 +63,7 @@ specified as a flag, assumes 1.
 
 Specify the name of the directory to store the results in.  For each group,
 a separate file will be created.  Usually used in conjunction with
---classify or --categorize, but can also be used for normal search results.
+ --classify or --categorize, but can also be used for normal search results.
 In that case, the basename of a file with results will be taken as the name
 of the file to create in that output directory.  The directory must **not**
 exist beforehand.
@@ -95,13 +95,13 @@ Indicate whether to show blame information if possible (currently only
 
 Indicate whether to show the item number of an item that matched.
 Defaults to True.  Some other options may override this, such as
---unique and --frequencies.
+ --unique and --frequencies.
 
 --show-filename
 
 Indicate whether to show the filename in which a match occurred.
 Defaults to True.  Some other options may override this, such as
---unique and --frequencies.
+ --unique and --frequencies.
 
 --summary-if-larger-than=N
 

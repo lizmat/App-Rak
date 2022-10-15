@@ -3,6 +3,7 @@ use as-cli-arguments:ver<0.0.7>:auth<zef:lizmat>;  # as-cli-arguments
 use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.15>:auth<zef:lizmat>;      # columns highlighter matches
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
+use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
 use rak:ver<0.0.35>:auth<zef:lizmat>;              # rak
 use String::Utils:ver<0.0.13>:auth<zef:lizmat> <after before between is-sha1>;
 
@@ -14,7 +15,7 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-10-12T13:56:46+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-10-15T15:10:16+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
 my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
@@ -416,7 +417,8 @@ my sub main() is export {
 #-------------------------------------------------------------------------------
 
 # Return "s" if number is not 1, for error messages
-my sub s($elems) { $elems == 1 ?? "" !! "s" }
+my sub s($elems)  { $elems == 1 ?? '' !! 's'  }
+my sub es($elems) { $elems == 1 ?? '' !! 'es' }
 
 # Properl show an option with one or two dashes
 sub o($option) {
@@ -593,31 +595,6 @@ my sub codify-extensions(*@extensions) {
     }
     else {
         -> $_ { !is-sha1($_) && extension($_) (elem) @extensions }
-    }
-}
-
-# Set up the --help handler
-use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
-my sub HELP($text, @keys, :$verbose) {
-    my $SCRIPT := $*PROGRAM.basename;
-    my $header := "$SCRIPT - " ~ DESCRIPTION;
-    say $header;
-    say "-" x $header.chars;
-    say $writing-to-stdout
-      ?? $text.lines.map({
-             !$++  # always first line
-               || .starts-with('--')
-               || (.ends-with(':') && !.starts-with(' '))
-               ?? BON ~ $_ ~ BOFF
-               !! $_
-         }).join("\n")
-      !! $text;
-
-    if $verbose {
-        say "";
-        say CREDITS;
-        say "";
-        say "Thank you for using $SCRIPT!";
     }
 }
 
@@ -2332,12 +2309,122 @@ my sub action-edit(--> Nil) {
 }
 
 my sub action-help(--> Nil) {
+    # nothing to do
+    return if Bool.ACCEPTS($action) && !$action;
 
-    activate-output-options;
-    my proto sub MAIN(|) {*}
-    use CLI::Help:ver<0.0.5>:auth<zef:lizmat> %?RESOURCES, &MAIN, &HELP, 'long';
-    @positionals.unshift: $pattern if $pattern;
-    MAIN(|@positionals, :help, :$verbose);  # XXX options ??
+    meh-for 'how', <csv modify filesystem result>;
+
+    my constant @sections = <
+      argument code content debugging examples faq filesystem general
+      haystack item listing option pattern philosophy resource result
+      special string
+    >;
+
+    class Hows {
+        my sub paragraphize($name) {
+            my @paragraphs;
+            my @lines;
+            for %?RESOURCES{"help/$name.txt"}.lines -> $line {
+                if (($line.ends-with(':')
+                     && !($line eq 'Example:' | 'Examples:'))
+                ) || $line.starts-with('--')
+                  || $line.starts-with('Q: ') {
+                    @paragraphs.push: @lines.join("\n") if @lines;
+                    @lines = $line;
+                }
+                else {
+                    @lines.push: $line;
+                }
+            }
+            @paragraphs.push: @lines.join("\n") if @lines;
+            @paragraphs ?? @paragraphs.Slip !! Empty
+        }
+
+        method lines() {
+            Bool.ACCEPTS($action)
+              ?? (@sections.map: &paragraphize)
+              !! $action (elem) @sections
+                ?? paragraphize($action)
+                !! meh "'$action' is not a recognized help subject";
+        }
+    }
+
+    sub highlight-header($_, $first?) {
+        $first
+          || .starts-with('--')
+          || .starts-with('Q: ')
+          || (.ends-with(':') && !.starts-with(' '))
+          ?? BON ~ $_ ~ BOFF
+          !! $_
+    }
+
+    # let's produce the necessary help and search in it / paragraph
+    if $pattern {
+        %rak<sources>          := (Hows,);
+        %rak<omit-item-number> := True;
+        %rak<degree>           := 1;
+
+        %rak<map-all> := True;
+        %rak<mapper>  := -> $, @matches {
+            '<how>' => ((@matches
+              ?? "Found @matches.elems() match&es(@matches) for '$pattern':"
+              !! "Nothing found for '$pattern'"
+            ), @matches.map({
+                ('-' x 80)
+                  ~ ($writing-to-stdout
+                      ?? .lines.map({
+                             my $result;
+                             FIRST $result = highlight-header($_);
+                             $result // $_
+                         }).join("\n") ~ "\n"
+                      !! $_
+                    )
+            }).Slip).Slip
+        }
+
+        prepare-needle;
+        run-rak;
+
+        activate-output-options;
+        %listing<show-filename> := False unless %listing<show-filename>:exists;
+        %listing<trim>          := False unless %listing<trim>:exists;
+        rak-results;
+        rak-stats;
+    }
+
+    # no pattern, generic help request
+    else {
+        my $text := do if Bool.ACCEPTS($action) {
+            %?RESOURCES<help.txt>.slurp(:close)
+        }
+        elsif $action {
+            meh "'$action' is not a recognized help subject"
+              unless $action (elem) @sections;
+            %?RESOURCES{"help/$action.txt"}.slurp(:close)
+        }
+
+        if $text {
+            my $SCRIPT := $*PROGRAM.basename;
+            my $header := "$SCRIPT - " ~ DESCRIPTION;
+            my str @parts;
+            @parts.push: $header;
+            @parts.push: "-" x $header.chars;
+            @parts.push: $writing-to-stdout
+              ?? $text.lines.map({
+                     highlight-header($_, !$++)  # always first line
+                 }).join("\n")
+              !! $text;
+
+            if $verbose {
+                @parts.push: "";
+                @parts.push: CREDITS;
+                @parts.push: "";
+                @parts.push: "Thank you for using $SCRIPT!";
+            }
+
+            sayer @parts.join("\n");
+        }
+    }
 }
 
 my sub action-json-per-file(--> Nil) {
@@ -2713,7 +2800,7 @@ my sub action-unicode(--> Nil) {
                ?? "Found @matches.elems() match{'es' if @matches > 1}"
                !! 'No matches found'
          }
-      !! -> $source, @matches {
+      !! -> $, @matches {
              '<unicode>' => @matches.map: {
                  my $chr := .uniparse;
                  "$chr.ord.fmt('%5X') $_ $chr"
@@ -2725,6 +2812,7 @@ my sub action-unicode(--> Nil) {
 
     run-rak;
 
+    activate-output-options;
     %listing<show-filename> := False unless %listing<show-filename>:exists;
     %listing<trim>          := False unless %listing<trim>:exists;
     rak-results;

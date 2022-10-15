@@ -2,6 +2,12 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.1.7  2022-10-15T16:03:10+02:00
+     - Refurbish the --help functionality by allowing it to search
+       help subjects.
+     - Remove dependency on CLI::Help, it is no longer convenient to
+       use for rak
+
 0.1.6  2022-10-14T22:40:31+02:00
      - Fixed various issues with saving custom options, specifically:
        - not saving some flags
