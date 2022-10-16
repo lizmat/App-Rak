@@ -129,7 +129,7 @@ Content modifiers:
  --modify-files        Change content of files using the Callable pattern
  --backup[=extension]  Make backup of file with extension (default: .bak)
  --rename-files        Rename files using the Callable pattern
- --dry-run             Don't actually make any changes, just run the process
+ --dryrun              Don't actually make any changes, just run the process
 
 Resource usage:
  --batch[=N]          Max number of files to process in a thread (default: 64)

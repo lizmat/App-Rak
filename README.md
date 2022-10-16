@@ -1149,7 +1149,7 @@ NOTE: support of this feature depends on Raku supporting that feature on the cur
 --rename-files
 --------------
 
-Flag. Only makes sense if the specified pattern is a `Callable`. Feeds all selected files as `IO::Path` to the pattern, and uses the result (if different from the original) as the new name of the file.
+Flag. Only makes sense if the specified pattern is a `Callable`. Feeds all selected files, sorted by absolute path, as `IO::Path` objects to the pattern, and uses the result (if different from the original) as the new name of the file.
 
 The `--dryrun` argument can be used to run through the whole process **except** doing actually any renaming.
 

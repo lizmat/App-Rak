@@ -9,7 +9,7 @@ is specified, then that will be added to the name of the file.  If
 specified as a flag, then ".bak" will be assumed.  Defaults to not
 making any backup.
 
---dry-run
+--dryrun
 
 Only makes sense when either the --modify-files or --rename-files is
 also specified.  Indicates that *no* actual changes should be performed.
@@ -23,7 +23,7 @@ Callable pattern is not True/False/Nil/Empty and different from the
 given line, then that line will be replaced by the returned value(s).
 Else it will be kept unchanged because of an implicit --passthru-context
 argument being active.  Defaults to False, indicating that files
-should **not** be changed.  Can also specify --dry-run to see which
+should **not** be changed.  Can also specify --dryrun to see which
 files would be changed without actually making any changes.
 
 --rename-files
@@ -33,8 +33,10 @@ if specified.  Indicates that the names of the selected files may be
 potentially changed.  If the value returned by the Callable pattern
 is not True/False/Nil/Empty and different from the given filename,
 then the name of the file will be replaced by the returned value.
-Defaults to False, indicating that no files will be renamed.  If
-the file is under version control (currently only "git" is supported)
-will make sure that the version control system will be aware of
-the rename.  Can also specify --dry-run to see which files would be
-renamed without actually making any changes.
+Defaults to False, indicating that no files will be renamed.
+
+Files are presented in a sorted order, allowing for repeatable and
+ordered renaming.  If a file is under version control (currently only
+"git" is supported) will make sure that the version control system
+will be aware of the rename.  Can also specify --dryrun to see which
+files would be renamed without actually making any changes.

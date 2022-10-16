@@ -24,3 +24,6 @@ $ rak '/ 19 | 20 | 25 /' calendar
 
 # Show the 20 most frequent words in lowercase
 # rak '*.match(/ \w+ /, :g)>>.lc.Slip' --frequencies --only-first=20
+
+# Rename files with 3 digits word bounded with an interval of 10
+$ rak '{ state $n = 0; .subst( / << \d ** 3 >> /, { ($n += 10).fmt("%03d") }) }' --rename-files

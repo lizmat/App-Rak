@@ -1426,8 +1426,9 @@ the current operating system.
 =head2 --rename-files
 
 Flag.  Only makes sense if the specified pattern is a C<Callable>.
-Feeds all selected files as C<IO::Path> to the pattern, and uses the
-result (if different from the original) as the new name of the file.
+Feeds all selected files, sorted by absolute path, as C<IO::Path> objects
+to the pattern, and uses the result (if different from the original) as
+the new name of the file.
 
 The C<--dryrun> argument can be used to run through the whole process
 B<except> doing actually any renaming.
