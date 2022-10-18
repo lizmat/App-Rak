@@ -22,9 +22,15 @@ files may be potentially changed.  If the value returned by the
 Callable pattern is not True/False/Nil/Empty and different from the
 given line, then that line will be replaced by the returned value(s).
 Else it will be kept unchanged because of an implicit --passthru-context
-argument being active.  Defaults to False, indicating that files
-should **not** be changed.  Can also specify --dryrun to see which
-files would be changed without actually making any changes.
+argument being active.
+
+Files are presented in a sorted order, allowing for repeatable and
+ordered renaming.  The $*N dynamic variable (initialized to 0) is
+available to the pattern, to allow keeping state between files.
+
+Defaults to False, indicating that files should **not** be changed.  Can
+also specify --dryrun to see which files would be changed without actually
+making any changes.
 
 --rename-files
 
@@ -36,7 +42,10 @@ then the name of the file will be replaced by the returned value.
 Defaults to False, indicating that no files will be renamed.
 
 Files are presented in a sorted order, allowing for repeatable and
-ordered renaming.  If a file is under version control (currently only
+ordered renaming.  The $*N dynamic variable (initialized to 0) is
+available to the pattern, to allow keeping state between files.
+
+If a file is under version control (currently only
 "git" is supported) will make sure that the version control system
 will be aware of the rename.  Can also specify --dryrun to see which
 files would be renamed without actually making any changes.

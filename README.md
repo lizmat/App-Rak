@@ -996,7 +996,7 @@ See "CHECKING TIMES ON FILES" for more information about features that can be us
 
 Flag. Only makes sense if the specified pattern is a `Callable`. Indicates whether the output of the pattern should be applied to the file in which it was found. Defaults to `False`.
 
-The `Callable` will be called for each line, giving the line (**including** its line ending). It is then up to the `Callable` to return:
+The `Callable` will be called for each file (in sorted order) and each line of the file, giving the line (**including** its line ending). The `$*N` dynamic variable is available inside the `Callable` and is initialized to 0 (in case modifications require keeping numeric state between calls). It is then up to the `Callable` to return:
 
 ### False
 
@@ -1155,7 +1155,7 @@ The `--dryrun` argument can be used to run through the whole process **except** 
 
 The `--verbose` argument can be used to get more verbose feedback on the operation.
 
-The `Callable` will be called for each line, giving the file as an `IO::Path` object. It is then up to the `Callable` to return:
+The `Callable` will be called for each line, giving the file as an `IO::Path` object. The `$*N` dynamic variable is available inside the `Callable` and is initialized to 0. It is then up to the `Callable` to return:
 
 ### False
 
@@ -1177,11 +1177,12 @@ Don't change the name of the file. NOTE: this means the exact `Empty` value. Thi
 
 Use this value as the new name of the file. It can either be a string or an `IO::Path` object. Only when the returned value is different from the given value, will a rename actually be attempted. To make this easier on the user, any `Str` returned, will be automatically converted to an `IO::Path` object before being compared using `eqv`.
 
-Example: rename all files with the `.t` extension to the `.rakutest` extension.
-
 ```bash
 # change the extension of all .t files to .rakutest
 $ rak '*.subst(/ \.t $/,".rakutest")' --rename-files
+
+# Rename files with 3 digits word bounded with an interval of 10
+$ rak '*.subst(/ << \d ** 3 >> /, { ($*N += 10).fmt("%03d") })' --rename-files
 ```
 
 Note that files that are under git revision control will be renamed using `git mv`: if that fails for any reason, a normal rename will be performed.

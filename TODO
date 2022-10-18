@@ -15,8 +15,16 @@ Ideas / Todo's
 - now that we have ngram, perhaps allow for some fuzzy searching?
 - support for spreadsheets
 - support for colors a la ack
+- transparently support searching in .gz and .bz2 files, if they're not
+  tars, by adding an --auto-decompress option that would modify the
+  internal :file handling to ignore .gz and .bz2 extensions
 
 Errors
 ======
 If a file is under version control, it does not mean it actually contains
 text.  Need to fix that with --blame-per-file/line.
+
+--find * does not seem to expand all paths in current dir
+
+--proximate functionality needs to check absolute distances, as with
+--backtrace line numbers *can* go backwards

@@ -15,9 +15,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-10-15T15:10:16+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-10-18T16:10:46+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -162,6 +162,7 @@ elsif %*ENV<RAK_CONFIG>:!exists {  # want to have the default config
 my $GitBlameFile;
 my $TextCSV;
 my &edit-files;
+my &backtrace-files;
 my &sourcery;
 my &sourcery-pattern;
 
@@ -173,6 +174,7 @@ my $output-dir;   # process output directory if defined
 my $debug-rak;    # process show rak args
 
 my $pattern;     # the pattern specified (if any)
+my $smartcase;   # --smartcase
 my $ignorecase;  # --ignorecase
 my $ignoremark;  # --ignoremark
 my $type;        # --type
@@ -1087,7 +1089,7 @@ my sub external-execution(str $name, $value --> Nil) {
 
 # check sourcery availability
 my sub check-sourcery(str $name) {
-    unless &edit-files {
+    unless &sourcery {
         CATCH { meh-not-installed 'sourcery', $name }
         (&sourcery, &sourcery-pattern) =
           "use sourcery; &sourcery, &needle".EVAL;
@@ -1099,6 +1101,14 @@ my sub check-EditFiles(str $name) {
     unless &edit-files {
         CATCH { meh-not-installed 'Edit::Files', $name }
         &edit-files = "use Edit::Files; &edit-files".EVAL;
+    }
+}
+
+# check Backtrace::Files availability
+my sub check-BacktraceFiles(str $name) {
+    unless &backtrace-files {
+        CATCH { meh-not-installed 'Backtrace::Files', $name }
+        &backtrace-files = "use Backtrace::Files; &backtrace-files".EVAL;
     }
 }
 
@@ -1239,6 +1249,11 @@ my sub option-allow-whitespace($value --> Nil) {
 
 my sub option-auto-diag($value --> Nil) {
     set-csv-flag('auto-diag', $value);
+}
+
+my sub option-backtrace($value --> Nil) {
+    check-BacktraceFiles('backtrace');
+    set-result-flag('backtrace', $value);
 }
 
 my sub option-backup($value --> Nil) {
@@ -1807,7 +1822,9 @@ my sub option-silently($value --> Nil) {
 }
 
 my sub option-smartcase($value --> Nil) {
-    set-global-flag('smartcase', $value);
+    Bool.ACCEPTS($value)
+      ?? ($smartcase := $value)
+      !! meh "'--smartcase' must be specified as a flag";
 }
 
 my sub option-sourcery($value --> Nil) {
@@ -2265,6 +2282,25 @@ my sub action-edit(--> Nil) {
         edit-files sourcery $pattern.trim;
         return;
     }
+    elsif %result<backtrace>:delete {
+        meh-for 'edit', <output-file pager result filesystem modify csv>;
+#        if $reading-from-stdin {
+dd @positionals;
+my @result is List =
+              backtrace-files("2".IO.slurp).map: -> (:key($file), :value(@line)) {
+                  @line.map({ Pair.new: $file, $_}).Slip
+              }
+            {
+#                use activate-special-handle;
+#                activate-special-handle(my $*IN);
+                edit-files @result;
+                return; 
+            }
+#        }
+#        else {
+#            meh "handling backtrace from file(s) NYI";
+#        }
+    }
 
     %rak<max-matches-per-source> := $_
       with %result<max-matches-per-file>:delete;
@@ -2371,6 +2407,7 @@ my sub action-help(--> Nil) {
               !! "Nothing found for '$pattern'"
             ), @matches.map({
                 ('-' x 80)
+                  ~ "\n"
                   ~ ($writing-to-stdout
                       ?? .lines.map({
                              my $result;
@@ -2579,6 +2616,7 @@ my sub action-modify-files(--> Nil) {
 
     %rak<with-line-endings> := True unless %rak<with-line-endings>:exists;
     %rak<passthru-context>  := %listing<passthru-context>:delete  // True;
+    %rak<sort>              := *.absolute;
     %rak<mapper> := -> $io, @matches --> Empty {
         ++$nr-files-seen;
 
@@ -2637,6 +2675,7 @@ my sub action-modify-files(--> Nil) {
         }
     }
 
+    my $*N = 0;
     run-rak(:eagerly);
     rak-stats;
 }
@@ -2680,6 +2719,11 @@ my sub action-per-line(--> Nil) {
         }
         $pattern      := sourcery-pattern $pattern;  # for highlighting
         %rak<sources> := @sources;                   # only these files
+    }
+
+    elsif %result<backtrace>:delete {
+        meh-for 'backtrace', <filesystem>;
+        NYI "still working on this";
     }
 
     else {
@@ -2772,6 +2816,7 @@ my sub action-rename-files(--> Nil) {
         sayer @fb.join("\n");
     }
 
+    my $*N = 0;
     run-rak(:eagerly);
     rak-stats;
 }
@@ -3015,7 +3060,7 @@ TEXT
 my sub prepare-needle(:$allow-matches-only = True) {
 
     if $pattern {
-        if %global<smartcase>:delete {
+        if $smartcase {
             $ignorecase.defined
               ?? meh "Cannot specify --smartcase when --ignorecase is also specified"
               !! ($ignorecase := !$pattern.contains(/ <:upper> /));
@@ -3071,6 +3116,7 @@ my sub as-options() {
     my sub add($name, $value) { @options.push: Pair.new: $name, $value }
 
     add('pattern', $pattern)             if $pattern;
+    add('smartcase', $smartcase)         if $smartcase;
     add('ignorecase', $ignorecase)       if $ignorecase;
     add('ignoremark', $ignoremark)       if $ignoremark;
     add('type', $type)                   if $type;

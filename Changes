@@ -1,6 +1,14 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Introduce $*N dynamic variable to the pattern of --rename-files
+       and --modify-files.
+     - Make --modify-files repeatable by sorting the paths
+     - (Implicitely) specifying --smartcase in situations where it does
+       not make sense, is now silently ignored, just like --ignorecase
+       and --ignoremark
+     - Fix issue in loading of "sourcery" check
+     - Fix issue with divider in --help search results
 
 0.1.9  2022-10-16T14:40:53+02:00
      - Bump dependency on rak to get :sort functionality

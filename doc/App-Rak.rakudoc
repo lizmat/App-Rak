@@ -1234,8 +1234,11 @@ Flag.  Only makes sense if the specified pattern is a C<Callable>.
 Indicates whether the output of the pattern should be applied to the file
 in which it was found.  Defaults to C<False>.
 
-The C<Callable> will be called for each line, giving the line (B<including>
-its line ending).  It is then up to the C<Callable> to return:
+The C<Callable> will be called for each file (in sorted order) and each
+line of the file, giving the line (B<including> its line ending).  The
+C<$*N> dynamic variable is available inside the C<Callable> and is
+initialized to 0 (in case modifications require keeping numeric state
+between calls).  It is then up to the C<Callable> to return:
 
 =head3 False
 
@@ -1437,7 +1440,9 @@ The C<--verbose> argument can be used to get more verbose feedback on
 the operation.
 
 The C<Callable> will be called for each line, giving the file as an
-C<IO::Path> object.  It is then up to the C<Callable> to return:
+C<IO::Path> object.  The C<$*N> dynamic variable is available inside the
+C<Callable> and is initialized to 0.  It is then up to the C<Callable> to
+return:
 
 =head3 False
 
@@ -1464,13 +1469,13 @@ the given value, will a rename actually be attempted.  To make this easier
 on the user, any C<Str> returned, will be automatically converted to an
 C<IO::Path> object before being compared using C<eqv>.
 
-Example: rename all files with the C<.t> extension to the C<.rakutest>
-extension.
-
 =begin code :lang<bash>
 
 # change the extension of all .t files to .rakutest
 $ rak '*.subst(/ \.t $/,".rakutest")' --rename-files
+
+# Rename files with 3 digits word bounded with an interval of 10
+$ rak '*.subst(/ << \d ** 3 >> /, { ($*N += 10).fmt("%03d") })' --rename-files
 
 =end code
 
