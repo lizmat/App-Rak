@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.1.10  2022-10-19T13:10:02+02:00
      - Introduce $*N dynamic variable to the pattern of --rename-files
        and --modify-files.
      - Make --modify-files repeatable by sorting the paths
@@ -9,6 +11,7 @@ Revision history for App-Rak
        and --ignoremark
      - Fix issue in loading of "sourcery" check
      - Fix issue with divider in --help search results
+     - Fix issue with searching as of --find-all was active by default
 
 0.1.9  2022-10-16T14:40:53+02:00
      - Bump dependency on rak to get :sort functionality

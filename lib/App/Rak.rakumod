@@ -2004,7 +2004,7 @@ my sub move-filesystem-options-to-rak(--> Nil) {
     }
 
     %rak<file> := codify-extensions @known-extensions
-      unless %rak<file under-version-control>:exists;
+      unless %rak<file under-version-control>:k;
 }
 
 my sub move-result-options-to-rak(--> Nil) {
@@ -2284,22 +2284,17 @@ my sub action-edit(--> Nil) {
     }
     elsif %result<backtrace>:delete {
         meh-for 'edit', <output-file pager result filesystem modify csv>;
-#        if $reading-from-stdin {
-dd @positionals;
-my @result is List =
-              backtrace-files("2".IO.slurp).map: -> (:key($file), :value(@line)) {
+        if $reading-from-stdin {
+my @result is List = 
+              backtrace-files($*IN.slurp).map: -> (:key($file), :value(@line)) {
                   @line.map({ Pair.new: $file, $_}).Slip
               }
-            {
-#                use activate-special-handle;
-#                activate-special-handle(my $*IN);
-                edit-files @result;
-                return; 
-            }
-#        }
-#        else {
-#            meh "handling backtrace from file(s) NYI";
-#        }
+            edit-files @result;
+            return; 
+        }
+        else {
+            meh "handling backtrace from file(s) NYI";
+        }
     }
 
     %rak<max-matches-per-source> := $_
@@ -2875,6 +2870,8 @@ my sub action-version(--> Nil) {
 }
 
 my sub action-vimgrep(--> Nil) {
+    meh "Cannot use --vimgrep when reading from STDIN"
+      if $reading-from-stdin;
 
     if %result<sourcery>:delete {
         meh-for 'vimgrep', <output-file pager result filesystem modify csv>;
