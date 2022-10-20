@@ -4,7 +4,7 @@ use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.15>:auth<zef:lizmat>;      # columns highlighter matches
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.37>:auth<zef:lizmat>;              # rak
+use rak:ver<0.0.38>:auth<zef:lizmat>;              # rak
 use String::Utils:ver<0.0.13>:auth<zef:lizmat> <after before between is-sha1>;
 
 # The epoch value when process started
@@ -15,9 +15,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-10-18T16:10:46+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-10-20T15:50:47+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -159,8 +159,9 @@ elsif %*ENV<RAK_CONFIG>:!exists {  # want to have the default config
 }
 
 # Links to optional classes
-my $GitBlameFile;
 my $TextCSV;
+my $GitBlameFile;
+my $IO-Path-AutoDecompress;
 my &edit-files;
 my &backtrace-files;
 my &sourcery;
@@ -1130,6 +1131,15 @@ my sub check-GitBlameFile(str $name) {
     }
 }
 
+# check IO::Path::AutoDecompress availability
+my sub check-IOPathAutoDecompress(str $name) {
+    unless $IO-Path-AutoDecompress {
+        CATCH { meh-not-installed 'IO::Path::AutoDecompress', $name }
+        require IO::Path::AutoDecompress;
+        $IO-Path-AutoDecompress := IO::Path::AutoDecompress;
+    }
+}
+
 # handle additional CSV parameters
 my sub set-csv-flag(str $name, $value --> Nil) {
     check-TextCSV($name);
@@ -1245,6 +1255,11 @@ my sub option-allow-loose-quotes($value --> Nil) {
 
 my sub option-allow-whitespace($value --> Nil) {
     set-csv-flag('allow-whitespace', $value);
+}
+
+my sub option-auto-decompress($value --> Nil) {
+    check-IOPathAutoDecompress('auto-decompress');
+    set-filesystem-flag('auto-decompress', $value);
 }
 
 my sub option-auto-diag($value --> Nil) {
@@ -1966,26 +1981,44 @@ my sub move-filesystem-options-to-rak(--> Nil) {
         if %filesystem<under-version-control> {
             maybe-meh-together 'under-version-control', %filesystem<
               dir file recurse-symlinked-dir recurse-unmatched-dir
+              auto-decompress
             >:k;
         }
-        elsif %filesystem<file>:delete -> $file {
-            maybe-meh-together 'file', %filesystem<
-              extensions known-extensions find-all
-            >:k;
-            %rak<file> := $file;
-        }
-        elsif %filesystem<known-extensions>:delete -> $known {
-            maybe-meh-together 'known-extensions', %filesystem<
-              extensions find-all
-            >:k;
-            %rak<file> := $known;
-        }
-        elsif %filesystem<find-all>:delete {
-            maybe-meh-together 'find-all', %filesystem<dir extensions>:k;
-            %rak<file> := True;
-        }
-        elsif %filesystem<extensions>:delete -> $seen {
-            %rak<file> := $seen;
+        else {
+            if %filesystem<file>:delete -> $file {
+                maybe-meh-together 'file', %filesystem<
+                  extensions known-extensions find-all
+                >:k;
+                %rak<file> := $file;
+            }
+            elsif %filesystem<known-extensions>:delete -> $known {
+                maybe-meh-together 'known-extensions', %filesystem<
+                  extensions find-all
+                >:k;
+                %rak<file> := $known;
+            }
+            elsif %filesystem<find-all>:delete {
+                maybe-meh-together 'find-all', %filesystem<dir extensions>:k;
+                %rak<file> := True;
+            }
+            elsif %filesystem<extensions>:delete -> $seen {
+                %rak<file> := $seen;
+            }
+
+            if %filesystem<auto-decompress>:delete {
+                %rak<ioify> := { $IO-Path-AutoDecompress.new($_) };
+
+                my &old-filter :=
+                  %rak<file> // codify-extensions @known-extensions;
+                %rak<file> := {
+                    my str $extension = extension($_);
+                    $extension eq 'gz'
+                      ?? old-filter(.chop(3))
+                      !! $extension eq 'bz2'
+                        ?? old-filter(.chop(4))
+                        !! old-filter($_)
+                }
+            }
         }
 
         if %filesystem<user>:delete -> $uid {

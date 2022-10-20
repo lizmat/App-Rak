@@ -11,6 +11,14 @@ arguments are specified, then --dir (accepting *all* directories for
 recursion) and --known-extensions (accepting only files of which the
 extension is an extension of any of the predefined extension groups).
 
+--auto-decompress
+
+Flag.  If specified with a True value, will accept compressed files
+with the .gz (gzip) or .bz2 (bzip2) extension, if the extension was
+otherwise acceptable.  Will automatically decompress files for
+inspection.  Requires that the IO::Path::AutoDecompress module is
+available.
+
 --dir=expression
 
 Specifies the expression (either as a string, regular expression or as

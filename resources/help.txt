@@ -47,6 +47,7 @@ Haystack specification:
 Filesystem filters:
  --accessed=condition    Check on epoch when file was last accessed
  --accept=code           Given an IO of a file, return if file acceptable
+ --auto-decompress       File may be gzipped (.gz) or bzip2ed (.bz2)
  --blocks=condition      Number of filesystem blocks used by file
  --created=condition     Check on epoch when file was created
  --deny=code             Given an IO of a file, return if **NOT** acceptable

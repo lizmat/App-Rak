@@ -253,6 +253,11 @@ SUPPORTED OPTIONS
 
 All options are optional. Any unexpected options, will cause an exception to be thrown with the unexpected options listed and possible alternatives mentioned. Unless specifically indicated otherwise, using the negation of a flag has the same effect as **not** specifying it.
 
+--absolute
+----------
+
+Flag. If specified indicates that whenever paths are shown, they will be shown as absolute paths. Defaults to `False`, which will cause paths to be produced as paths relative to the current directory.
+
 --accept=code
 -------------
 
@@ -269,11 +274,6 @@ $ rak --accept='*.slurp.contains("use Test")'
 If specified, indicates the `Callable` that should return True to include a file in the selection of files to be checked. The access time of the file (number of seconds since epoch, as a `Num` value) will be passed as the only argument. Note that many file systems do not actually support this reliably.
 
 See "CHECKING TIMES ON FILES" for more information about features that can be used inside the `Callable`.
-
---absolute
-----------
-
-Flag. If specified indicates that whenever paths are shown, they will be shown as absolute paths. Defaults to `False`, which will cause paths to be produced as paths relative to the current directory.
 
 --after-context=N
 -----------------
@@ -294,6 +294,11 @@ Only applicable if `--csv-per-line` has been specified. Flag. If specified, indi
 ------------------
 
 Only applicable if `--csv-per-line` has been specified. Flag. If specified, indicates that whitespace is allowed around separators.
+
+--auto-decompress
+-----------------
+
+Flag. If specified with a True value, will accept compressed files with the `.gz` (gzip) or `.bz2` (bzip2) extension, if the extension was otherwise acceptable. Will automatically decompress files for inspection. Requires that the `IO::Path::AutoDecompress` module is available.
 
 --auto-diag
 -----------

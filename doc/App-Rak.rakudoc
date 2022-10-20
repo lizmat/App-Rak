@@ -312,6 +312,12 @@ to be thrown with the unexpected options listed and possible alternatives
 mentioned.  Unless specifically indicated otherwise, using the negation of
 a flag has the same effect as B<not> specifying it.
 
+=head2 --absolute
+
+Flag.  If specified indicates that whenever paths are shown, they will be
+shown as absolute paths.  Defaults to C<False>, which will cause paths to
+be produced as paths relative to the current directory.
+
 =head2 --accept=code
 
 Specifies the code that should be executed that should return C<True> if
@@ -336,12 +342,6 @@ reliably.
 See "CHECKING TIMES ON FILES" for more information about features that
 can be used inside the C<Callable>.
 
-=head2 --absolute
-
-Flag.  If specified indicates that whenever paths are shown, they will be
-shown as absolute paths.  Defaults to C<False>, which will cause paths to
-be produced as paths relative to the current directory.
-
 =head2 --after-context=N
 
 Indicate the number of lines that should be shown B<after> any line that
@@ -361,6 +361,13 @@ indicates that fields do not need to be quoted to be acceptable.
 
 Only applicable if C<--csv-per-line> has been specified.  Flag.  If specified,
 indicates that whitespace is allowed around separators.
+
+=head2 --auto-decompress
+
+Flag.  If specified with a True value, will accept compressed files
+with the C<.gz> (gzip) or C<.bz2> (bzip2) extension, if the extension was
+otherwise acceptable.  Will automatically decompress files for inspection.
+Requires that the C<IO::Path::AutoDecompress> module is available.
 
 =head2 --auto-diag
 
