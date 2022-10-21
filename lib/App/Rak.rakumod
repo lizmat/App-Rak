@@ -6,7 +6,10 @@ use IO::Path::AutoDecompress:ver<0.0.2>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
 use rak:ver<0.0.38>:auth<zef:lizmat>;              # rak
-use String::Utils:ver<0.0.13>:auth<zef:lizmat> <after before between is-sha1>;
+
+use String::Utils:ver<0.0.14>:auth<zef:lizmat> <
+  after before between is-sha1 non-word
+>;
 
 # The epoch value when process started
 my $init-epoch = $*INIT-INSTANT.to-posix.head;
@@ -507,7 +510,9 @@ my sub codify(Str:D $code) {
 
 # Pre-process literal strings looking like a regex
 my sub regexify($code) {
-    "/{ ':i ' if $ignorecase }{ ':m ' if $ignoremark }$code.substr(1)".EVAL
+    non-word(my $target := $code.substr(1,*-1).trim)
+      ?? "/{ ':i ' if $ignorecase }{ ':m ' if $ignoremark }$code.substr(1)".EVAL
+      !! ($pattern := $target)
 }
 
 # Convert a string to code, fail if not possible

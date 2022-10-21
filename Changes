@@ -3,6 +3,10 @@ Revision history for App-Rak
 {{$NEXT}}
      - Add dependency on IO::Path::AutoDecompress to make --auto-decompress
        option an option that is always available
+     - Bump dependency on String::Utils to get "non-word"
+     - Make regexes that consist of a literal string of word characters
+       only, use the much faster .contains logic rather than going the
+       full regex way.
 
 0.1.11  2022-10-20T16:01:39+02:00
      - Add support for --auto-decompress
