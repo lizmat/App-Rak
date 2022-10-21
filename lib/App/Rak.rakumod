@@ -2,6 +2,7 @@
 use as-cli-arguments:ver<0.0.7>:auth<zef:lizmat>;  # as-cli-arguments
 use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.15>:auth<zef:lizmat>;      # columns highlighter matches
+use IO::Path::AutoDecompress:ver<0.0.2>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
 use rak:ver<0.0.38>:auth<zef:lizmat>;              # rak
@@ -161,7 +162,6 @@ elsif %*ENV<RAK_CONFIG>:!exists {  # want to have the default config
 # Links to optional classes
 my $TextCSV;
 my $GitBlameFile;
-my $IO-Path-AutoDecompress;
 my &edit-files;
 my &backtrace-files;
 my &sourcery;
@@ -1131,15 +1131,6 @@ my sub check-GitBlameFile(str $name) {
     }
 }
 
-# check IO::Path::AutoDecompress availability
-my sub check-IOPathAutoDecompress(str $name) {
-    unless $IO-Path-AutoDecompress {
-        CATCH { meh-not-installed 'IO::Path::AutoDecompress', $name }
-        require IO::Path::AutoDecompress;
-        $IO-Path-AutoDecompress := IO::Path::AutoDecompress;
-    }
-}
-
 # handle additional CSV parameters
 my sub set-csv-flag(str $name, $value --> Nil) {
     check-TextCSV($name);
@@ -1258,7 +1249,6 @@ my sub option-allow-whitespace($value --> Nil) {
 }
 
 my sub option-auto-decompress($value --> Nil) {
-    check-IOPathAutoDecompress('auto-decompress');
     set-filesystem-flag('auto-decompress', $value);
 }
 
@@ -2006,7 +1996,7 @@ my sub move-filesystem-options-to-rak(--> Nil) {
             }
 
             if %filesystem<auto-decompress>:delete {
-                %rak<ioify> := { $IO-Path-AutoDecompress.new($_) };
+                %rak<ioify> := &IOAD;
 
                 my &old-filter :=
                   %rak<file> // codify-extensions @known-extensions;

@@ -298,7 +298,7 @@ Only applicable if `--csv-per-line` has been specified. Flag. If specified, indi
 --auto-decompress
 -----------------
 
-Flag. If specified with a True value, will accept compressed files with the `.gz` (gzip) or `.bz2` (bzip2) extension, if the extension was otherwise acceptable. Will automatically decompress files for inspection. Requires that the `IO::Path::AutoDecompress` module is available.
+Flag. If specified with a True value, will accept compressed files with the `.gz` (gzip) or `.bz2` (bzip2) extension, if the extension was otherwise acceptable. Will automatically decompress files for inspection.
 
 --auto-diag
 -----------

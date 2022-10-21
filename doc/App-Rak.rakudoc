@@ -367,7 +367,6 @@ indicates that whitespace is allowed around separators.
 Flag.  If specified with a True value, will accept compressed files
 with the C<.gz> (gzip) or C<.bz2> (bzip2) extension, if the extension was
 otherwise acceptable.  Will automatically decompress files for inspection.
-Requires that the C<IO::Path::AutoDecompress> module is available.
 
 =head2 --auto-diag
 

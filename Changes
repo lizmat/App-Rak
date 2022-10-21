@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Add dependency on IO::Path::AutoDecompress to make --auto-decompress
+       option an option that is always available
 
 0.1.11  2022-10-20T16:01:39+02:00
      - Add support for --auto-decompress
