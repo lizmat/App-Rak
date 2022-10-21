@@ -2312,17 +2312,24 @@ my sub action-edit(--> Nil) {
     }
     elsif %result<backtrace>:delete {
         meh-for 'edit', <output-file pager result filesystem modify csv>;
-        if $reading-from-stdin {
-my @result is List = 
-              backtrace-files($*IN.slurp).map: -> (:key($file), :value(@line)) {
-                  @line.map({ Pair.new: $file, $_}).Slip
-              }
-            edit-files @result;
-            return; 
+
+        my sub go-edit-error($error --> Nil) {
+            if backtrace-files($error).map: -> (:key($file), :value(@line)) {
+                @line.map({ Pair.new: $file, $_}).Slip
+            } -> @result {
+                edit-files @result.List;
+            }
+            note $error.chomp;
         }
-        else {
-            meh "handling backtrace from file(s) NYI";
-        }
+
+        $reading-from-stdin
+          ?? go-edit-error($*IN.slurp(:close))
+          !! @positionals
+            ?? meh "Can only specify a single file with a backtrace."
+            !! $pattern.IO.e
+              ?? go-edit-error($pattern.IO.slurp)
+              !! meh "handling backtrace from file(s) NYI";
+        return;
     }
 
     %rak<max-matches-per-source> := $_
