@@ -774,7 +774,8 @@ my sub show-results(--> Nil) {
                             sayer $source if $show-filename;
                             for @matches.map({ $_ if .value.elems }) {
                                 my uint $linenr = .key;
-                                sayer "" if $linenr - $last-linenr > $skip-ok;
+                                sayer ""
+                                  if abs($linenr - $last-linenr) > $skip-ok;
                                 if Slip.ACCEPTS(.value) {
                                     # Can only produce a Slip from a real
                                     # Callable, which cannot have any
@@ -796,7 +797,8 @@ my sub show-results(--> Nil) {
                         elsif $show-filename {
                             for @matches.map({ $_ if .value.elems }) {
                                 my uint $linenr = .key;
-                                sayer "" if $linenr - $last-linenr > $skip-ok;
+                                sayer ""
+                                  if abs($linenr - $last-linenr) > $skip-ok;
                                 if Slip.ACCEPTS(.value) {
                                     # Can only produce a Slip from a real
                                     # Callable, which cannot have any
@@ -820,7 +822,8 @@ my sub show-results(--> Nil) {
                         else {
                             for @matches.map({ $_ if .value.elems }) {
                                 my uint $linenr = .key;
-                                sayer "" if $linenr - $last-linenr > $skip-ok;
+                                sayer ""
+                                  if abs($linenr - $last-linenr) > $skip-ok;
                                 if Slip.ACCEPTS(.value) {
                                     # Can only produce a Slip from a real
                                     # Callable, which cannot have any
@@ -2752,8 +2755,31 @@ my sub action-per-line(--> Nil) {
     }
 
     elsif %result<backtrace>:delete {
-        meh-for 'backtrace', <filesystem>;
-        NYI "still working on this";
+        my $context        := %result<context>:delete        // 2;
+        my $before-context := %result<before-context>:delete // $context;
+        my $after-context  := %result<after-context>:delete  // $context;
+        meh-for 'backtrace', <filesystem result>;
+
+        my sub produce-result($error) {
+            backtrace-files($error,
+              :source, :$before-context, :$after-context,
+              :in-backtrace(PairMatched), :added-context(PairContext)
+            )
+        }
+
+        %listing<highlight> := False unless $pattern;
+        %listing<trim>      := False if $before-context || $after-context;
+
+        $rak := Rak.new: result => $reading-from-stdin
+          ?? produce-result($*IN.slurp(:close))
+          !! @positionals
+            ?? meh "Can only specify a single file with a backtrace."
+            !! $pattern.IO.e
+              ?? produce-result($pattern.IO.slurp)
+              !! meh "handling backtrace from file(s) NYI";
+
+        rak-results;
+        return;
     }
 
     else {
