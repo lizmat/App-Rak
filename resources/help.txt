@@ -140,6 +140,7 @@ Special options:
  --edit[=editor]     Go edit the result in an editor, (default EDITOR or vim)
  --vimgrep           Produce output in :vimgrep format
  --checkout=string   Checkout branch if pattern matches single branch name
+ --backtrace         Interpret text as a Raku backtrace
  --sourcery          Treat pattern as code indicating candidates for inspection
  --ecosystem[=name]  Inspect one or more Raku ecosystem's module's META
 

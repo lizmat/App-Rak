@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.1.12  2022-10-22T13:04:37+02:00
      - Add dependency on IO::Path::AutoDecompress to make --auto-decompress
        option an option that is always available
      - Bump dependency on String::Utils to get "non-word"

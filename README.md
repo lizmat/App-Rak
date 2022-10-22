@@ -305,6 +305,22 @@ Flag. If specified with a True value, will accept compressed files with the `.gz
 
 Only applicable if `--csv-per-line` has been specified. Flag. If (implicitly) specified, will show diagnostic information about problems that occurred during parsing of the CSV file. The default is `True`.
 
+backtrace
+---------
+
+Flag. When specified with a True value, will interpret either standard input, or a single file, as a Raku backtrace. And produce a result containing the lines of source code from that backtrace. Can be used together with `--context`, `--before-context`, `--after-context`, `--edit` and `--vimgrep`. Any pattern specification will only be used for highlighting. If **not** used in combination with `--edit` or `--vimgrep`, will assume a context of 2 lines.
+
+```bash
+# look at source of a stacktrace
+$ raku script 2>&1 | rak --backtrace
+
+# inspect the source of a stacktrace in an editor
+$ raku script 2>&1 | rak --backtrace --edit
+
+# inspect a backtrace stored in a file
+$ rak --backtrace filename
+```
+
 --backup[=extension]
 --------------------
 

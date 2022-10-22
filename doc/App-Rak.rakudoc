@@ -374,6 +374,29 @@ Only applicable if C<--csv-per-line> has been specified.  Flag.  If
 (implicitly) specified, will show diagnostic information about problems
 that occurred during parsing of the CSV file.  The default is C<True>.
 
+=head2 backtrace
+
+Flag.  When specified with a True value, will interpret either standard
+input, or a single file, as a Raku backtrace.  And produce a result
+containing the lines of source code from that backtrace.  Can be used
+together with C<--context>, C<--before-context>, C<--after-context>,
+C<--edit> and C<--vimgrep>.  Any pattern specification will only be used
+for highlighting.  If B<not> used in combination with C<--edit> or
+C<--vimgrep>, will assume a context of 2 lines.
+
+=begin code :lang<bash>
+
+# look at source of a stacktrace
+$ raku script 2>&1 | rak --backtrace
+
+# inspect the source of a stacktrace in an editor
+$ raku script 2>&1 | rak --backtrace --edit
+
+# inspect a backtrace stored in a file
+$ rak --backtrace filename
+
+=end code
+
 =head2 --backup[=extension]
 
 Indicate whether backups should be made of files that are being modified.
