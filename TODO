@@ -15,9 +15,13 @@ Ideas / Todo's
 - now that we have ngram, perhaps allow for some fuzzy searching?
 - support for spreadsheets
 - support for colors a la ack
-- transparently support searching in .gz and .bz2 files, if they're not
-  tars, by adding an --auto-decompress option that would modify the
-  internal :file handling to ignore .gz and .bz2 extensions
+- make use of --type leading: --type=contains would force any pattern to
+  be considered literally, rather than trying to interpret for regexes or
+  code.  This would make --type=auto the default (trying to interpret).
+  Other types could be --type=regex and --type=code to interpret the pattern
+  as a regex or as code respectively, without the /.../ or {...} checks.
+  And possibly in the future: --type=json-path for the 'jp:' prefix to
+  interprete the rest of the pattern as a JSON::Path specification.
 
 Errors
 ======
