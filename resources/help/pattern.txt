@@ -24,7 +24,7 @@ Example:
 $ rak foo
 
 Literal strings matching can be further specialize with the --type
-argument, which can have 4 possible values:
+argument, which can have 4 possible values
 
 1. contains     string must occur anywhere in item
 2. words        string must be surrounded by (virtual) whitespace in item

@@ -8,7 +8,7 @@ Show an overview of all options of the "rak" command line interface.
 --help=subject
 
 Show additional information about the given subject.  Possible subjects
-are (in alphabetical order):
+are (in alphabetical order)
 
 - argument    Argument format
 - code        Code pattern helpers

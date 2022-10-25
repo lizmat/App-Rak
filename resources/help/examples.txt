@@ -27,3 +27,6 @@ $ rak '/ 19 | 20 | 25 /' calendar
 
 # Rename files with 3 digits word bounded with an interval of 10
 $ rak '*.subst(/ << \d ** 3 >> /, { ($*N += 10).fmt("%03d") })' --rename-files
+
+# Show all line the same as the previous line
+$ rak '{ state $last = ""; LEAVE $last = $_; $_ eq $last }'
