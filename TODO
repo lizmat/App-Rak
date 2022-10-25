@@ -22,6 +22,7 @@ Ideas / Todo's
   as a regex or as code respectively, without the /.../ or {...} checks.
   And possibly in the future: --type=json-path for the 'jp:' prefix to
   interprete the rest of the pattern as a JSON::Path specification.
+- add Log::Timeline support somehow
 
 Errors
 ======
