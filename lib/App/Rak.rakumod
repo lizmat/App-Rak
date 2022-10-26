@@ -1428,7 +1428,7 @@ my sub option-extensions($value --> Nil) {
       if Bool.ACCEPTS($value);
 
     my @unknown;
-    if $value.split(',').map: {
+    given $value.split(',').map: {
         if .starts-with('#') {
             if %exts{$_} -> \extensions {
                 extensions.Slip
