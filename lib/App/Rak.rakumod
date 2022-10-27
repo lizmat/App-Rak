@@ -1428,7 +1428,7 @@ my sub option-extensions($value --> Nil) {
       if Bool.ACCEPTS($value);
 
     my @unknown;
-    if $value.split(',').map: {
+    my @extensions = $value.split(',').map: {
         if .starts-with('#') {
             if %exts{$_} -> \extensions {
                 extensions.Slip
@@ -1441,11 +1441,11 @@ my sub option-extensions($value --> Nil) {
         else {
             $_
         }
-    } -> @extensions {
-        @unknown
-          ?? meh("No extension&s(@unknown) known for '@unknown[]'")
-          !! (%filesystem<extensions> := codify-extensions @extensions);
     }
+
+    @unknown
+      ?? meh("No extensions known for group&s(@unknown) @unknown[]")
+      !! (%filesystem<extensions> := codify-extensions @extensions);
 }
 
 my sub option-file($value --> Nil) {
