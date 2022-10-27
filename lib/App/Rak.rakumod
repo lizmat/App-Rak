@@ -1,7 +1,7 @@
 # The modules that we need here, with their full identities
 use as-cli-arguments:ver<0.0.7>:auth<zef:lizmat>;  # as-cli-arguments
 use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
-use highlighter:ver<0.0.15>:auth<zef:lizmat>;      # columns highlighter matches
+use highlighter:ver<0.0.16>:auth<zef:lizmat>;      # columns highlighter matches
 use IO::Path::AutoDecompress:ver<0.0.2>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
@@ -19,9 +19,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-10-22T11:35:52+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-10-22T22:32:01+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -181,7 +181,12 @@ my $pattern;     # the pattern specified (if any)
 my $smartcase;   # --smartcase
 my $ignorecase;  # --ignorecase
 my $ignoremark;  # --ignoremark
-my $type;        # --type
+
+# allowed types with --type
+my constant %types = <
+  auto regex code contains words starts-with ends-with
+>.map: * => 1;
+my $type;  # --type (implicitely) specified
 
 my @modules;  # list of modules to -use-
 my @repos;    # list of repositories to include with -use lib-
@@ -484,7 +489,32 @@ my sub named-args(%args, *%wanted) {
     }
 }
 
-# Convert a string to code if possible
+# Preprocess a pattern, checking types and contents
+my sub pre-process($pattern) {
+    if !$type || $type eq 'auto' {
+        if $pattern.starts-with('/')
+          && $pattern.ends-with('/')
+          && $pattern ne '//' {
+            non-word(my $target := $pattern.substr(1,*-1).trim)
+              ?? $pattern
+              !! $target
+        }
+        else {
+            $pattern
+        }
+    }
+    elsif $type eq 'regex' {
+        non-word($pattern.trim) ?? "/$pattern/" !! $pattern
+    }
+    elsif $type eq 'code' {
+        '{' ~ $pattern ~ '}'
+    }
+    else {
+        $pattern
+    }
+}
+
+# Convert a string to code if possible, adhering to type
 my sub codify(Str:D $code) {
     CATCH {
         meh "Could not compile '$code':\n$_.message()";
@@ -512,7 +542,7 @@ my sub codify(Str:D $code) {
 my sub regexify($code) {
     non-word(my $target := $code.substr(1,*-1).trim)
       ?? "/{ ':i ' if $ignorecase }{ ':m ' if $ignoremark }$code.substr(1)".EVAL
-      !! ($pattern := $target)
+      !! $target
 }
 
 # Convert a string to code, fail if not possible
@@ -541,7 +571,7 @@ my sub convert-to-simple-Callable(Str:D $code, str $name) {
 
 # Return Callable for a pattern that is not supposed to be code
 my sub needleify($pattern) {
-    if !$type || $type eq 'contains' {
+    if !$type || $type eq 'auto' | 'contains' | 'regex' {
         $ignorecase
           ?? $ignoremark
             ?? *.contains($pattern, :i, :m)
@@ -624,7 +654,20 @@ TEXT
     }
 
     %rak<eager> := True if $eagerly;
-    $rak := rak $needle, %rak;
+    $rak := do if List.ACCEPTS($needle) {
+        my sub gatherer($haystack) {
+            for $needle -> &code {
+                my \result := code($haystack);
+                return result
+                  if result
+                  || !(result =:= False || result =:= Empty || result =:= Nil)
+            }
+        }
+        rak &gatherer, %rak;
+    }
+    else {
+        rak $needle, %rak;
+    }
     meh .message with $rak.exception;
     note "Unexpected leftovers: %rak.raku()" if %rak;
 }
@@ -713,12 +756,25 @@ my sub show-results(--> Nil) {
         my %nameds =
           (:$ignorecase if $ignorecase),
           (:$ignoremark if $ignoremark),
-          (:$type       if $type),
           (:summary-if-larger-than($_)
             with %listing<summary-if-larger-than>:delete),
         ;
 
-        my $target := Regex.ACCEPTS($needle) ?? $needle !! $pattern;
+        my $target := do if Regex.ACCEPTS($needle) {
+            $needle
+        }
+        else {
+            if !$type || $type eq 'auto' {
+                %nameds<type> := 'contains';
+            }
+            elsif $type eq 'contains'
+               || $type eq 'words'
+               || $type eq 'starts-with'
+               || $type eq 'ends-with' {
+                %nameds<type> := $type;
+            }
+            $pattern
+        }
 
         $trim
           ?? -> $line {
@@ -1748,7 +1804,45 @@ my sub option-paths-from($value --> Nil) {
 my sub option-pattern($value --> Nil) {
     Bool.ACCEPTS($value)
       ?? meh "'--pattern' must be a pattern specification, not a flag"
-      !! ($pattern := $value);
+      !! List.ACCEPTS($pattern)
+        ?? meh "Cannot specify --pattern with --patterns-from at the same time"
+        !! $pattern.defined
+          ?? meh "Can only specify --pattern once"
+          !! ($pattern := $value);
+}
+
+my sub option-patterns-from($value --> Nil) {
+
+    # helper sub for getting pattern(s) from file
+    sub read-patterns($handle) {
+        if $handle.lines -> @patterns {
+            $pattern := @patterns == 1 ?? @patterns.head !! @patterns;
+        }
+        else {
+            meh "No patterns found, so no matches to be expected";
+        }
+    }
+
+    if Bool.ACCEPTS($value) {
+        meh "'--patterns-from' must be a file specification, not a flag"
+    }
+    elsif List.ACCEPTS($pattern) {
+        meh "Can only specify --patterns-from once"
+    }
+    elsif $pattern.defined {
+        meh "Cannot specify --patterns-from with a pattern already specified";
+    }
+    elsif $value eq '-' {
+        note "Reading from STDIN, please enter patterns and ^D when done:"
+          if $*IN.t;
+        read-patterns($*IN);
+    }
+    elsif $value.IO.r {
+        read-patterns($value.IO);
+    }
+    else {
+        meh "Could not read from '$value' to obtain patterns";
+    }
 }
 
 my sub option-per-file($value --> Nil) {
@@ -1868,7 +1962,7 @@ my sub option-trim($value --> Nil) {
 my sub option-type($value --> Nil) {
     Bool.ACCEPTS($value)
       ?? meh "'--type' must be specified with a string"
-      !! $value eq 'contains' | 'words' | 'starts-with' | 'ends-with'
+      !! %types{$value}
         ?? ($type := $value)
         !! meh "'$value' is not an expected --type";
 }
@@ -2909,6 +3003,7 @@ my sub action-unicode(--> Nil) {
              }
          }
 
+    $smartcase  := False;
     $ignorecase := True;
     prepare-needle;
 
@@ -3132,8 +3227,42 @@ TEXT
     exit note @text.join("\n");
 }
 
+# Return Callable for given pattern
+my sub codify-pattern($pattern) {
+    Callable.ACCEPTS(my $needle := codify($pattern))
+      ?? $needle
+      !! needleify($needle)
+}
+
+# Return Callable for given pattern and matches only to be returned
+my sub codify-pattern-matches-only($pattern) {
+    my $needle := codify($pattern);
+
+    # already executable
+    if Callable.ACCEPTS($needle) {
+        if Regex.ACCEPTS($needle) {
+            my $old-needle := $needle;
+            *.&matches($old-needle)
+        }
+        else {
+            $needle
+        }
+    }
+
+    # not executable yet
+    else {
+        # Note that we if we want matches only and we didn't have
+        # a regex yet, we must use the highlighter.matches method
+        # to generate the matches from the string pattern.  If we
+        # would first convert to a Callable, we wouldn't be able
+        # to find the matches anymore, as a Callable can only say
+        # whether there was a match, not where.
+        *.&matches: $pattern, :$ignorecase, :$ignoremark, |(:$type if $type)
+    }
+}
+
 # Prepare the executable needle
-my sub prepare-needle(:$allow-matches-only = True) {
+my sub prepare-needle() {
 
     if $pattern {
         if $smartcase {
@@ -3141,39 +3270,29 @@ my sub prepare-needle(:$allow-matches-only = True) {
               ?? meh "Cannot specify --smartcase when --ignorecase is also specified"
               !! ($ignorecase := !$pattern.contains(/ <:upper> /));
         }
-    }
-    else {
-        $pattern := '*.defined';  # put in a basic noop
-    }
 
-    # first attempt at codifying pattern
-    $needle := codify($pattern);
+        # multiple patterns
+        if List.ACCEPTS($pattern) {
+            $pattern := $pattern.map(&pre-process).List;
+            $needle := $pattern.map(%result<matches-only>:delete
+              ?? &codify-pattern-matches-only
+              !! &codify-pattern
+            ).List;
+        }
 
-    # already executable
-    if Callable.ACCEPTS($needle) {
-        if Regex.ACCEPTS($needle) {
-            if $allow-matches-only && (%result<matches-only>:delete) {
-                my $old-needle := $needle;
-                $needle := *.&matches($old-needle)
-            }
+        # a single pattern
+        else {
+            $pattern := pre-process $pattern;
+            $needle := %result<matches-only>:delete
+              ?? codify-pattern-matches-only($pattern)
+              !! codify-pattern($pattern)
         }
     }
 
-    # non-executable
-    elsif $allow-matches-only && (%result<matches-only>:delete) {
-        # Note that we if we want matches only and we didn't have
-        # a regex yet, we must use the highlighter.matches method
-        # to generate the matches from the string pattern.  If we
-        # would first convert to a Callable, we wouldn't be able
-        # to find the matches anymore, as a Callable can only say
-        # whether there was a match, not where.
-        $needle := *.&matches:
-          $pattern, :$ignorecase, :$ignoremark, |(:$type if $type)
-    }
-
-    # convert string to Callable
+    # put in a basic noop
     else {
-        $needle := needleify($pattern)
+        $pattern := '*.defined';
+        $needle  := &defined;
     }
 
     if $source-for {

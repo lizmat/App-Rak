@@ -374,7 +374,7 @@ Only applicable if C<--csv-per-line> has been specified.  Flag.  If
 (implicitly) specified, will show diagnostic information about problems
 that occurred during parsing of the CSV file.  The default is C<True>.
 
-=head2 backtrace
+=head2 --backtrace
 
 Flag.  When specified with a True value, will interpret either standard
 input, or a single file, as a Raku backtrace.  And produce a result
@@ -1652,13 +1652,76 @@ Defaults to C<160> if C<STDOUT> is a TTY (aka, someone is actually watching
 the search results), otherwise defaults to C<Inf> effectively (indicating
 no summarization will ever occur).
 
-=item --type=words|starts-with|ends-with|contains
+=head2 --type=string
 
-Only makes sense if the pattern is a literal string.  With C<words> specified,
-will look for pattern as a word in a line, with C<starts-with> will
-look for the pattern at the beginning of a line, with C<ends-with>
-will look for the pattern at the end of a line, with C<contains> will
-look for the pattern at any position in a line (which is the default).
+The C<--type> argument indicates how any pattern, as specified on the
+commmand line, or from previously saved options, should be interpreted.
+If not specified specified, will assume C<auto>.
+
+The following strings can be specified:
+
+=head3 auto
+
+If C<--type=auto> is (implicitely) specified, will look for cues in a
+specified pattern to understand what functionality is requested.  The
+following cues are currently supported:
+
+=item / regex /
+
+A string starting and ending with a slash C</>, will be interpreted as a
+Raku regex.  This will honour any C<--smartcase>, C<--ignorecase> and
+C<--ignoremark> specifications.
+
+=item { code }
+
+A string starting with a curly brace open C<{> and ending with a curly
+brace close C<}>, will be interpreted as Raku source code to be compiled.
+
+=item *code
+
+A string starting with an asterisk C<*> will be interpreted as Raku source
+code, assuming Whatever currying semantics.
+
+=item literal
+
+Otherwise, the string will be interpreted as a literal string to search for,
+with C<--type=contains> semantics.  This will honour any C<--smartcase>,
+C<--ignorecase> and C<--ignoremark> specifications.
+
+=head3 regex
+
+If C<type=regex> is specified, then a pattern will be interpreted as a
+regex, as if it was surrounded by slashes.
+
+=head3 code
+
+If C<type=code> is specified, then a pattern will be interpreted as Raku
+source code, as if it was surrounded by curly braces.
+
+=head3 contains
+
+If C<type=contains> is specified, then a pattern will be interpreted as a
+literal string, while honouring any C<--smartcase>, C<--ignorecase> and
+C<--ignoremark> specifications.
+
+=head3 words
+
+If C<type=words> is specified, then a pattern will be interpreted as a
+literal string that should be bounded by word boundares at both ends,
+while honouring any C<--smartcase>, C<--ignorecase> and C<--ignoremark>
+specifications.
+
+=head3 starts-with
+
+If C<type=starts-with> is specified, then a pattern will be interpreted as
+a literal string that should occur at the B<start> of a line, while honouring
+any C<--smartcase>, C<--ignorecase> and C<--ignoremark> specifications.
+
+=head3 ends-with
+
+If C<type=ends-with> is specified, then a pattern will be interpreted as
+a literal string that should occur at the B<end> of a line, while honouring
+any C<--smartcase>, C<--ignorecase> and C<--ignoremark> specifications.
 
 =head2 --trim
 

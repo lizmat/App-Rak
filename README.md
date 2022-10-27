@@ -1330,9 +1330,56 @@ Flag. Only applicable if `--csv-per-line` has been specified. If specified, then
 
 Indicate the maximum size a line may have before it will be summarized. Defaults to `160` if `STDOUT` is a TTY (aka, someone is actually watching the search results), otherwise defaults to `Inf` effectively (indicating no summarization will ever occur).
 
-  * --type=words|starts-with|ends-with|contains
+--type=string
+-------------
 
-Only makes sense if the pattern is a literal string. With `words` specified, will look for pattern as a word in a line, with `starts-with` will look for the pattern at the beginning of a line, with `ends-with` will look for the pattern at the end of a line, with `contains` will look for the pattern at any position in a line (which is the default).
+The `--type` argument indicates how any pattern, as specified on the commmand line, or from previously saved options, should be interpreted. If not specified specified, will assume `auto`.
+
+The following strings can be specified:
+
+### auto
+
+If `--type=auto` is (implicitely) specified, will look for cues in a specified pattern to understand what functionality is requested. The following cues are currently supported:
+
+  * / regex /
+
+A string starting and ending with a slash `/`, will be interpreted as a Raku regex. This will honour any `--smartcase`, `--ignorecase` and `--ignoremark` specifications.
+
+  * { code }
+
+A string starting with a curly brace open `{` and ending with a curly brace close `}`, will be interpreted as Raku source code to be compiled.
+
+  * *code
+
+A string starting with an asterisk `*` will be interpreted as Raku source code, assuming Whatever currying semantics.
+
+  * literal
+
+Otherwise, the string will be interpreted as a literal string to search for, with `--type=contains` semantics. This will honour any `--smartcase`, `--ignorecase` and `--ignoremark` specifications.
+
+### regex
+
+If `type=regex` is specified, then a pattern will be interpreted as a regex, as if it was surrounded by slashes.
+
+### code
+
+If `type=code` is specified, then a pattern will be interpreted as Raku source code, as if it was surrounded by curly braces.
+
+### contains
+
+If `type=contains` is specified, then a pattern will be interpreted as a literal string, while honouring any `--smartcase`, `--ignorecase` and `--ignoremark` specifications.
+
+### words
+
+If `type=words` is specified, then a pattern will be interpreted as a literal string that should be bounded by word boundares at both ends, while honouring any `--smartcase`, `--ignorecase` and `--ignoremark` specifications.
+
+### starts-with
+
+If `type=starts-with` is specified, then a pattern will be interpreted as a literal string that should occur at the **start** of a line, while honouring any `--smartcase`, `--ignorecase` and `--ignoremark` specifications.
+
+### ends-with
+
+If `type=ends-with` is specified, then a pattern will be interpreted as a literal string that should occur at the **end** of a line, while honouring any `--smartcase`, `--ignorecase` and `--ignoremark` specifications.
 
 --trim
 ------

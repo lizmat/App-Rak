@@ -1,14 +1,19 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Fixed a (implicit) --smartcase blocking use of --unicode
+     - Bumped dependency on highlighter to get multiple needle support
+     - Fix issue with handling unknown extension groups, Mustafa Aydın++
+     - Add support for --patterns-from
+     - Add support for --type=auto|regex|code
 
 0.1.12  2022-10-22T13:04:37+02:00
      - Add dependency on IO::Path::AutoDecompress to make --auto-decompress
        option an option that is always available
      - Bump dependency on String::Utils to get "non-word"
      - Make regexes that consist of a literal string of word characters
-       only, use the much faster .contains logic rather than going the
-       full regex way.
+       only, use the much faster .contains logic on the literal string,
+       rather than going the full regex way
 
 0.1.11  2022-10-20T16:01:39+02:00
      - Add support for --auto-decompress
