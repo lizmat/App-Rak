@@ -1382,6 +1382,12 @@ actually a path specification, rather than a pattern.  This allows
 the pattern to be saved with C<--save>, and thus freeze a specific
 pattern as part of a custom option.
 
+=head2 --patterns-from=file
+
+Alternative way to specify one or more patterns to search for.  Reads the
+indicated file and interprets each line as a pattern according to the rules
+(implicitly) set with the C<--type> argument.
+
 =head2 --per-file[=code]
 
 Indicate whether matching should be done per file, rather than per line.

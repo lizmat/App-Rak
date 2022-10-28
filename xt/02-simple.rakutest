@@ -80,6 +80,8 @@ my sub query-ok(
 # Checks for "ine"
 my @ine = (
   <ine>,
+  <ine --type=auto>,
+  <ine --type=regex>,
   <ine --type=ends-with>,
   <INE --type=ends-with --ignorecase>,
   <ïñę --type=ends-with --ignoremark>,
@@ -124,14 +126,16 @@ for (
     query-ok .Slip, '--highlight', :ok("\n");
 }
 
-query-ok "six",
-  <--smartcase --/group-matches --/show-item-number --/highlight --/break>,
-  ok => q:to/OK/;
+for "six", ('.lc eq "six"', '--type=code') {
+    query-ok .Slip,
+      <--smartcase --/group-matches --/show-item-number --/highlight --/break>,
+      ok => q:to/OK/;
 six:SIX
 seven:SIX
 eight:SIX
 nine:SIX
 OK
+}
 
 query-ok <seven --type=words>, :head(2), ok => qq:to/OK/;
 seven
@@ -211,7 +215,7 @@ for </\w+/>, <*.words.Slip> {
 OK
 }
 
-for <*.&defined>, <{$_}> {
+for <*.defined>, <{$_}> {
     query-ok $_, '--frequencies', ok => q:to/OK/;
 10:zero
 9:one
@@ -240,7 +244,7 @@ nine
 OK
 }
 
-for <*.&defined>, <{$_}> {
+for <*.defined>, <{$_}> {
     query-ok $_, '--unique', ok => q:to/OK/;
 zero
 one

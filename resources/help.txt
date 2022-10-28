@@ -2,20 +2,24 @@ Arguments overview:
 ‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
 
 Pattern specification:
+Either as first argument, or as --pattern=foo option, or as pattern(s)
+in --patterns-from=file option.
  foo                      literal string
  '/ << bar >> /'          Raku regex indicated by being bounded by / /
  '{ .ends-with("bar") }'  Raku code indicated by being bounded by { }
  '*.starts-with("foo")'   Raku WhateverCode starting with *
-either as first argument, or as --pattern=foo option
+ --type=auto         Interpret special markers in pattern as above (default)
+ --type=regex        Interpret pattern as a regex (without special markers)
+ --type=code         Interpret pattern as code (without special markers)
+ --type=words        Look for pattern as a word
+ --type=starts-with  Look for pattern at start of a line
+ --type=ends-with    Look for pattern at end of a line
+ --type=contains     Look for pattern anywhere (default if no special markers)
 
 String search pattern modifiers:
  --ignorecase  Ignore distinction between upper, lower and title case letters
  --ignoremark  Only compare base characters, ignore additional marks
  --smartcase   As --ignorecase if pattern does *NOT* contain any uppercase
- --type=words        Look for string as a word
- --type=starts-with  Look for string at start of a line
- --type=ends-with    Look for string at end of a line
- --type=contains     Look for string anywhere (default)
 
 Item producers:
  --per-line[=producer]  Produce lines for pattern matching

@@ -1,13 +1,29 @@
 Pattern specification:
 ‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
 
-There are 2 ways in which a pattern can be specified:
+There are 3 ways in which pattern(s) can be specified:
 
 1. As the first positional argument
-2. With the --pattern argument
+2. Or with the --pattern=foo argument
+3. Or using the --patterns-from=file argument
 
-The latter can be handy if you want to create a short-cut to searching
-for a particular string with --save.
+The first is easiest for a quick ad-hoc search.  The second can be handy
+if you want to create a short-cut to searching for a particular string with
+--save.  The last one allows you set up a set of patterns to be searched
+for simultaneously.
+
+If the --patterns-from=file argument is specified, it will read the content
+of the given file and process each line as a pattern specification, as
+described below.  When searching, each pattern is tried on an item, and
+accepted as soon as a pattern matched.  Any highlighting will occur on
+*that* match only.
+
+If a literal string is specified as a pattern, then by default any item of
+which the stringification contains that string, will be accepted.
+
+Example:
+# produce any lines that have "foo" in them
+$ rak foo
 
 Patterns come in 3 flavours:
 
@@ -15,25 +31,13 @@ Patterns come in 3 flavours:
 2. as a regex (the Raku name for "regular expression")
 3. as a piece of code (a Callable in Raku)
 
-If a literal string is specified as a pattern, then by default
-any item of which the stringification contains that string, will
-be accepted.
+Whether something you specified is interpreted as a regex or as code, or
+just as a string, is determined by the --type argument.  By default, the
+--type arguments assumes "auto".  When this is (implicitly) specified,
+then the string will be checked for special markers to deduce the intended
+type of pattern.
 
-Example:
-# produce any lines that have "foo" in them
-$ rak foo
-
-Literal strings matching can be further specialize with the --type
-argument, which can have 4 possible values
-
-1. contains     string must occur anywhere in item
-2. words        string must be surrounded by (virtual) whitespace in item
-3. starts-with  item must *start* with string
-4. ends-with    item must *end* with string
-
-Example:
-# produce any lines that have the word "bar" in them
-$ rak bar --type=words
+Regex:
 
 If a string that starts and ends with '/' is specified as a pattern,
 it is considered to be a regex and will be compiled as such.  Any
@@ -45,11 +49,17 @@ Example:
 # produce any lines that have the word "bar" in them
 $ rak '/ << bar >> /'
 
-Both literal string matching, as well as matching with a regex, are
-sensitive to the --ignorecase and --ignoremark arguments.
+If --type=regex has been specified, you should omit the '/' at either end of
+the string:
+
+Example:
+# produce any lines that have the word "bar" in them
+$ rak '<< bar >>' --type=regex
+
+Code:
 
 If a string that starts with '{' and ends with '}' is specified, or
-a string that starts with '*.', they will be considered to be Raku
+a string that starts with '*', they will be considered to be Raku
 executable code and compiled as such.  Each item will be passed as
 a positional argument to the compiled code, and the code is expected
 to return a value that is either:
@@ -61,7 +71,7 @@ to return a value that is either:
 5. Slip       produce all items in the Slip, always
 6. product    produce that, always
 
-True and False are returned for any condition.
+True or False are returned for any condition.
 
 Empty is returned for any failed conditional construct, such as "if",
 "unless", "with" or "without".
@@ -85,8 +95,38 @@ $ rak '*.uc'
 # produce only lines uppercased that have "foo" in them
 $ rak '{ .uc if .contains("foo") }'
 
-# produce all lines, only uppercase the ones that have "foo" in them
+# produce all lines, only uppercase the ones that have "rakudoc" in them
 $ rak '{.contains("rakudoc") ?? .uc !! $_}'
 
 # produce all unique words
 $ rak '*.words.Slip'
+
+If --type=code has been specified, you should omit the '{' and '}', or
+omit the initial '*':
+
+Examples:
+# produce uppercased lines
+$ rak '.uc' --type=code
+
+# produce all lines, only uppercase the ones that have "rakudoc" in them
+$ rak '.contains("rakudoc") ?? .uc !! $_' --type=code
+
+Other types:
+
+Literal strings matching can be further specialized with other values of the
+--type argument:
+
+ - contains     string must occur anywhere in item
+ - words        string must be surrounded by (virtual) whitespace in item
+ - starts-with  item must *start* with string
+ - ends-with    item must *end* with string
+
+Examples:
+# produce any lines that have the word "bar" in them
+$ rak bar --type=words
+
+# produce any lines that start with "Example"
+$ rak Example --type=starts-with
+
+Both literal string matching, as well as matching with a regex, are
+sensitive to the --smartcase, --ignorecase and --ignoremark arguments.
