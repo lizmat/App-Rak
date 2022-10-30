@@ -105,7 +105,7 @@ OK
 }
 
 # Check without highlighting
-for @ine {
+for |@ine, <nine --type=equal>, '^nine$', '^nine', 'nine$', '§nine' {
     query-ok .Slip,
       <--show-filename --show-item-number --group-matches --/highlight>,
       :head(2), ok => q:to/OK/;

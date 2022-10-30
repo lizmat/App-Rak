@@ -43,19 +43,78 @@ and bug reports continue to be more than welcome!
 
 =head2 pattern
 
-The pattern to search for.  This can either be a literal string, or a
-L<Raku regular expression|https://docs.raku.org/language/regexes>
-(indicated by a string starting and ending with C</>), a
-C<Callable> (indicated by a string starting with C<{> and ending with C<}>),
-or a result of L<C<Whatever> currying|https://docs.raku.org/type/Whatever>
-(indicated by a string starting with C<*.>).
+The pattern to search for.
 
 Can also be specified with the C<--pattern> option, in which case B<all>
 the positional arguments are considered to be a path specification.
 
-If the pattern is a C<Callable>, then the dynamic variable C<$*SOURCE> will
-contain the C<IO::Path> object of the file being processed.  Note that
-pattern C<Callable>s will be called in a thread B<unsafe> manner.
+Patterns will be interpreted in the following ways if B<no> C<--type>
+has been specified, or C<--type=auto> has been specified.
+
+Multiple patterns, stored in a file or read from STDIN, can also be specified
+with the <C--patterns-from> argument.
+
+=head3 / regex /
+
+If the pattern starts and ends with C</>, then it indicates a Raku
+L<regex|https://docs.raku.org/language/regexes>.  B<No> special processing
+of the given string between slashes will be done: the given pattern will be
+parsed as a regex verbatim.  During the search process, each item will be
+matched against this regex.  Any C<--ignorecase> or C<--ignoremark> arguments
+will be honoured.
+
+=head3 { code }
+
+If the pattern starts with C<{> and ends with C<}>, then it indicates
+Raku code to be executed.  B<No> special processing of the given string
+between the curly braces will be done: the given code will be compiled as
+Raku code.  During the search process, this code will be run for each item,
+available in C<$_>.
+
+The dynamic variable C<$*SOURCE> will contain the C<IO::Path> object of the
+file being processed.  Note that the Raku code will be called in a thread
+B<unsafe> manner.
+
+=head3 *code
+
+If the pattern starts with C<*>, then this is a short way of specifying Raku
+code as a pattern, using
+L<Whatever-currying|https://docs.raku.org/type/Whatever#index-entry-Whatever-currying>.  Otherwise the same as C<{ code }>.
+
+=head3 ^string
+
+If the pattern starts with C<^>, then it indicates the string should be at
+the B<start> of each item.  Basically a shortcut to specifying
+C<string --type=starts-with>.  Any C<--smartcase>, C<--ignorecase> or
+C<--ignoremark> arguments will be honoured.
+
+=head3 string$
+
+If the pattern ends with C<$>, then it indicates the string should be at
+the B<end> of each item.  Basically a shortcut to specifying
+C<string --type=ends-with>.  Any C<--smartcase>, C<--ignorecase> or
+C<--ignoremark> arguments will be honoured.
+
+=head3 ^string$
+
+If the pattern starts with C<^> and ends with C<$>, then it indicates that
+the string should be equal to the item.  Basically a shortcut to specifying
+C<string --type=equal>.  Any C<--smartcase>, C<--ignorecase> or C<--ignoremark>
+arguments will be honoured.
+
+=head3 §string
+
+If the pattern starts with C<§>, then it indicates that the string should
+occur as a word (with word-boundaris on both ends) in the item.  Basically a
+shortcut to specifying C<string --type=words>.  Any C<--smartcase>,
+C<--ignorecase> or C<--ignoremark> arguments will be honoured.
+
+=head3 string
+
+If there are no special start or end markers, then it indicates that the
+string should occur somewhere in the item.  Basically a shortcut to
+specifying C<string --type=contains>.  Any C<--smartcase>, C<--ignorecase> or
+C<--ignoremark> arguments will be honoured.
 
 =head2 path(s)
 
@@ -75,7 +134,7 @@ option was used for the pattern specification.
 
 =head1 ON CALLABLES AS PATTERN
 
-C<Callables> can be specfied by a string starting with C<*.> (so-called
+C<Callables> can be specified by a string starting with C<*.> (so-called
 L<Whatever currying|https://docs.raku.org/type/Whatever>, or as a string
 starting with C<{> and ending with C<}>.
 
@@ -1386,7 +1445,8 @@ pattern as part of a custom option.
 
 Alternative way to specify one or more patterns to search for.  Reads the
 indicated file and interprets each line as a pattern according to the rules
-(implicitly) set with the C<--type> argument.
+(implicitly) set with the C<--type> argument.  If the file specification is
+C<"-">, then the patterns will be read from STDIN.
 
 =head2 --per-file[=code]
 
@@ -1669,30 +1729,8 @@ The following strings can be specified:
 =head3 auto
 
 If C<--type=auto> is (implicitely) specified, will look for cues in a
-specified pattern to understand what functionality is requested.  The
-following cues are currently supported:
-
-=item / regex /
-
-A string starting and ending with a slash C</>, will be interpreted as a
-Raku regex.  This will honour any C<--smartcase>, C<--ignorecase> and
-C<--ignoremark> specifications.
-
-=item { code }
-
-A string starting with a curly brace open C<{> and ending with a curly
-brace close C<}>, will be interpreted as Raku source code to be compiled.
-
-=item *code
-
-A string starting with an asterisk C<*> will be interpreted as Raku source
-code, assuming Whatever currying semantics.
-
-=item literal
-
-Otherwise, the string will be interpreted as a literal string to search for,
-with C<--type=contains> semantics.  This will honour any C<--smartcase>,
-C<--ignorecase> and C<--ignoremark> specifications.
+specified pattern to understand what functionality is requested.  See
+the L<pattern> for more information.
 
 =head3 regex
 
@@ -1727,6 +1765,12 @@ any C<--smartcase>, C<--ignorecase> and C<--ignoremark> specifications.
 
 If C<type=ends-with> is specified, then a pattern will be interpreted as
 a literal string that should occur at the B<end> of a line, while honouring
+any C<--smartcase>, C<--ignorecase> and C<--ignoremark> specifications.
+
+=head3 equal
+
+If C<type=equal> is specified, then a pattern will be interpreted as a
+literal string that should be B<equal> to the line, while honouring
 any C<--smartcase>, C<--ignorecase> and C<--ignoremark> specifications.
 
 =head2 --trim

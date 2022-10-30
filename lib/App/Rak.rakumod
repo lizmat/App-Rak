@@ -1,7 +1,7 @@
 # The modules that we need here, with their full identities
 use as-cli-arguments:ver<0.0.7>:auth<zef:lizmat>;  # as-cli-arguments
 use has-word:ver<0.0.3>:auth<zef:lizmat>;          # has-word
-use highlighter:ver<0.0.17>:auth<zef:lizmat>;      # columns highlighter matches
+use highlighter:ver<0.0.18>:auth<zef:lizmat>; # columns highlighter matches Type
 use IO::Path::AutoDecompress:ver<0.0.2>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
@@ -184,7 +184,7 @@ my $ignoremark;  # --ignoremark
 
 # allowed types with --type
 my constant %types = <
-  auto regex code contains words starts-with ends-with
+  auto regex code contains words starts-with ends-with equal
 >.map: * => 1;
 my $type;  # --type (implicitely) specified
 
@@ -494,23 +494,38 @@ my sub pre-process($pattern) {
     if !$type || $type eq 'auto' {
         if $pattern.starts-with('/')
           && $pattern.ends-with('/')
-          && $pattern ne '//' {
+          && $pattern.chars > 2 {
             non-word(my $target := $pattern.substr(1,*-1).trim)
               ?? $pattern
-              !! $target
+              !! $target but Type<contains>
+        }
+        elsif $pattern.starts-with('^') {
+            $pattern.ends-with('$')
+              ?? $pattern.substr(1, *-1) but Type<equal>
+              !! $pattern.substr(1)      but Type<starts-with>
+        }
+        elsif $pattern.ends-with('$') {
+            $pattern.substr(0, *-1) but Type<ends-with>
+        }
+        elsif $pattern.starts-with('§') {
+            $pattern.substr(1) but Type<words>
         }
         else {
-            $pattern
+            $pattern but Type<contains>
         }
     }
     elsif $type eq 'regex' {
-        non-word($pattern.trim) ?? "/$pattern/" !! $pattern
+        non-word(my $normalized := $pattern.trim)
+          ?? "/$pattern/"
+          !! $normalized but Type<contains>
     }
     elsif $type eq 'code' {
         '{' ~ $pattern ~ '}'
     }
+
+    # some other known type
     else {
-        $pattern
+        $pattern but Type($type)
     }
 }
 
@@ -527,7 +542,7 @@ my sub codify(Str:D $code) {
 
     $code eq '*.defined'
       ?? &defined
-      !! $code.starts-with('/') && $code.ends-with('/') && $code ne '/'
+      !! $code.starts-with('/') && $code.ends-with('/') && $code.chars > 2
         ?? regexify($code)
         !! $code.starts-with('{') && $code.ends-with('}')
           ?? (prelude() ~ 'my $ := -> $_ ' ~ $code).EVAL
@@ -540,9 +555,7 @@ my sub codify(Str:D $code) {
 
 # Pre-process literal strings looking like a regex
 my sub regexify($code) {
-    non-word(my $target := $code.substr(1,*-1).trim)
-      ?? "/{ ':i ' if $ignorecase }{ ':m ' if $ignoremark }$code.substr(1)".EVAL
-      !! $target
+    "/{ ':i ' if $ignorecase }{ ':m ' if $ignoremark }$code.substr(1)".EVAL
 }
 
 # Convert a string to code, fail if not possible
@@ -570,8 +583,10 @@ my sub convert-to-simple-Callable(Str:D $code, str $name) {
 }
 
 # Return Callable for a pattern that is not supposed to be code
-my sub needleify($pattern) {
-    if !$type || $type eq 'auto' | 'contains' | 'regex' {
+my sub needleify(Str:D $pattern) {
+    my $type := $pattern.type;
+
+    if $type eq 'contains' {
         $ignorecase
           ?? $ignoremark
             ?? *.contains($pattern, :i, :m)
@@ -598,7 +613,7 @@ my sub needleify($pattern) {
             ?? *.starts-with($pattern, :m)
             !! *.starts-with($pattern)
     }
-    else {  # $type eq 'ends-with' {
+    elsif $type eq 'ends-with' {
         $ignorecase
           ?? $ignoremark
             ?? *.ends-with($pattern, :i, :m)
@@ -606,6 +621,15 @@ my sub needleify($pattern) {
           !! $ignoremark
             ?? *.ends-with($pattern, :m)
             !! *.ends-with($pattern)
+    }
+    else {  # $type eq 'equal' {
+        $ignorecase
+          ?? $ignoremark
+            ?? { .chars == $pattern.chars && .index($pattern, :i, :m).defined }
+            !! { .chars == $pattern.chars && .index($pattern, :i    ).defined }
+          !! $ignoremark
+            ?? { .chars == $pattern.chars && .index($pattern, :m).defined }
+            !! { $_ eq $pattern }
     }
 }
 

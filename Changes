@@ -2,6 +2,17 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.2.1  2022-10-30T12:50:04+01:00
+     - Add support for --type=equal
+     - Add support for ^string as a shortcut for --type=starts-with
+     - Add support for string$ as a shortcut for --type=ends-with
+     - Add support for ^string$ as a shortcut for --type=equal
+     - Add support for §string as a shortcut for --type=words
+     - Bump dependency on highlighter to get support for "equal" and
+       the Type role for annotating strings with a type of search
+     - Rewrote the "pattern" section in the documentation, to give
+       a better overview from the start
+
 0.2  2022-10-28T13:38:31+02:00
      - Add support for --patterns-from
      - Add support for --type=auto|regex|code, make --type leading
@@ -10,8 +21,8 @@ Revision history for App-Rak
      - Fix issue with handling unknown extension groups, Mustafa Aydın++
 
 0.1.12  2022-10-22T13:04:37+02:00
-     - Add dependency on IO::Path::AutoDecompress to make --auto-decompress
-       option an option that is always available
+     - Add dependency on IO::Path::AutoDecompress to make
+       --auto-decompress option an option that is always available
      - Bump dependency on String::Utils to get "non-word"
      - Make regexes that consist of a literal string of word characters
        only, use the much faster .contains logic on the literal string,

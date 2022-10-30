@@ -41,11 +41,47 @@ POSITIONAL ARGUMENTS
 pattern
 -------
 
-The pattern to search for. This can either be a literal string, or a [Raku regular expression](https://docs.raku.org/language/regexes) (indicated by a string starting and ending with `/`), a `Callable` (indicated by a string starting with `{` and ending with `}`), or a result of [`Whatever` currying](https://docs.raku.org/type/Whatever) (indicated by a string starting with `*.`).
+The pattern to search for.
 
 Can also be specified with the `--pattern` option, in which case **all** the positional arguments are considered to be a path specification.
 
-If the pattern is a `Callable`, then the dynamic variable `$*SOURCE` will contain the `IO::Path` object of the file being processed. Note that pattern `Callable`s will be called in a thread **unsafe** manner.
+Patterns will be interpreted in the following ways if **no** `--type` has been specified, or `--type=auto` has been specified.
+
+Multiple patterns, stored in a file or read from STDIN, can also be specified with the <C--patterns-from> argument.
+
+### / regex /
+
+If the pattern starts and ends with `/`, then it indicates a Raku [regex](https://docs.raku.org/language/regexes). **No** special processing of the given string between slashes will be done: the given pattern will be parsed as a regex verbatim. During the search process, each item will be matched against this regex. Any `--ignorecase` or `--ignoremark` arguments will be honoured.
+
+### { code }
+
+If the pattern starts with `{` and ends with `}`, then it indicates Raku code to be executed. **No** special processing of the given string between the curly braces will be done: the given code will be compiled as Raku code. During the search process, this code will be run for each item, available in `$_`.
+
+The dynamic variable `$*SOURCE` will contain the `IO::Path` object of the file being processed. Note that the Raku code will be called in a thread **unsafe** manner.
+
+### *code
+
+If the pattern starts with `*`, then this is a short way of specifying Raku code as a pattern, using [Whatever-currying](https://docs.raku.org/type/Whatever#index-entry-Whatever-currying). Otherwise the same as `{ code }`.
+
+### ^string
+
+If the pattern starts with `^`, then it indicates the string should be at the **start** of each item. Basically a shortcut to specifying `string --type=starts-with`. Any `--smartcase`, `--ignorecase` or `--ignoremark` arguments will be honoured.
+
+### string$
+
+If the pattern ends with `$`, then it indicates the string should be at the **end** of each item. Basically a shortcut to specifying `string --type=ends-with`. Any `--smartcase`, `--ignorecase` or `--ignoremark` arguments will be honoured.
+
+### ^string$
+
+If the pattern starts with `^` and ends with `$`, then it indicates that the string should be equal to the item. Basically a shortcut to specifying `string --type=equal`. Any `--smartcase`, `--ignorecase` or `--ignoremark` arguments will be honoured.
+
+### §string
+
+If the pattern starts with `§`, then it indicates that the string should occur as a word (with word-boundaris on both ends) in the item. Basically a shortcut to specifying `string --type=words`. Any `--smartcase`, `--ignorecase` or `--ignoremark` arguments will be honoured.
+
+### string
+
+If there are no special start or end markers, then it indicates that the string should occur somewhere in the item. Basically a shortcut to specifying `string --type=contains`. Any `--smartcase`, `--ignorecase` or `--ignoremark` arguments will be honoured.
 
 path(s)
 -------
@@ -59,7 +95,7 @@ Paths can also be specified with the `--paths` option, in which case there shoul
 ON CALLABLES AS PATTERN
 =======================
 
-`Callables` can be specfied by a string starting with `*.` (so-called [Whatever currying](https://docs.raku.org/type/Whatever), or as a string starting with `{` and ending with `}`.
+`Callables` can be specified by a string starting with `*.` (so-called [Whatever currying](https://docs.raku.org/type/Whatever), or as a string starting with `{` and ending with `}`.
 
 Note that if a `Callable` is specified as a pattern, then no highlighting can be performed as it cannot signal why or where a match occurred.
 
@@ -1116,7 +1152,7 @@ Alternative way to specify the pattern to search for. If (implicitly) specified,
 --patterns-from=file
 --------------------
 
-Alternative way to specify one or more patterns to search for. Reads the indicated file and interprets each line as a pattern according to the rules (implicitly) set with the `--type` argument.
+Alternative way to specify one or more patterns to search for. Reads the indicated file and interprets each line as a pattern according to the rules (implicitly) set with the `--type` argument. If the file specification is `"-"`, then the patterns will be read from STDIN.
 
 --per-file[=code]
 -----------------
@@ -1344,23 +1380,7 @@ The following strings can be specified:
 
 ### auto
 
-If `--type=auto` is (implicitely) specified, will look for cues in a specified pattern to understand what functionality is requested. The following cues are currently supported:
-
-  * / regex /
-
-A string starting and ending with a slash `/`, will be interpreted as a Raku regex. This will honour any `--smartcase`, `--ignorecase` and `--ignoremark` specifications.
-
-  * { code }
-
-A string starting with a curly brace open `{` and ending with a curly brace close `}`, will be interpreted as Raku source code to be compiled.
-
-  * *code
-
-A string starting with an asterisk `*` will be interpreted as Raku source code, assuming Whatever currying semantics.
-
-  * literal
-
-Otherwise, the string will be interpreted as a literal string to search for, with `--type=contains` semantics. This will honour any `--smartcase`, `--ignorecase` and `--ignoremark` specifications.
+If `--type=auto` is (implicitely) specified, will look for cues in a specified pattern to understand what functionality is requested. See the [pattern](pattern) for more information.
 
 ### regex
 
@@ -1385,6 +1405,10 @@ If `type=starts-with` is specified, then a pattern will be interpreted as a lite
 ### ends-with
 
 If `type=ends-with` is specified, then a pattern will be interpreted as a literal string that should occur at the **end** of a line, while honouring any `--smartcase`, `--ignorecase` and `--ignoremark` specifications.
+
+### equal
+
+If `type=equal` is specified, then a pattern will be interpreted as a literal string that should be **equal** to the line, while honouring any `--smartcase`, `--ignorecase` and `--ignoremark` specifications.
 
 --trim
 ------
