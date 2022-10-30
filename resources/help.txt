@@ -4,17 +4,26 @@ Arguments overview:
 Pattern specification:
 Either as first argument, or as --pattern=foo option, or as pattern(s)
 in --patterns-from=file option.
- foo                      literal string
+
+ Special markers:
  '/ << bar >> /'          Raku regex indicated by being bounded by / /
  '{ .ends-with("bar") }'  Raku code indicated by being bounded by { }
  '*.starts-with("foo")'   Raku WhateverCode starting with *
+ §string   String should match as a word
+ ^string   String should match at start of line
+ string$   String should match at end of line
+ ^string$  String should match with line entirely
+ string    String should match anywhere in line
+
+ Pattern type overrides:
  --type=auto         Interpret special markers in pattern as above (default)
  --type=regex        Interpret pattern as a regex (without special markers)
  --type=code         Interpret pattern as code (without special markers)
- --type=words        Look for pattern as a word
- --type=starts-with  Look for pattern at start of a line
- --type=ends-with    Look for pattern at end of a line
- --type=contains     Look for pattern anywhere (default if no special markers)
+ --type=words        Pattern must match as a word
+ --type=starts-with  Pattern must match at start of line
+ --type=ends-with    Pattern must match at end of line
+ --type=equal        Pattern must match entirely
+ --type=contains     Pattern must match anywhere (default if no markers)
 
 String search pattern modifiers:
  --ignorecase  Ignore distinction between upper, lower and title case letters
