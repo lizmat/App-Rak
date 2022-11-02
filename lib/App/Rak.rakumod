@@ -5,7 +5,7 @@ use highlighter:ver<0.0.18>:auth<zef:lizmat>; # columns highlighter matches Type
 use IO::Path::AutoDecompress:ver<0.0.2>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.38>:auth<zef:lizmat>;              # rak
+use rak:ver<0.0.38>:auth<zef:lizmat>;              # rak Rak
 
 use String::Utils:ver<0.0.14>:auth<zef:lizmat> <
   after before between is-sha1 non-word
@@ -681,7 +681,9 @@ TEXT
     $rak := do if List.ACCEPTS($needle) {
         my sub gatherer($haystack) {
             for $needle -> &code {
-                my \result := code($haystack);
+                my \result := Regex.ACCEPTS(&code)
+                  ?? $haystack.contains(&code)
+                  !! code($haystack);
                 return result
                   if result
                   || !(result =:= False || result =:= Empty || result =:= Nil)
@@ -749,7 +751,6 @@ my sub show-results(--> Nil) {
         $highlight     := True unless $highlight.defined;
         $trim          := True unless $trim.defined;
         $only-first    := 1000 unless $only-first.defined;
-        $proximate     := 1 if !$proximate.defined && $group-matches;
     }
     my $has-break := %listing<has-break>:delete // $break.defined;
     # Switch to really large values if not specified

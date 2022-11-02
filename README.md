@@ -1179,7 +1179,7 @@ $ rak foo --per-line='*.lines.tail(10)'
 --proximate=[N]
 ---------------
 
-Indicates whether matched lines should be grouped together that are within N lines of each other. This is useful for visually picking out matches that appear close to other matches. If specified as a flag, indicates a proximation of **1**. Defaults to **1** if a human is watching, to <0> otherwise (indication no proximation check to be performed).
+Indicates whether matched lines should be grouped together that are within N lines of each other. This is useful for visually picking out matches that appear close to other matches. If specified as a flag, indicates a proximation of **1**. Defaults to <0> otherwise (indicating no proximation check should be performed).
 
 --quietly
 ---------

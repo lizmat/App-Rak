@@ -2,6 +2,13 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.2.2  2022-11-02T13:11:04+01:00
+     - Change default for --proximate to off always, instead of 1
+       when --human is (implicitly) specified
+     - Fix issue with regex patterns in --patterns-from, spotted by
+       Zer0-Tolerance++
+     - Documentation tweaks
+
 0.2.1  2022-10-30T12:50:04+01:00
      - Add support for --type=equal
      - Add support for ^string as a shortcut for --type=starts-with
