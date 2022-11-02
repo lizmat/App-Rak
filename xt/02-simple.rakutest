@@ -88,6 +88,7 @@ my @ine = (
   <ÍNĒ --type=ends-with --ignorecase --ignoremark>,
   <ine --type=contains>,
   <ine --type=contains --smartcase>,
+  <ine --type=contains --smartmark>,
   </ine/>,
   </ine$/>,
   </in.$/>,
@@ -122,6 +123,8 @@ for (
   <ine --type=words>,
   <ine --type=starts-with>,
   <INE>,
+  <INE --smartcase>,
+  <ÍNĒ --smartmark>,
   </^ine/>,
   <42>,
 ) {

@@ -26,7 +26,7 @@ $ rak --ignoremark foo
 If specified with a True value, will cause the pattern matcher (if
 it is a literal text) to ignore the distinction between upper,
 lower and title case letters (like --ignorecase), but only if the
-pattern does **NOT** contain any uppercase characters.
+pattern does **NOT** contain any uppercase letters.
 
 Example:
 # search for "foo" without taking case into account
@@ -34,6 +34,19 @@ $ rak --smartcase foo
 
 # search for "Foo" while *still* taking case into account
 $ rak --smartcase Foo
+
+--smartmark
+
+If specified with a True value, will cause the pattern matcher (if
+it is a literal text) to ignore any accents on letters (like --ignormark),
+but only if the pattern does **NOT** contain any accented letters.
+
+Example:
+# search for "foo" without taking accents into account
+$ rak --smartmark foo
+
+# search for "Foo" while *still* taking accents into account
+$ rak --smartmark fóö
 
 --type=[contains | words | starts-with | ends-with]
 

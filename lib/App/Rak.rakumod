@@ -7,8 +7,8 @@ use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
 use rak:ver<0.0.38>:auth<zef:lizmat>;              # rak Rak
 
-use String::Utils:ver<0.0.14>:auth<zef:lizmat> <
-  after before between is-sha1 non-word
+use String::Utils:ver<0.0.15>:auth<zef:lizmat> <
+  after before between is-sha1 non-word has-marks
 >;
 
 # The epoch value when process started
@@ -19,9 +19,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-10-28T13:23:53+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-11-02T20:59:23+01:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -179,6 +179,7 @@ my $debug-rak;    # process show rak args
 
 my $pattern;     # the pattern specified (if any)
 my $smartcase;   # --smartcase
+my $smartmark;   # --smartmark
 my $ignorecase;  # --ignorecase
 my $ignoremark;  # --ignoremark
 
@@ -1959,6 +1960,12 @@ my sub option-smartcase($value --> Nil) {
       !! meh "'--smartcase' must be specified as a flag";
 }
 
+my sub option-smartmark($value --> Nil) {
+    Bool.ACCEPTS($value)
+      ?? ($smartmark := $value)
+      !! meh "'--smartmark' must be specified as a flag";
+}
+
 my sub option-sourcery($value --> Nil) {
     check-sourcery('sourcery');
     set-result-flag('sourcery', $value);
@@ -3028,8 +3035,8 @@ my sub action-unicode(--> Nil) {
              }
          }
 
-    $smartcase  := False;
-    $ignorecase := True;
+    $smartcase  := $smartmark  := False;
+    $ignorecase := $ignoremark := True;
     prepare-needle;
 
     run-rak;
@@ -3294,6 +3301,11 @@ my sub prepare-needle() {
             $ignorecase.defined
               ?? meh "Cannot specify --smartcase when --ignorecase is also specified"
               !! ($ignorecase := !$pattern.contains(/ <:upper> /));
+        }
+        if $smartmark {
+            $ignoremark.defined
+              ?? meh "Cannot specify --smartmark when --ignoremark is also specified"
+              !! ($ignoremark := !has-marks($pattern));
         }
 
         # multiple patterns

@@ -85,15 +85,15 @@ L<Whatever-currying|https://docs.raku.org/type/Whatever#index-entry-Whatever-cur
 
 If the pattern starts with C<^>, then it indicates the string should be at
 the B<start> of each item.  Basically a shortcut to specifying
-C<string --type=starts-with>.  Any C<--smartcase>, C<--ignorecase> or
-C<--ignoremark> arguments will be honoured.
+C<string --type=starts-with>.  Any C<--smartcase>, C<--smartmark>,
+C<--ignorecase> or C<--ignoremark> arguments will be honoured.
 
 =head3 string$
 
 If the pattern ends with C<$>, then it indicates the string should be at
 the B<end> of each item.  Basically a shortcut to specifying
-C<string --type=ends-with>.  Any C<--smartcase>, C<--ignorecase> or
-C<--ignoremark> arguments will be honoured.
+C<string --type=ends-with>.  Any C<--smartcase>, C<--smartmark>,
+C<--ignorecase> or C<--ignoremark> arguments will be honoured.
 
 =head3 ^string$
 
@@ -107,14 +107,14 @@ arguments will be honoured.
 If the pattern starts with C<§>, then it indicates that the string should
 occur as a word (with word-boundaris on both ends) in the item.  Basically a
 shortcut to specifying C<string --type=words>.  Any C<--smartcase>,
-C<--ignorecase> or C<--ignoremark> arguments will be honoured.
+C<--smartmark>, C<--ignorecase> or C<--ignoremark> arguments will be honoured.
 
 =head3 string
 
 If there are no special start or end markers, then it indicates that the
 string should occur somewhere in the item.  Basically a shortcut to
-specifying C<string --type=contains>.  Any C<--smartcase>, C<--ignorecase> or
-C<--ignoremark> arguments will be honoured.
+specifying C<string --type=contains>.  Any C<--smartcase>, C<--smartmark>,
+C<--ignorecase> or C<--ignoremark> arguments will be honoured.
 
 =head2 path(s)
 
@@ -1670,7 +1670,13 @@ will accept:
 =head2 --smartcase
 
 Flag.  An intelligent version of C<--ignorecase>.  If the pattern does
-B<not> contain any uppercase characters, it will act as if C<--ignorecase>
+B<not> contain any uppercase letters, it will act as if C<--ignorecase>
+was specified.  Otherwise it is ignored.
+
+=head2 --smartmark
+
+Flag.  An intelligent version of C<--ignoremark>.  If the pattern does
+B<not> contain any accented letters, it will act as if C<--ignoremark>
 was specified.  Otherwise it is ignored.
 
 =head2 --sourcery
@@ -1745,33 +1751,36 @@ source code, as if it was surrounded by curly braces.
 =head3 contains
 
 If C<type=contains> is specified, then a pattern will be interpreted as a
-literal string, while honouring any C<--smartcase>, C<--ignorecase> and
-C<--ignoremark> specifications.
+literal string, while honouring any C<--smartcase>, C<--smartmark>,
+C<--ignorecase> and C<--ignoremark> specifications.
 
 =head3 words
 
 If C<type=words> is specified, then a pattern will be interpreted as a
 literal string that should be bounded by word boundares at both ends,
-while honouring any C<--smartcase>, C<--ignorecase> and C<--ignoremark>
-specifications.
+while honouring any C<--smartcase>, C<--smartmark>, C<--ignorecase> and
+C<--ignoremark> specifications.
 
 =head3 starts-with
 
 If C<type=starts-with> is specified, then a pattern will be interpreted as
 a literal string that should occur at the B<start> of a line, while honouring
-any C<--smartcase>, C<--ignorecase> and C<--ignoremark> specifications.
+any C<--smartcase>, C<--smartmark>, C<--ignorecase> and C<--ignoremark>
+specifications.
 
 =head3 ends-with
 
 If C<type=ends-with> is specified, then a pattern will be interpreted as
 a literal string that should occur at the B<end> of a line, while honouring
-any C<--smartcase>, C<--ignorecase> and C<--ignoremark> specifications.
+any C<--smartcase>, C<--smartmark>, C<--ignorecase> and C<--ignoremark>
+specifications.
 
 =head3 equal
 
 If C<type=equal> is specified, then a pattern will be interpreted as a
 literal string that should be B<equal> to the line, while honouring
-any C<--smartcase>, C<--ignorecase> and C<--ignoremark> specifications.
+any C<--smartcase>, C<--smartmark>, C<--ignorecase> and C<--ignoremark>
+specifications.
 
 =head2 --trim
 

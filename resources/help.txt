@@ -29,6 +29,7 @@ String search pattern modifiers:
  --ignorecase  Ignore distinction between upper, lower and title case letters
  --ignoremark  Only compare base characters, ignore additional marks
  --smartcase   As --ignorecase if pattern does *NOT* contain any uppercase
+ --smartmark   As --ignoremark if pattern does *NOT* contain any accents
 
 Item producers:
  --per-line[=producer]  Produce lines for pattern matching

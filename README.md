@@ -65,11 +65,11 @@ If the pattern starts with `*`, then this is a short way of specifying Raku code
 
 ### ^string
 
-If the pattern starts with `^`, then it indicates the string should be at the **start** of each item. Basically a shortcut to specifying `string --type=starts-with`. Any `--smartcase`, `--ignorecase` or `--ignoremark` arguments will be honoured.
+If the pattern starts with `^`, then it indicates the string should be at the **start** of each item. Basically a shortcut to specifying `string --type=starts-with`. Any `--smartcase`, `--smartmark`, `--ignorecase` or `--ignoremark` arguments will be honoured.
 
 ### string$
 
-If the pattern ends with `$`, then it indicates the string should be at the **end** of each item. Basically a shortcut to specifying `string --type=ends-with`. Any `--smartcase`, `--ignorecase` or `--ignoremark` arguments will be honoured.
+If the pattern ends with `$`, then it indicates the string should be at the **end** of each item. Basically a shortcut to specifying `string --type=ends-with`. Any `--smartcase`, `--smartmark`, `--ignorecase` or `--ignoremark` arguments will be honoured.
 
 ### ^string$
 
@@ -77,11 +77,11 @@ If the pattern starts with `^` and ends with `$`, then it indicates that the str
 
 ### §string
 
-If the pattern starts with `§`, then it indicates that the string should occur as a word (with word-boundaris on both ends) in the item. Basically a shortcut to specifying `string --type=words`. Any `--smartcase`, `--ignorecase` or `--ignoremark` arguments will be honoured.
+If the pattern starts with `§`, then it indicates that the string should occur as a word (with word-boundaris on both ends) in the item. Basically a shortcut to specifying `string --type=words`. Any `--smartcase`, `--smartmark`, `--ignorecase` or `--ignoremark` arguments will be honoured.
 
 ### string
 
-If there are no special start or end markers, then it indicates that the string should occur somewhere in the item. Basically a shortcut to specifying `string --type=contains`. Any `--smartcase`, `--ignorecase` or `--ignoremark` arguments will be honoured.
+If there are no special start or end markers, then it indicates that the string should occur somewhere in the item. Basically a shortcut to specifying `string --type=contains`. Any `--smartcase`, `--smartmark`, `--ignorecase` or `--ignoremark` arguments will be honoured.
 
 path(s)
 -------
@@ -1335,7 +1335,12 @@ Flag and option. Only applicable if the pattern is a `Callable`. Indicates wheth
 --smartcase
 -----------
 
-Flag. An intelligent version of `--ignorecase`. If the pattern does **not** contain any uppercase characters, it will act as if `--ignorecase` was specified. Otherwise it is ignored.
+Flag. An intelligent version of `--ignorecase`. If the pattern does **not** contain any uppercase letters, it will act as if `--ignorecase` was specified. Otherwise it is ignored.
+
+--smartmark
+-----------
+
+Flag. An intelligent version of `--ignoremark`. If the pattern does **not** contain any accented letters, it will act as if `--ignoremark` was specified. Otherwise it is ignored.
 
 --sourcery
 ----------
@@ -1392,23 +1397,23 @@ If `type=code` is specified, then a pattern will be interpreted as Raku source c
 
 ### contains
 
-If `type=contains` is specified, then a pattern will be interpreted as a literal string, while honouring any `--smartcase`, `--ignorecase` and `--ignoremark` specifications.
+If `type=contains` is specified, then a pattern will be interpreted as a literal string, while honouring any `--smartcase`, `--smartmark`, `--ignorecase` and `--ignoremark` specifications.
 
 ### words
 
-If `type=words` is specified, then a pattern will be interpreted as a literal string that should be bounded by word boundares at both ends, while honouring any `--smartcase`, `--ignorecase` and `--ignoremark` specifications.
+If `type=words` is specified, then a pattern will be interpreted as a literal string that should be bounded by word boundares at both ends, while honouring any `--smartcase`, `--smartmark`, `--ignorecase` and `--ignoremark` specifications.
 
 ### starts-with
 
-If `type=starts-with` is specified, then a pattern will be interpreted as a literal string that should occur at the **start** of a line, while honouring any `--smartcase`, `--ignorecase` and `--ignoremark` specifications.
+If `type=starts-with` is specified, then a pattern will be interpreted as a literal string that should occur at the **start** of a line, while honouring any `--smartcase`, `--smartmark`, `--ignorecase` and `--ignoremark` specifications.
 
 ### ends-with
 
-If `type=ends-with` is specified, then a pattern will be interpreted as a literal string that should occur at the **end** of a line, while honouring any `--smartcase`, `--ignorecase` and `--ignoremark` specifications.
+If `type=ends-with` is specified, then a pattern will be interpreted as a literal string that should occur at the **end** of a line, while honouring any `--smartcase`, `--smartmark`, `--ignorecase` and `--ignoremark` specifications.
 
 ### equal
 
-If `type=equal` is specified, then a pattern will be interpreted as a literal string that should be **equal** to the line, while honouring any `--smartcase`, `--ignorecase` and `--ignoremark` specifications.
+If `type=equal` is specified, then a pattern will be interpreted as a literal string that should be **equal** to the line, while honouring any `--smartcase`, `--smartmark`, `--ignorecase` and `--ignoremark` specifications.
 
 --trim
 ------

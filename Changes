@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Up dependency on String::Utils to get "has-marks" support
+     - Add support for --smartmark
 
 0.2.2  2022-11-02T13:11:04+01:00
      - Change default for --proximate to off always, instead of 1
