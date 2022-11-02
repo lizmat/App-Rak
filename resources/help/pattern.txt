@@ -137,11 +137,11 @@ Shortcuts:
 Several shortcuts are available to indicate some type of behaviour for
 literal strings.  They are
 
+ - string      string --type=contains
+ - §string     string --type=words
  - ^string     string --type=starts-with
  - string$     string --type=ends-with
  - ^string$    string --type=equal
- - §string     string --type=words
- - string      string --type=contains
 
 Examples:
 # produce any lines that have the word "bar" in them

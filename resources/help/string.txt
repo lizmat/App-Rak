@@ -48,15 +48,18 @@ $ rak --smartmark foo
 # search for "Foo" while *still* taking accents into account
 $ rak --smartmark fóö
 
---type=[contains | words | starts-with | ends-with]
+--type=[auto|contains|words|starts-with|ends-with|equal|regex|code]
 
-Only makes sense with a literal pattern matcher.  Expects one of
-the following literal values:
+Expects one of the following literal values:
 
- - contains     match if literal pattern occurs anywhere
- - words        match if literal pattern is on word/non-word boundaries
- - starts-with  match if literal pattern is at the start of an item
- - ends-with    match if literal pattern is at the end of an item
+ - auto         allow for shortcuts in pattern (default)
+ - contains     accept if literal pattern occurs anywhere
+ - words        accept if literal pattern is on word/non-word boundaries
+ - starts-with  accept if literal pattern is at the start of an item
+ - ends-with    accept if literal pattern is at the end of an item
+ - equal        accept if literal pattern is same as line
+ - regex        accept if pattern as regex matches an item
+ - code         accept if pattern as code produces a result for an item
 
 Examples:
 # search for "foo" anywhere in an item (default case)
@@ -73,3 +76,12 @@ $ rak --type=starts-with foo
 
 # search for "foo" at the end of a line
 $ rak --type=ends-with foo
+
+# search for lines consisting of "foo"
+$ rak --type=equal foo
+
+# search for /i.e/ in a line
+$ rak --type=regex i.e
+
+# return all lines in uppercase
+$ rak --type=code .uc
