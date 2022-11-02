@@ -20,6 +20,8 @@ Ideas / Todo's
 - add Log::Timeline support somehow
 - Allow for hypering withing a file if the file is larger than X bytes
   (probably 1MB)
+- Implement a --smartmark flag: --ignoremark if pattern contains any
+  non-base characters.
 
 Errors
 ======

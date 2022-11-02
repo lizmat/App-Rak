@@ -51,7 +51,6 @@ The following defaults will be applied unless specifically overridden:
  --highlight
  --trim
  --only-first=1000
- --proximate=1
 
 --only-first[=N]
 
@@ -83,8 +82,8 @@ not activate any pager.
 
 Specify grouping of matched lines by indicating the maximum difference
 in line number value that is allowed before an extra empty line will
-be added between matches.  Defaults to 1 if a human is watching, or
-no proximation otherwise.
+be added between matches.  If specified as a flag, will assume 1.
+Defaults to 0 to indicate no proximation.
 
 --show-blame
 
