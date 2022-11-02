@@ -116,6 +116,9 @@ OK
 
 # Sure to not produce any matches
 for (
+  <§ine>,
+  <^ine>,
+  <^ine$>,
   <ine --type=words>,
   <ine --type=starts-with>,
   <INE>,
@@ -173,7 +176,7 @@ nine
 5:FOUR
 OK
 
-query-ok q/{.uc if .contains("v")}/, <--/group-matches --/break>,
+query-ok q/.uc if .contains("v")/, <--type=code --/group-matches --/break>,
   ok => q:to/OK/;
 five:6:FIVE
 six:6:FIVE
