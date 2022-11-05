@@ -1,8 +1,11 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.2.3  2022-11-05T11:56:14+01:00
      - Up dependency on String::Utils to get "has-marks" support
      - Add support for --smartmark
+     - Fix issue with --edit --find
 
 0.2.2  2022-11-02T13:11:04+01:00
      - Change default for --proximate to off always, instead of 1
