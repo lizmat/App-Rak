@@ -137,7 +137,7 @@ Listing modifiers:
  --only-first[=N]            Show only the N results, N defaults to 1
  --output-file=filename      Store output to indicated file (default: STDOUT)
  --output-dir=directory      Store output ino indicated directory / group
- --pager                     Pager to use (default: ACK_PAGER // none)
+ --pager                     Pager to use (default: RAK_PAGER // none)
  --stats                     Also show statistics
 
 Content modifiers:

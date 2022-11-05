@@ -75,7 +75,7 @@ results to STDOUT.
 --pager=program
 
 Specify a pager program to use.  Defaults to what is specified with the
-ACK_PAGER environment variable.  If that is not specified either, does
+RAK_PAGER environment variable.  If that is not specified either, does
 not activate any pager.
 
 --proximate[=N]
