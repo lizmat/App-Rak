@@ -2473,11 +2473,10 @@ my sub action-edit(--> Nil) {
 
     # find filenames to edit
     if $find {
-        my str @files;
-        %rak<sources-only> := True;
-        %rak<mapper>       := -> $io --> Empty {
-            LAST edit-files @files, :$editor;
-            @files.push: $io.relative;
+        %rak<find>             := True;
+        %rak<omit-item-number> := True;
+        %rak<mapper> := -> $, @files --> Empty {
+            edit-files @files, :$editor;
         }
     }
 
