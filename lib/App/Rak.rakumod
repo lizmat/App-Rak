@@ -549,7 +549,7 @@ my sub codify(Str:D $code) {
           ?? (prelude() ~ 'my $ := -> $_ ' ~ $code).EVAL
           !! $code.starts-with('-> $') && $code.ends-with('}')
             ?? (prelude() ~ 'my $ := ' ~ $code).EVAL
-            !! $code.starts-with('*')
+            !! $code.starts-with('*') && $code.chars > 1
               ?? (prelude() ~ 'my $ := ' ~ $code).EVAL
               !! $code
 }

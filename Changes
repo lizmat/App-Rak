@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Fix issue with bare literal * being interpreted as a
+       Whatever, rather than as a literal '*'
 
 0.2.3  2022-11-05T11:56:14+01:00
      - Up dependency on String::Utils to get "has-marks" support
