@@ -2895,13 +2895,16 @@ my sub action-per-line(--> Nil) {
         %listing<highlight> := False unless $pattern;
         %listing<trim>      := False if $before-context || $after-context;
 
+        # $pattern here is supposed to be the file with the backtrace
         $rak := Rak.new: result => $reading-from-stdin
           ?? produce-result($*IN.slurp(:close))
           !! @positionals
             ?? meh "Can only specify a single file with a backtrace."
-            !! $pattern.IO.e
-              ?? produce-result($pattern.IO.slurp)
-              !! meh "handling backtrace from file(s) NYI";
+            !! $pattern
+              ?? $pattern.IO.e
+                ?? produce-result($pattern.IO.slurp)
+                !! meh "handling backtrace from file(s) NYI"
+              !! meh "Must specify a file with a backtrace.";
 
         rak-results;
         return;
