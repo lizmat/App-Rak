@@ -717,6 +717,34 @@ executed. Any C<$_> in the invocation string will be replaced by the file
 being checked. The file will be included if the program runs to a successful
 conclusion.
 
+=head2 --execute-raku[=code]
+
+Flag or code specification.  When specified with a True value, will
+use the pattern as the name of a script to execute.  If code is specified
+will execute that code.  If the code consists of "-", then will read code
+from STDIN to execute.  Any execution error's backtrace will be used
+to produce a result with the lines of source code of that backtrace.
+
+Can be used together with C<--context>, C<--before-context>,
+C<--after-context>, C<--edit> and C<--vimgrep>.  Will assume a context of
+2 lines if B<not> used in combination with C<--edit> or C<--vimgrep>,
+
+If C<--verbose> is specified, will try to create an extended (--ll-exception)
+backtrace.
+
+=begin code :lang<bash>
+
+# look at source of a stacktrace after running script
+$ rak --execute-raku script
+
+# inspect the source of a stacktrace in an editor
+$ rak --execute-raku script --edit
+
+# inspect a backtrace from execution of code read from STDIN
+$ cat script | rak --execute-raku=-
+
+=end code
+
 =head2 --extensions=spec
 
 Indicate the extensions of the filenames that should be inspected.
@@ -743,8 +771,8 @@ $ rak foo --extensions=,foo
 =end code
 
 Predefined groups are C<#raku>, C<#perl>, C<#cro>, C<#text>, C<#c>, C<#c++>,
-C<#yaml>, C<#ruby>, C<#python>, C<#html>, C<#markdown>, C<#json>, C<#jsonl>,
-C<#csv>, C<#config> and C<#text>.
+C<#yaml>, C<#ruby>, C<#python>, C<#html>, C<#markdown>, C<#js>, C<#json>,
+C<#jsonl>, C<#csv>, C<#config> and C<#text>.
 
 The C<--list-known-extensions> argument can be used to see which predefined
 groups of extensions are supported, and which extensions they cover.
@@ -1254,6 +1282,12 @@ $ rak --list-known-extensions
        #c: c h hdl
      #c++: cpp cxx hpp hxx
   #config: ini
+     #cro: (none) crotmp
+     #csv: (none) csv psv tsv
+    #html: htm html css
+      #js: js ts tsx
+    #json: json
+   #jsonl: jsonl
 #markdown: md markdown
     #perl: (none) pl pm t
   #python: py

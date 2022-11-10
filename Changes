@@ -4,6 +4,11 @@ Revision history for App-Rak
      - Fix issue with bare literal * being interpreted as a
        Whatever, rather than as a literal '*'
      - Fix issue with --backtrace without file containing backtrace
+     - Bump dependency on rak to auto-skip binary files without
+       extension
+     - Add dependency on Backtrace::Files
+     - Add support for --execute-raku
+     - Add #js group of extensions, add .css to #html group
 
 0.2.3  2022-11-05T11:56:14+01:00
      - Up dependency on String::Utils to get "has-marks" support
@@ -412,7 +417,7 @@ Revision history for App-Rak
     - Worked a bit on the pod
 
 0.0.14  2022-07-18T20:47:50+02:00
-    - Add dependency on META::constants 
+    - Add dependency on META::constants
     - Add dependency on CLI::Help to get --help support
     - Make sure that option replacements occur recursively
     - Bump dependency on "Files::Containing" to get :count-only

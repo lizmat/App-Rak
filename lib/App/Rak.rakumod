@@ -5,8 +5,11 @@ use highlighter:ver<0.0.18>:auth<zef:lizmat>; # columns highlighter matches Type
 use IO::Path::AutoDecompress:ver<0.0.2>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.38>:auth<zef:lizmat>;              # rak Rak
+use rak:ver<0.0.39>:auth<zef:lizmat>;              # rak Rak
 
+use Backtrace::Files:ver<0.0.3>:auth<zef:lizmat> <
+  backtrace-files
+>;
 use String::Utils:ver<0.0.15>:auth<zef:lizmat> <
   after before between is-sha1 non-word has-marks
 >;
@@ -19,9 +22,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-11-02T20:59:23+01:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-11-08T10:22:02+01:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -137,7 +140,8 @@ my constant %exts =
   '#c++'      => <cpp cxx hpp hxx>,
   '#csv'      => ('', <csv psv tsv>).flat.List,
   '#cro'      => ('', 'crotmp'),
-  '#html'     => <htm html>,
+  '#html'     => <htm html css>,
+  '#js'       => <js ts tsx>,
   '#json'     => <json>,
   '#jsonl'    => <jsonl>,
   '#markdown' => <md markdown>,
@@ -166,7 +170,6 @@ elsif %*ENV<RAK_CONFIG>:!exists {  # want to have the default config
 my $TextCSV;
 my $GitBlameFile;
 my &edit-files;
-my &backtrace-files;
 my &sourcery;
 my &sourcery-pattern;
 
@@ -743,7 +746,7 @@ my sub show-results(--> Nil) {
     my $highlight     := %listing<highlight>:delete;
     my $trim          := %listing<trim>:delete;
     my $only-first    := %listing<only-first>:delete;
-    my $proximate     := %listing<proximate>:delete;
+    my uint $proximate = %listing<proximate>:delete // 0;
 
     # Set up human defaults
     if $human {
@@ -755,7 +758,6 @@ my sub show-results(--> Nil) {
     }
     my $has-break := %listing<has-break>:delete // $break.defined;
     # Switch to really large values if not specified
-    my uint $skip-ok    = $proximate  || 0x7fff_ffff_ffff_ffff;
     my uint $stop-after = $only-first || 0x7fff_ffff_ffff_ffff;
 
     # Set up highlighting
@@ -773,12 +775,12 @@ my sub show-results(--> Nil) {
         $highlight-after := $highlight-before;
     }
 
-    my &line-post-proc := do if $highlight {
-        my Str() $pre = my Str() $post = $_ with $highlight-before;
-        $post                          = $_ with $highlight-after;
-        $pre  = BON  without $pre;
-        $post = BOFF without $post;
+    my Str() $pre = my Str() $post = $_ with $highlight-before;
+    $post                          = $_ with $highlight-after;
+    $pre  = BON  without $pre;
+    $post = BOFF without $post;
 
+    my &line-post-proc := do if $highlight {
         my %nameds =
           (:$ignorecase if $ignorecase),
           (:$ignoremark if $ignoremark),
@@ -811,6 +813,12 @@ my sub show-results(--> Nil) {
              }
     }
 
+    elsif %listing<whole-line>:delete {
+        $output-dir
+          ?? -> $line { $line }
+          !! -> $line { "$pre$line$post" }
+    }
+
     # No highlighting wanted, abuse highlighter logic anyway
     else {
         $trim ?? *.Str.trim !! *.Str
@@ -825,6 +833,14 @@ my sub show-results(--> Nil) {
           !! Buf.ACCEPTS($value)
             ?? $value.List.Str
             !! $value.Str
+    }
+
+    # Proximate breaker logic
+    my sub breaker(uint $linenr, uint $last-linenr --> Nil) {
+        sayer ""
+          if $proximate
+          && ($linenr <= $last-linenr  # probably a backtrace
+               |! ($linenr - $last-linenr) >= $proximate);
     }
 
     # show the results!
@@ -856,8 +872,7 @@ my sub show-results(--> Nil) {
                             sayer $source if $show-filename;
                             for @matches.map({ $_ if .value.elems }) {
                                 my uint $linenr = .key;
-                                sayer ""
-                                  if abs($linenr - $last-linenr) > $skip-ok;
+                                breaker($linenr, $last-linenr);
                                 if Slip.ACCEPTS(.value) {
                                     # Can only produce a Slip from a real
                                     # Callable, which cannot have any
@@ -879,8 +894,7 @@ my sub show-results(--> Nil) {
                         elsif $show-filename {
                             for @matches.map({ $_ if .value.elems }) {
                                 my uint $linenr = .key;
-                                sayer ""
-                                  if abs($linenr - $last-linenr) > $skip-ok;
+                                breaker($linenr, $last-linenr);
                                 if Slip.ACCEPTS(.value) {
                                     # Can only produce a Slip from a real
                                     # Callable, which cannot have any
@@ -904,8 +918,7 @@ my sub show-results(--> Nil) {
                         else {
                             for @matches.map({ $_ if .value.elems }) {
                                 my uint $linenr = .key;
-                                sayer ""
-                                  if abs($linenr - $last-linenr) > $skip-ok;
+                                breaker($linenr, $last-linenr);
                                 if Slip.ACCEPTS(.value) {
                                     # Can only produce a Slip from a real
                                     # Callable, which cannot have any
@@ -1195,14 +1208,6 @@ my sub check-EditFiles(str $name) {
     }
 }
 
-# check Backtrace::Files availability
-my sub check-BacktraceFiles(str $name) {
-    unless &backtrace-files {
-        CATCH { meh-not-installed 'Backtrace::Files', $name }
-        &backtrace-files = "use Backtrace::Files; &backtrace-files".EVAL;
-    }
-}
-
 # check Text::CSV availability
 my sub check-TextCSV(str $name) {
     unless $TextCSV {
@@ -1347,7 +1352,6 @@ my sub option-auto-diag($value --> Nil) {
 }
 
 my sub option-backtrace($value --> Nil) {
-    check-BacktraceFiles('backtrace');
     set-result-flag('backtrace', $value);
 }
 
@@ -1503,6 +1507,10 @@ my sub option-escape($value --> Nil) {
 
 my sub option-exec($value --> Nil) {
     external-execution('exec', $value);
+}
+
+my sub option-execute-raku($value --> Nil) {
+    %result<execute-raku> := $value;
 }
 
 my sub option-extensions($value --> Nil) {
@@ -1860,7 +1868,7 @@ my sub option-patterns-from($value --> Nil) {
     }
     elsif $value eq '-' {
         note "Reading from STDIN, please enter patterns and ^D when done:"
-          if $*IN.t;
+          unless $reading-from-stdin;
         read-patterns($*IN);
     }
     elsif $value.IO.r {
@@ -2434,22 +2442,23 @@ my sub action-csv-per-line(--> Nil) {
 
 my sub action-edit(--> Nil) {
 
+    my sub go-edit-error($error --> Nil) {
+        if backtrace-files($error).map: -> (:key($file), :value(@line)) {
+            @line.map({ Pair.new: $file, $_}).Slip
+        } -> @result {
+            edit-files @result.List;
+        }
+#        note $error.chomp;
+    }
+
     if %result<sourcery>:delete {
         meh-for 'edit', <output-file pager result filesystem modify csv>;
         edit-files sourcery $pattern.trim;
         return;
     }
+
     elsif %result<backtrace>:delete {
         meh-for 'edit', <output-file pager result filesystem modify csv>;
-
-        my sub go-edit-error($error --> Nil) {
-            if backtrace-files($error).map: -> (:key($file), :value(@line)) {
-                @line.map({ Pair.new: $file, $_}).Slip
-            } -> @result {
-                edit-files @result.List;
-            }
-            note $error.chomp;
-        }
 
         $reading-from-stdin
           ?? go-edit-error($*IN.slurp(:close))
@@ -2459,6 +2468,33 @@ my sub action-edit(--> Nil) {
               ?? go-edit-error($pattern.IO.slurp)
               !! meh "handling backtrace from file(s) NYI";
         return;
+    }
+
+    elsif %result<execute-raku>:delete -> $raku {
+        if Bool.ACCEPTS($raku) {
+            meh "Must specify name of file with Raku code to execute"
+              unless $pattern;
+
+            my $io := $pattern.IO;
+            meh "File '$pattern' is not found or not readable"
+              unless $io.r;
+
+            my $proc := run $*EXECUTABLE, 
+              ('--ll-exception' if $verbose), $io, @positionals, :out, :err;
+            if $proc.err.slurp(:close) -> $backtrace {
+                go-edit-error($backtrace);
+                return;
+            }
+            elsif $proc.out.slurp(:close) -> $output {
+                meh $output;
+            }
+            else {
+                meh "No error or output produced";
+            }
+        }
+        else {
+            meh "Can only edit backtraces from actual file";
+        }
     }
 
     %rak<max-matches-per-source> := $_
@@ -2857,6 +2893,21 @@ my sub action-per-file(--> Nil) {
 my sub action-per-line(--> Nil) {
     meh-for 'per-line', <csv modify>;
 
+    # helper sub for --backtrace and --execute-raku
+    my sub produce-result($error) {
+        my $context        := %result<context>:delete        // 2;
+        my $before-context := %result<before-context>:delete // $context;
+        my $after-context  := %result<after-context>:delete  // $context;
+        meh-for 'backtrace', <filesystem result>;
+
+        %listing<highlight> := False;
+        %listing<trim>      := False if $before-context || $after-context;
+        backtrace-files($error,
+          :source, :$before-context, :$after-context,
+          :in-backtrace(PairMatched), :added-context(PairContext)
+        )
+    }
+
     if %result<sourcery>:delete {
         meh-for 'sourcery', <filesystem>;
 
@@ -2880,20 +2931,8 @@ my sub action-per-line(--> Nil) {
     }
 
     elsif %result<backtrace>:delete {
-        my $context        := %result<context>:delete        // 2;
-        my $before-context := %result<before-context>:delete // $context;
-        my $after-context  := %result<after-context>:delete  // $context;
-        meh-for 'backtrace', <filesystem result>;
-
-        my sub produce-result($error) {
-            backtrace-files($error,
-              :source, :$before-context, :$after-context,
-              :in-backtrace(PairMatched), :added-context(PairContext)
-            )
-        }
-
-        %listing<highlight> := False unless $pattern;
-        %listing<trim>      := False if $before-context || $after-context;
+        %listing<whole-line> := True;
+        %listing<proximate>  := 1;
 
         # $pattern here is supposed to be the file with the backtrace
         $rak := Rak.new: result => $reading-from-stdin
@@ -2908,6 +2947,79 @@ my sub action-per-line(--> Nil) {
 
         rak-results;
         return;
+    }
+
+    elsif %result<execute-raku>:delete -> $raku is copy {
+        %listing<whole-line> := True;
+        %listing<proximate>  := 1;
+
+        # Executing from a script
+        if Bool.ACCEPTS($raku) {
+            meh "Must specify name of file with Raku code to execute"
+              unless $pattern;
+
+            my $io := $pattern.IO;
+            meh "File '$pattern' is not found or not readable"
+              unless $io.r;
+
+            my $proc := run $*EXECUTABLE, 
+              ('--ll-exception' if $verbose), $io, @positionals, :out, :err;
+            if $proc.err.slurp(:close) -> $backtrace {
+                $rak := Rak.new: result => produce-result($backtrace);
+            }
+            elsif $proc.out.slurp(:close) -> $output {
+                meh $output;
+            }
+            else {
+                meh "No error or output produced";
+            }
+
+            rak-results;
+            return
+        }
+
+        # Executing from literal code or STDIN
+        else {
+            CATCH {
+                my $gist := .gist;
+                if $gist.contains('Error while compiling') {
+                    meh $gist.subst(/ 'compiling' <( \s+ \S+ /, ':');
+                }
+
+                my @result;
+                for produce-result($_) {
+                    if .key.starts-with('EVAL_') {
+                        my int $index = .value.head.key.Int;
+                        my int $linenr;
+                        @result.push: Pair.new:
+                          "CODE",
+                          $raku.lines.map({
+                            (++$linenr == $index ?? PairMatched !! PairContext)
+                              .new: $linenr, $_
+                          }).List;
+                        last;
+                    }
+                    else {
+                        @result.push: $_;
+                    }
+                }
+                if @result {
+                    $rak := Rak.new: :@result;
+                    rak-results;
+                    return;
+                }
+                meh $gist;  # some other weird error
+            }
+            if $raku eq '-' {
+                note "Reading from STDIN, please enter code and ^D when done:"
+                  unless $reading-from-stdin;
+                $raku = $*IN.slurp(:close);
+            }
+
+            # Actually run the code
+            $raku.EVAL;
+            meh "Did not get an execution error, so no backtrace to work with.";
+        }
     }
 
     else {
@@ -3060,19 +3172,22 @@ my sub action-version(--> Nil) {
 }
 
 my sub action-vimgrep(--> Nil) {
+
+    # helper sub for --backtrace and _-execute-raku
+    my sub vimgreppify($error --> Nil) {
+        for backtrace-files($error) -> (:key($file), :value(@line)) {
+            sayer "$file:$_\::" for @line;
+        }
+    }
+
     if %result<sourcery>:delete {
         meh-for 'vimgrep', <output-file pager result filesystem modify csv>;
         sayer "$_.key():$_.value()::" for sourcery $pattern.trim;
         return;
     }
+
     elsif %result<backtrace>:delete {
         meh-for 'edit', <output-file pager result filesystem modify csv>;
-
-        my sub vimgreppify($error --> Nil) {
-            for backtrace-files($error) -> (:key($file), :value(@line)) {
-                sayer "$file:$_\::" for @line;
-            }
-        }
 
         $reading-from-stdin
           ?? vimgreppify($*IN.slurp(:close))
@@ -3082,6 +3197,33 @@ my sub action-vimgrep(--> Nil) {
               ?? vimgreppify($pattern.IO.slurp)
               !! meh "handling backtrace from file(s) NYI";
         return;
+    }
+
+    elsif %result<execute-raku>:delete -> $raku {
+        if Bool.ACCEPTS($raku) {
+            meh "Must specify name of file with Raku code to execute"
+              unless $pattern;
+
+            my $io := $pattern.IO;
+            meh "File '$pattern' is not found or not readable"
+              unless $io.r;
+
+            my $proc := run $*EXECUTABLE, 
+              ('--ll-exception' if $verbose), $io, @positionals, :out, :err;
+            if $proc.err.slurp(:close) -> $backtrace {
+                vimgreppify($backtrace);
+                return;
+            }
+            elsif $proc.out.slurp(:close) -> $output {
+                meh $output;
+            }
+            else {
+                meh "No error or output produced";
+            }
+        }
+        else {
+            meh "Can only vimgrep backtraces from actual file";
+        }
     }
 
     meh "Cannot use --vimgrep when reading from STDIN"

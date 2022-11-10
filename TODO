@@ -1,7 +1,6 @@
 Ideas / Todo's
 ==============
 
-- run a raku program and interpret the execution error as an --edit
 - expose mapper functionality
 - create plugin structure
 - modify files met csv-per-line
@@ -18,15 +17,19 @@ Ideas / Todo's
   the rest of the pattern as a JSON::Path specification.
 - XPath en XML file support
 - add Log::Timeline support somehow
+- some setting associated with --find, that would only show directories
 - Allow for hypering withing a file if the file is larger than X bytes
   (probably 1MB)
+- conflicts with variables set in default custom list, should not result
+  in errors, e.g. making --smartcase a default, and then specifying some
+  combination of options incompatible with --smartcase.
+- Add "text-only" flag, which would look at *all* files, but only accept
+  the ones that Data::TextOrBinary considers to be text
 
 Errors
 ======
 If a file is under version control, it does not mean it actually contains
 text.  Need to fix that with --blame-per-file/line.
 
---find * does not seem to expand all paths in current dir
-
---proximate functionality needs to check absolute distances, as with
---backtrace line numbers *can* go backwards
+Options that can either be a flag or a string, appear not to be able to
+accept values when used with --save.

@@ -151,12 +151,13 @@ Resource usage:
  --degree[=N | code]  Max workers to use for processing (default: cores - 1)
 
 Special options:
- --edit[=editor]     Go edit the result in an editor, (default EDITOR or vim)
- --vimgrep           Produce output in :vimgrep format
- --checkout=string   Checkout branch if pattern matches single branch name
- --backtrace         Interpret text as a Raku backtrace
- --sourcery          Treat pattern as code indicating candidates for inspection
- --ecosystem[=name]  Inspect one or more Raku ecosystem's module's META
+ --edit[=editor]        Go edit the result in an editor, (default EDITOR or vim)
+ --vimgrep              Produce output in :vimgrep format
+ --ecosystem[=name]     Inspect one or more Raku ecosystem's module's META
+ --checkout=string      Checkout branch if pattern matches single branch name
+ --sourcery             Treat pattern as code, use candidates as result
+ --backtrace            Interpret text as a Raku backtrace, use as result
+ --execute-raku[=code]  Run raku code for exception, use as result
 
 Option management:
  --save=name            Translate --name to all other options specified,

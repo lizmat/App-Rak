@@ -32,12 +32,12 @@ Flag.  When specified with a True value, will interpret either standard
 input, or a single file, as a Raku backtrace.  And produce a result
 containing the lines of source code from that backtrace.  Can be used
 together with --context, --before-context, --after-context, --edit and
---vimgrep.  Any pattern specification will only be used for highlighting.
+ --vimgrep.  Any pattern specification will only be used for highlighting.
 If *not* used in combination with --edit or --vimgrep, will assume a
 context of 2 lines.
 
 Examples:
-# look at source of a stacktrace
+# look at source of a stacktrace after running script
 $ raku script 2>&1 | rak --backtrace
 
 # inspect the source of a stacktrace in an editor
@@ -45,6 +45,28 @@ $ raku script 2>&1 | rak --backtrace --edit
 
 # inspect a backtrace stored in a file
 $ rak --backtrace filename
+
+--execute-raku[=code]
+
+Flag or code specification.  When specified with a True value, will
+use the pattern as the name of a script to execute.  If code is specified
+will execute that code.  If the code consists of "-", then will read code
+from STDIN to execute.  Any execution error's backtrace will be used
+to produce a result with the lines of source code of that backtrace.
+Can be used together with --context, --before-context, --after-context,
+ --edit and --vimgrep.  If *not* used in combination with --edit or --vimgrep,
+will assume a context of 2 lines.  If --verbose is specified, will try to
+create an extended (--ll-exception) backtrace.
+
+Examples:
+# look at source of a stacktrace after running script
+$ rak --execute-raku script
+
+# inspect the source of a stacktrace in an editor
+$ rak --execute-raku script --edit
+
+# inspect a backtrace from execution of code read from STDIN
+$ cat script | rak --execute-raku=-
 
 --sourcery
 

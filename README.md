@@ -551,6 +551,26 @@ Only applicable if `--csv-per-line` has been specified. Indicates the escape cha
 
 If specified, indicates the name of a program and its arguments to be executed. Any `$_` in the invocation string will be replaced by the file being checked. The file will be included if the program runs to a successful conclusion.
 
+--execute-raku[=code]
+---------------------
+
+Flag or code specification. When specified with a True value, will use the pattern as the name of a script to execute. If code is specified will execute that code. If the code consists of "-", then will read code from STDIN to execute. Any execution error's backtrace will be used to produce a result with the lines of source code of that backtrace.
+
+Can be used together with `--context`, `--before-context`, `--after-context`, `--edit` and `--vimgrep`. Will assume a context of 2 lines if **not** used in combination with `--edit` or `--vimgrep`,
+
+If `--verbose` is specified, will try to create an extended (--ll-exception) backtrace.
+
+```bash
+# look at source of a stacktrace after running script
+$ rak --execute-raku script
+
+# inspect the source of a stacktrace in an editor
+$ rak --execute-raku script --edit
+
+# inspect a backtrace from execution of code read from STDIN
+$ cat script | rak --execute-raku=-
+```
+
 --extensions=spec
 -----------------
 
@@ -572,7 +592,7 @@ $ rak foo --extensions=
 $ rak foo --extensions=,foo
 ```
 
-Predefined groups are `#raku`, `#perl`, `#cro`, `#text`, `#c`, `#c++`, `#yaml`, `#ruby`, `#python`, `#html`, `#markdown`, `#json`, `#jsonl`, `#csv`, `#config` and `#text`.
+Predefined groups are `#raku`, `#perl`, `#cro`, `#text`, `#c`, `#c++`, `#yaml`, `#ruby`, `#python`, `#html`, `#markdown`, `#js`, `#json`, `#jsonl`, `#csv`, `#config` and `#text`.
 
 The `--list-known-extensions` argument can be used to see which predefined groups of extensions are supported, and which extensions they cover.
 
@@ -1001,6 +1021,12 @@ $ rak --list-known-extensions
        #c: c h hdl
      #c++: cpp cxx hpp hxx
   #config: ini
+     #cro: (none) crotmp
+     #csv: (none) csv psv tsv
+    #html: htm html css
+      #js: js ts tsx
+    #json: json
+   #jsonl: jsonl
 #markdown: md markdown
     #perl: (none) pl pm t
   #python: py
