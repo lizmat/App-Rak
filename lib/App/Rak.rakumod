@@ -1808,7 +1808,7 @@ my sub option-output-file($value --> Nil) {
 my sub option-pager($value --> Nil) {
     Bool.ACCEPTS($value)
       ?? meh "'pager--' expects a program specification"
-      !! ($pager := $value);
+      !! ($pager = $value);
 }
 
 my sub option-paragraph-context($value --> Nil) {
@@ -2311,7 +2311,8 @@ my sub move-result-options-to-rak(--> Nil) {
 }
 
 my sub activate-output-options() {
-    $pager := %*ENV<RAK_PAGER> unless $pager.defined;
+    $pager = %*ENV<RAK_PAGER> unless $pager.defined;
+    $pager = "$pager -r" if $pager eq "less" | "more";  # ensure raw
     if $pager {
         meh "Cannot specify a pager and an output-file"
           if $output-file && $output-file ne '-';
