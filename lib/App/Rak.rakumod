@@ -5,7 +5,7 @@ use highlighter:ver<0.0.18>:auth<zef:lizmat>; # columns highlighter matches Type
 use IO::Path::AutoDecompress:ver<0.0.2>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.39>:auth<zef:lizmat>;              # rak Rak
+use rak:ver<0.0.40>:auth<zef:lizmat>;              # rak Rak
 
 use Backtrace::Files:ver<0.0.3>:auth<zef:lizmat> <
   backtrace-files
@@ -2117,11 +2117,13 @@ my sub move-filesystem-options-to-rak(--> Nil) {
             >:k;
         }
         else {
-            if %filesystem<file>:delete -> $file {
+            if %filesystem<file>:exists {
                 maybe-meh-together 'file', %filesystem<
                   extensions known-extensions find-all
                 >:k;
-                %rak<file> := $file;
+                my $file := %rak<file> := %filesystem<file>:delete;
+                meh "--/file only makes sense when used together with --find"
+                  if !$file && !%result<find>;
             }
             elsif %filesystem<known-extensions>:delete -> $known {
                 maybe-meh-together 'known-extensions', %filesystem<
@@ -2312,10 +2314,10 @@ my sub move-result-options-to-rak(--> Nil) {
 
 my sub activate-output-options() {
     $pager = %*ENV<RAK_PAGER> unless $pager.defined;
-    $pager = "$pager -r" if $pager eq "less" | "more";  # ensure raw
     if $pager {
         meh "Cannot specify a pager and an output-file"
           if $output-file && $output-file ne '-';
+        $pager = "$pager -r" if $pager eq "less" | "more";  # ensure raw
         $*OUT = (run $pager.words, :in).in(:bin)
     }
     elsif $output-file {

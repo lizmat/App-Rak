@@ -784,6 +784,9 @@ file be included in the file selection process.  The basename of the file
 will be passed as the only argument.  Defaults to C<True>, indicating that
 all files should be included.
 
+If C<--/file> is specified, then only directory paths will be accepted.
+This only makes sense if C<--find> is also specified.
+
 =head2 --file-separator-null
 
 Flag.  Indicate to separate filenames by null bytes rather than newlines

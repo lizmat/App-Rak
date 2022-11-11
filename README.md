@@ -601,6 +601,8 @@ The `--list-known-extensions` argument can be used to see which predefined group
 
 If specified, indicates the `Callable` that should return True to have a file be included in the file selection process. The basename of the file will be passed as the only argument. Defaults to `True`, indicating that all files should be included.
 
+If `--/file` is specified, then only directory paths will be accepted. This only makes sense if `--find` is also specified.
+
 --file-separator-null
 ---------------------
 

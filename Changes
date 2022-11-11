@@ -2,6 +2,14 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.2.5  2022-11-11T19:04:06+01:00
+     - Fix issue with pager setting being ignored in some (obvious)
+       cases
+     - Ensure that "less" and "more" are called raw by default, to
+       make sure highlighting is shown properly
+     - Bump dependency on rak to get directory only search support
+     - Allow --/file --find to just search paths of directories
+
 0.2.4  2022-11-10T14:01:43+01:00
      - Fix issue with bare literal * being interpreted as a
        Whatever, rather than as a literal '*'
