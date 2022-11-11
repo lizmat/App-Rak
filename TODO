@@ -24,7 +24,8 @@ Ideas / Todo's
   in errors, e.g. making --smartcase a default, and then specifying some
   combination of options incompatible with --smartcase.
 - Add "text-only" flag, which would look at *all* files, but only accept
-  the ones that Data::TextOrBinary considers to be text
+  the ones that Data::TextOrBinary considers to be text.  Possibly make
+  that the default, instead of --known-extensions.
 
 Errors
 ======

@@ -2315,7 +2315,7 @@ my sub activate-output-options() {
     if $pager {
         meh "Cannot specify a pager and an output-file"
           if $output-file && $output-file ne '-';
-        $*OUT = (run $pager.words, :in).in;
+        $*OUT = (run $pager.words, :in).in(:bin)
     }
     elsif $output-file {
         $*OUT = open($output-file, :w) if $output-file ne '-';
@@ -2885,6 +2885,7 @@ my sub action-per-file(--> Nil) {
       ?? *.slurp(:enc(%rak<encoding> // 'utf8-c8'))
       !! $action;
 
+    activate-output-options;
     run-rak;
     rak-results;
     rak-stats;
@@ -2908,6 +2909,7 @@ my sub action-per-line(--> Nil) {
         )
     }
 
+    activate-output-options;
     if %result<sourcery>:delete {
         meh-for 'sourcery', <filesystem>;
 
@@ -3044,6 +3046,7 @@ my sub action-rename-files(--> Nil) {
     meh-for 'rename-files', <output-file pager listing modify csv>;
 
     prepare-needle;
+    activate-output-options;
     move-filesystem-options-to-rak;
 
     # First try to do a "git mv", if that failed, try an ordinary rename
