@@ -1226,13 +1226,20 @@ my sub check-GitBlameFile(str $name) {
     }
 }
 
-# handle additional CSV parameters
+# handle additional CSV flags
 my sub set-csv-flag(str $name, $value --> Nil) {
     check-TextCSV($name);
-
     Bool.ACCEPTS($value)
       ?? (%csv{$name} := $value)
       !! meh("'--$name' can only be specified as a flag");
+}
+
+# handle additional CSV values
+my sub set-csv-value(str $name, $value, str $type --> Nil) {
+    check-TextCSV($name);
+    Bool.ACCEPTS($value)
+      ?? meh "'--$name' expects $type character, not a flag"
+      !! (%csv{$name} := $value)
 }
 
 # Set highlight options
@@ -1502,7 +1509,7 @@ my sub option-eol($value --> Nil) {
 }
 
 my sub option-escape($value --> Nil) {
-    set-csv-flag('escape', $value);
+    set-csv-value('escape', $value, 'an escape');
 }
 
 my sub option-exec($value --> Nil) {
@@ -1904,7 +1911,7 @@ my sub option-quietly($value --> Nil) {
 }
 
 my sub option-quote($value --> Nil) {
-    set-csv-flag('quote', $value);
+    set-csv-value('quote', $value, 'a quote');
 }
 
 my sub option-rak($value --> Nil) {
@@ -1938,7 +1945,7 @@ my sub option-sayer($value --> Nil) {
 }
 
 my sub option-sep($value --> Nil) {
-    set-csv-flag('sep', $value);
+    set-csv-value('sep', $value, 'a seperator');
 }
 
 my sub option-shell($value --> Nil) {
