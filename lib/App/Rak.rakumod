@@ -5,7 +5,7 @@ use highlighter:ver<0.0.18>:auth<zef:lizmat>; # columns highlighter matches Type
 use IO::Path::AutoDecompress:ver<0.0.2>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.40>:auth<zef:lizmat>;              # rak Rak
+use rak:ver<0.0.41>:auth<zef:lizmat>;              # rak Rak
 
 use Backtrace::Files:ver<0.0.3>:auth<zef:lizmat> <
   backtrace-files
@@ -2171,7 +2171,7 @@ my sub move-filesystem-options-to-rak(--> Nil) {
     }
 
     %rak<file> := codify-extensions @known-extensions
-      unless %rak<file under-version-control>:k;
+      unless $reading-from-stdin || (%rak<file under-version-control>:k);
 }
 
 my sub move-result-options-to-rak(--> Nil) {
@@ -2285,11 +2285,15 @@ my sub move-result-options-to-rak(--> Nil) {
                             sayer "$_.key() has $_.value() match{"es" if .value > 1}"
                               for @files;
                         }
-                        sayer @files
-                          ?? "@files.map(*.value).sum() matches in @files.elems() files"
+                        my int $nr-matches = @files.map(*.value).sum;
+                        my int $nr-files   = @files.elems;
+                        sayer $nr-files
+                          ?? "$nr-matches match&es($nr-matches) in $nr-files file&s($nr-files)"
                           !! "No files with matches";
                     }
-                    @files.push: Pair.new: stringify($io), @matches.elems;
+                    @files.push: Pair.new:
+                      $reading-from-stdin ?? '<STDIN>' !! stringify($io),
+                      @matches.elems;
                 }
             }
 
