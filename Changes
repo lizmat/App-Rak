@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.2.6  2022-11-14T18:15:53+01:00
      - Bump dependency on rak to get "is-text" support
      - Add "is-text" option to indicate selecting files with text
        rather than with binary data.  Made that also the default
