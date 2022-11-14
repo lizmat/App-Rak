@@ -8,8 +8,8 @@ Refining by name:
 
 These arguments partially overlap in functionality.  If none of these
 arguments are specified, then --dir (accepting *all* directories for
-recursion) and --known-extensions (accepting only files of which the
-extension is an extension of any of the predefined extension groups).
+recursion) and --is-text (accepting only files that appear to contain
+text, rather than binary information).
 
 --auto-decompress
 
@@ -63,6 +63,14 @@ the extension is an extension of any of the predefined extension groups.
 Conflicts with --file, --find-all or --extensions.
 
 Refining by content:
+
+--is-text
+
+Flag.  If specified with a True value, indicates that only files that appear
+to contain text (rather than binary data) should be selected.  If specified
+with a False value, indicates that only files with binary data should be
+selected.  However, actual searching for binary data is not yet implemented,
+so this feature can only be used in conjunction with --find.
 
 --accept=code
 

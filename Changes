@@ -1,6 +1,13 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Bump dependency on rak to get "is-text" support
+     - Add "is-text" option to indicate selecting files with text
+       rather than with binary data.  Made that also the default
+       rather than --known-extensions.  Can specify --/is-text to
+       select files with binary data, but that only makes sense
+       when --find is also specified for now.  Refuse to search
+       binary files otherwise (at least for now).
 
 0.2.5  2022-11-11T19:04:06+01:00
      - Fix issue with pager setting being ignored in some (obvious)

@@ -913,6 +913,13 @@ Flag. If specified, will only select files that are symbolic links. Use negation
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
+--is-text
+---------
+
+Flag. If specified, will only select files that appear to contain text (rather than binary data). Use negation `--/is-text` to only select files with binary data.
+
+Note: support for searching for binary data is not yet implemented, so `--/is-text` can only be used in conjunction with --find.
+
 --is-world-executable
 ---------------------
 

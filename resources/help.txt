@@ -89,6 +89,7 @@ Filesystem filters:
  --is-owned-by-user      File is (not) owned by user
  --is-sticky             Has STICKY bit set in attributes
  --is-symbolic-link      File is (not) a symbolic link
+ --is-text               File contains (does not contain) text
  --is-world-executable   File can (not) be executed by anybody
  --is-world-readable     File can (not) be read by anybody
  --is-world-writable     File can (not) be written to by anybody

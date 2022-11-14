@@ -5,7 +5,7 @@ use highlighter:ver<0.0.18>:auth<zef:lizmat>; # columns highlighter matches Type
 use IO::Path::AutoDecompress:ver<0.0.2>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.3>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.41>:auth<zef:lizmat>;              # rak Rak
+use rak:ver<0.0.42>:auth<zef:lizmat>;              # rak Rak
 
 use Backtrace::Files:ver<0.0.3>:auth<zef:lizmat> <
   backtrace-files
@@ -668,6 +668,10 @@ my sub codify-extensions(*@extensions) {
 
 # Run the query
 my sub run-rak(:$eagerly --> Nil) {
+
+    meh "Searching for binary data NYI, did you forget a --find?"
+      if %rak<is-text>:exists && !%rak<is-text> && !%rak<find>;
+
     if $debug-rak {
         note .key ~ ': ' ~ .value.raku for %rak.sort(*.key);
     }
@@ -1705,6 +1709,10 @@ my sub option-is-symbolic-link($value --> Nil) {
     set-filesystem-flag('is-symbolic-link', $value);
 }
 
+my sub option-is-text($value --> Nil) {
+    set-filesystem-flag('is-text', $value);
+}
+
 my sub option-is-world-executable($value --> Nil) {
     set-filesystem-flag('is-world-executable', $value);
 }
@@ -2177,8 +2185,10 @@ my sub move-filesystem-options-to-rak(--> Nil) {
         %filesystem = ();
     }
 
-    %rak<file> := codify-extensions @known-extensions
-      unless $reading-from-stdin || (%rak<file under-version-control>:k);
+    %rak<is-text> := True
+      unless $reading-from-stdin || (%rak<
+        file is-text under-version-control
+      >:k);
 }
 
 my sub move-result-options-to-rak(--> Nil) {
