@@ -466,6 +466,16 @@ Attempt to interpret file as a CSV file, and pass each row as a List to to the p
 
 More documentation can be found with the [Text::CSV](https://raku.land/github:Tux/Text::CSV) module itself.
 
+```bash
+# Show the values of the column named "foo" of the rows in the "info.csv"
+# file if the column named "bar" is equal to "foo"
+$ rak --csv-per-line '{.<foo> if .<bar> eq "foo"}' info.csv
+
+# Show the values of the first column of the rows in the "info.csv" file
+# if the second column is equal to "foo"
+$ rak --csv-per-line --/headers '{.[0] if .[1] eq "foo"}' info.csv
+```
+
 --degree[=N | code]
 -------------------
 
@@ -728,6 +738,58 @@ NOTE: support of this feature depends on Raku supporting that feature on the cur
 Flag. If specified, will only select files that do have the SETUID bit set in their attributes. Use negation `--/has-setuid` to only select files that do **not** have the SETUID bit set.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
+--headers
+---------
+
+Only applicable when `--csv-per-line` is also specified. It defaults to "auto". It can have the following values:
+
+  * --headers
+
+Boolean True, same as "auto"
+
+  * --/headers
+
+Boolean False, assume comma separator and no header line, produce a list of column values for each line in the CSV file.
+
+  * --headers=auto
+
+Automatically determine separator, first line is header with column names, produce a hash with values keyed to column names for each line in the CSV file.
+
+  * --headers=skip
+
+Assume the first line is a header, but skip it. Produce a lust of column values for each line in the CSV file.
+
+  * --headers=uc
+
+Same as "auto", but uppercase the column names found in the header line.
+
+  * --headers=lc
+
+Same as "auto", but lowercase the column names found in the header line.
+
+  * --headers='<a b c>'
+
+Specifies a list of column names to associate with columns, in order. Assumes no header line is available.
+
+  * --headers=':a<foo>, :b<bar>'
+
+Indicates a list of `Pair`s with column name mapping to use instead of the column names found in the header line of the CSV file.
+
+  * --headers='code'
+
+Any Raku code that produces one of the above values. Also supports a `Map` or `Hash` instead of a list of `Pair`s.
+
+```bash
+# Use uppercase column names
+$ rak --csv-per-line --headers=uc '{.<FOO> if .<BAR> eq "foo"}' info.csv
+
+# Use alternate column names in order of columns
+$ rak --csv-per-line --headers='<a b>' '{.<a> if .<n> eq "foo"}' info.csv
+
+# Use alternate column names using mapping
+$ rak --csv-per-line --headers=':foo<a>, :bar<b>' '{.<a> if .<n> eq "foo"}' info.csv
+```
 
 --help[=area-of-interest]
 -------------------------

@@ -609,6 +609,18 @@ will be tried, unless overridden by any explicit extension specification.
 More documentation can be found with the
 L<Text::CSV|https://raku.land/github:Tux/Text::CSV> module itself.
 
+=begin code :lang<bash>
+
+# Show the values of the column named "foo" of the rows in the "info.csv"
+# file if the column named "bar" is equal to "foo"
+$ rak --csv-per-line '{.<foo> if .<bar> eq "foo"}' info.csv
+
+# Show the values of the first column of the rows in the "info.csv" file
+# if the second column is equal to "foo"
+$ rak --csv-per-line --/headers '{.[0] if .[1] eq "foo"}' info.csv
+
+=end code
+
 =head2 --degree[=N | code]
 
 Indicate the number of worker threads that should be maximally.  Defaults
@@ -940,6 +952,67 @@ that do B<not> have the SETUID bit set.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
+
+=head2 --headers
+
+Only applicable when C<--csv-per-line> is also specified.  It defaults to
+"auto".  It can have the following values:
+
+=item --headers
+
+Boolean True, same as "auto"
+
+=item --/headers
+
+Boolean False, assume comma separator and no header line, produce a list
+of column values for each line in the CSV file.
+
+=item --headers=auto
+
+Automatically determine separator, first line is header with column names,
+produce a hash with values keyed to column names for each line in the CSV
+file.
+
+=item --headers=skip
+
+Assume the first line is a header, but skip it.  Produce a lust of column
+values for each line in the CSV file.
+
+=item --headers=uc
+
+Same as "auto", but uppercase the column names found in the header line.
+
+=item --headers=lc
+
+Same as "auto", but lowercase the column names found in the header line.
+
+=item --headers='<a b c>'
+
+Specifies a list of column names to associate with columns, in order.
+Assumes no header line is available.
+
+=item --headers=':a<foo>, :b<bar>'
+
+Indicates a list of C<Pair>s with column name mapping to use instead
+of the column names found in the header line of the CSV file.
+
+=item --headers='code'
+
+Any Raku code that produces one of the above values.  Also supports a
+C<Map> or C<Hash> instead of a list of C<Pair>s.
+
+=begin code :lang<bash>
+
+# Use uppercase column names
+$ rak --csv-per-line --headers=uc '{.<FOO> if .<BAR> eq "foo"}' info.csv
+
+# Use alternate column names in order of columns
+$ rak --csv-per-line --headers='<a b>' '{.<a> if .<n> eq "foo"}' info.csv
+
+# Use alternate column names using mapping
+$ rak --csv-per-line --headers=':foo<a>, :bar<b>' '{.<a> if .<n> eq "foo"}' info.csv
+
+=end code
 
 =head2 --help[=area-of-interest]
 

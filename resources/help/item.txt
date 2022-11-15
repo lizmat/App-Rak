@@ -148,8 +148,8 @@ https://raku.land/zef:lizmat/Git::Blame::File .
 
 --csv-per-line
 
-Attempt to interprete file as a CSV file, and pass each row as an item
-to the pattern matchere.  Only files with extensions from the #csv group
+Attempt to interprete file as a CSV file, and by default pass each row as
+a hash to the pattern matcher.  Only files with extensions from the #csv group
 will be tried, unless overridden by any explicit extension specification.
 
 The following options only make sense when --csv-per-line has been specified:
@@ -164,15 +164,45 @@ The following options only make sense when --csv-per-line has been specified:
 - --sep=[,]              field separator, default: ,
 - --strict               flag, do not allow different number of fields
 - --keep-meta            flag, produce fields as CSV::Field instead of Str
+- --headers[=value]      logic for handling headers, see below
 
 Example:
+# Show the values of the column named "foo" of the rows in the "info.csv"
+# file if the column named "bar" is equal to "foo"
+$ rak --csv-per-line '{.<foo> if .<bar> eq "foo"}' info.csv
+
 # Show the values of the first column of the rows in the "info.csv" file
 # if the second column is equal to "foo"
-$ rak --csv-per-line '{.[0] if .[1] eq "foo"}' info.csv
+$ rak --csv-per-line --/headers '{.[0] if .[1] eq "foo"}' info.csv
 
 Requires that the Text::CSV module is installed.
 For more information about Text::CSV, see
 https://raku.land/github:Tux/Text::CSV .
+
+--headers
+
+Only applicable when --csv-per-line is also specified.  It defaults to
+"auto".  It can have the following values:
+
+- True              same as "auto"  (--headers)
+- False             assume comma separator and no header line (--/headers)
+- auto              automatically determine separator, first line is header
+- skip              skip first line, no key mapping
+- uc                same as "auto", but uppercase the column names in header
+- lc                same as "auto", but lowercase the column names in header
+- <a b c>           list of column names to assume
+- :a<foo>, :b<bar>  map column names to given alternate value
+- code              Raku code generating any of the above values
+
+Examples:
+# Use uppercase column names
+$ rak --csv-per-line --headers=uc '{.<FOO> if .<BAR> eq "foo"}' info.csv
+
+# Use alternate column names in order of columns
+$ rak --csv-per-line --headers='<a b>' '{.<a> if .<n> eq "foo"}' info.csv
+
+# Use alternate column names using mapping
+$ rak --csv-per-line --headers=':foo<a>, :bar<b>' '{.<a> if .<n> eq "foo"}' info.csv
 
 --unicode
 
