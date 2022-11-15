@@ -7,7 +7,7 @@ END unlink %*ENV<RAK_CONFIG>;
 my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
-my $dir  = $*TMPDIR.add("App-Rak");
+my $dir  = $*PROGRAM.parent.sibling("q");
 my $dira = $dir.absolute ~ $*SPEC.dir-sep;
 my $rel := $dir.relative ~ $*SPEC.dir-sep;
 my $dot  = $?FILE.IO.parent.parent;
@@ -19,28 +19,16 @@ my %path2name  = %name2path.kv.reverse;
 
 my $paths = $dir.sibling("rak-paths");
 $paths.spurt: %name2path{@filenames}.join("\n");
+END $paths.IO.unlink;
 
 my @targets  = @filenames;
 @targets[3]  = "";
 @targets[6] .= uc;
 
-$dir.mkdir;
-for @filenames.kv -> $n, $name {
-    %name2path{$name}.IO.spurt: @targets[0..$n].join("\n") ~ "\n";
-    is %name2path{$name}.IO.slurp, @targets[0..$n].join("\n") ~ "\n",
-      "is the file for $name ok?";
-}
-
 # using paths from here on out
 $dot   .= relative;
 $dir   .= absolute;
 $paths .= absolute;
-
-END {
-    .IO.unlink for %name2path.values;
-    $paths.IO.unlink;
-    $dir.IO.rmdir;
-}
 
 my sub query-ok(
   *@query,              # the actual parameters
@@ -49,11 +37,13 @@ my sub query-ok(
   :$add-paths  = True,  # add paths specification
   :$add-human  = True,  # add human specification
   :$add-degree = True,  # add degree specification
+  :$add-absolute,       # add absolute specification
 ) is test-assertion {
     my @args = $*EXECUTABLE.absolute, "-I$dot", $rak, @query.Slip;
     @args.push: "--paths-from=$paths" if $add-paths;
     @args.push: "--human"             if $add-human;
     @args.push: "--degree"            if $add-degree;
+    @args.push: "--absolute"          if $add-absolute;
     $ok .= chomp;
 
     # Logic to run the query
@@ -62,7 +52,9 @@ my sub query-ok(
         my $key = "huh?";
 
         is $proc.err.slurp(:close), "", "is '@query[]' STDERR clean?";
-        $proc.out.lines.map(*.subst($rel, :g)).join("\n")
+        $add-absolute
+          ?? $proc.out.lines.join("\n")
+          !! $proc.out.lines.map(*.subst($rel, :g)).join("\n")
     }
 
     # Base query
@@ -76,6 +68,7 @@ my sub query-ok(
           "is '@query[]' result ok?";
     }
 }
+
 
 # Checks for "ine"
 my @ine = (
@@ -154,7 +147,7 @@ nine
 8:{BON}seven{BOFF}
 OK
 
-query-ok </o$/ --find --absolute>, ok => qq:to/OK/;
+query-ok </o$/ --find>, :add-absolute, ok => qq:to/OK/;
 {$dira}tw{BON}o{BOFF}
 {$dira}zer{BON}o{BOFF}
 OK
