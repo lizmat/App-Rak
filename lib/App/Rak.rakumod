@@ -1621,15 +1621,13 @@ my sub option-headers($value --> Nil) {
     CATCH {
         meh "Could not compile --headers='$value':\n$_.message()";
     }
-    %csv<headers> := do if Bool.ACCEPTS($value)
-      || $value (elem) <skip auto lc uc> {
-        $value
-    }
-    else {
-        my $compiled := $value.EVAL;
-        # Text::CSV must have an Array for a list of column names :-(
-        List.ACCEPTS($compiled) ?? $compiled.Array !! $compiled;
-    }
+    %csv<headers> := Bool.ACCEPTS($value) || $value (elem) <skip auto lc uc>
+      ?? $value
+      !! List.ACCEPTS(my $compiled := $value.EVAL)
+        ?? $compiled.are =:= Pair
+          ?? %($compiled)  # convert list of Pairs to hash
+          !! $compiled.Array
+        !! $compiled;
 }
 
 my sub option-help($value --> Nil) {
