@@ -2452,6 +2452,7 @@ my sub action-csv-per-line(--> Nil) {
     %filesystem<file> //= codify-extensions %exts<#csv>
       unless $reading-from-stdin;
     move-filesystem-options-to-rak;
+    move-result-options-to-rak;
 
     %csv<auto-diag> := True unless %csv<auto-diag>:exists;
     my $csv := $TextCSV.new(|%csv);
