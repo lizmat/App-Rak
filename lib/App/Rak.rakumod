@@ -501,7 +501,7 @@ my sub pre-process($pattern) {
           && $pattern.chars > 2 {
             non-word(my $target := $pattern.substr(1,*-1).trim)
               ?? $pattern
-              !! $target but Type<contains>
+              !! $target but Type<contains>  # avoid using regex for / foo /
         }
         elsif $pattern.starts-with('^') {
             $pattern.ends-with('$')
@@ -515,7 +515,7 @@ my sub pre-process($pattern) {
             $pattern.substr(1) but Type<words>
         }
         else {
-            $pattern but Type<contains>
+            $pattern  # could be some other pattern to interprete
         }
     }
     elsif $type eq 'regex' {
@@ -527,7 +527,7 @@ my sub pre-process($pattern) {
         '{' ~ $pattern ~ '}'
     }
 
-    # some other known type
+    # some other known type, don't interprete
     else {
         $pattern but Type($type)
     }
@@ -536,7 +536,8 @@ my sub pre-process($pattern) {
 # Convert a string to code if possible, adhering to type
 my sub codify(Str:D $code) {
     CATCH {
-        meh "Could not compile '$code':\n$_.message()";
+        meh "Could not compile '$code':\n$_.message()"
+          unless %rak<dont-catch>;
     }
 
     # Return prelude from --repository and --module parameters
@@ -554,7 +555,7 @@ my sub codify(Str:D $code) {
             ?? (prelude() ~ 'my $ := ' ~ $code).EVAL
             !! $code.starts-with('*') && $code.chars > 1
               ?? (prelude() ~ 'my $ := ' ~ $code).EVAL
-              !! $code
+              !! $code but Type('contains')
 }
 
 # Pre-process literal strings looking like a regex
@@ -3481,7 +3482,6 @@ my sub codify-pattern-matches-only($pattern) {
 
 # Prepare the executable needle
 my sub prepare-needle() {
-
     if $pattern {
         if $smartcase {
             $ignorecase.defined
@@ -3496,19 +3496,26 @@ my sub prepare-needle() {
 
         # multiple patterns
         if List.ACCEPTS($pattern) {
+            my $matches-only := %result<matches-only>:delete;
+
             $pattern := $pattern.map(&pre-process).List;
-            $needle := $pattern.map(%result<matches-only>:delete
-              ?? &codify-pattern-matches-only
-              !! &codify-pattern
-            ).List;
+            $needle := $pattern.map({
+                .can('type')
+                  ?? needleify($_)
+                  !! $matches-only
+                    ?? codify-pattern-matches-only($_)
+                    !! codify-pattern($_)
+            }).List
         }
 
         # a single pattern
         else {
             $pattern := pre-process $pattern;
-            $needle := %result<matches-only>:delete
-              ?? codify-pattern-matches-only($pattern)
-              !! codify-pattern($pattern)
+            $needle := $pattern.can('type')
+              ?? needleify($pattern)
+              !! (%result<matches-only>:delete)
+                ?? codify-pattern-matches-only($pattern)
+                !! codify-pattern($pattern)
         }
     }
 

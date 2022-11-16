@@ -5,6 +5,9 @@ Revision history for App-Rak
        --csv-per-line, which now will assume a header line in the
        CSV file per default, and will produce hashes per line, keyed
        to the column name.
+     - Added some basic --csv-per-line author tests
+     - Fix issue with --type= information not being authoritative,
+       spotted by Márton Polgár
 
 0.2.6  2022-11-14T18:15:53+01:00
      - Bump dependency on rak to get "is-text" support
