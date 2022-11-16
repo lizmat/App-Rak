@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.2.7  2022-11-16T13:12:17+01:00
      - Add support for --headers argument, which is a sub-option of
        --csv-per-line, which now will assume a header line in the
        CSV file per default, and will produce hashes per line, keyed
