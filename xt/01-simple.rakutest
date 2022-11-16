@@ -69,7 +69,6 @@ my sub query-ok(
     }
 }
 
-
 # Checks for "ine"
 my @ine = (
   <ine>,
@@ -760,6 +759,11 @@ OK
 query-ok <-/im --list-expanded-options>, :!add-paths, :!add-human, :!add-degree,
   :!head, ok => qq:to/OK/;
 No options found
+OK
+
+query-ok <*@ --type=starts-with q>, :!add-paths, :!head, ok => qq:to/OK/;
+foo
+1:{BON}*\@{BOFF}foo
 OK
 
 done-testing;
