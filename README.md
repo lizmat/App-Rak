@@ -648,11 +648,6 @@ $ rak --find --filesize='* >= 30'
 
 Flag. If specified, will **not** look at the contents of the selected paths, but instead consider the selected paths as lines in a virtual file. And as such will always only produce filenames.
 
---find-all
-----------
-
-Flag. If specified, will override any file or directory filter settings and include all possible files for inspection (basically setting both `--dir` and `--file` to `True`).
-
 --only-first[=N]
 ----------------
 

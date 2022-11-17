@@ -36,31 +36,24 @@ Can either be a single extension (group), or a comma-separated list
 of extensions (groups).  Currently the predefined extension groups
 are: #raku, #perl, #cro, #text, #c, #c++, #yaml, #ruby, #python, #js,
 #html, #markdown, #json, #jsonl, #csv, #config and #text.  Conflicts
-with --file, --find-all or --known-extensions.
+with --file or --known-extensions.
 
 --file=expression
 
 Specifies the expression (either as a string, regular expression or
 as a Callable) that will be matched with the basename of a file.
 This expression should return True to have a file be included.
-Conflicts with --extensions, --find-all or --known-extensions.
+Conflicts with --extensions or --known-extensions.
 
 If specified as --file, will accept *all* file paths for inclusion.
 If specified as --/file, will only produce paths of directories if --find
 is also specified.
 
---find-all
-
-Flag.  If specified with a True value, will set --dir and --file both
-to True, indicating *no* limitation on which directories are acceptable
-for recursion, nor any limitation on the basename of a file.  Conflicts
-with --file, --dir, --extensions or --known-extensions.
-
 --known-extensions
 
 Flag.  If specified with a True value, will only accept files of which
 the extension is an extension of any of the predefined extension groups.
-Conflicts with --file, --find-all or --extensions.
+Conflicts with --file or --extensions.
 
 Refining by content:
 

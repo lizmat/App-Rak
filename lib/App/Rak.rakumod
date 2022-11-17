@@ -24,7 +24,7 @@ my constant BOFF = "\e[22m";  # BOLD OFF
 #- start of available options --------------------------------------------------
 #- Generated on 2022-11-15T21:06:14+01:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find find-all formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -79,14 +79,14 @@ my constant %falsies =
   1                => 'only-first',
 
 # from ag
-  a                => 'find-all',
-  all-types        => 'find-all',
+  a                => 'dir',
+  all-types        => 'dir',
   after            => 'after-context',
   before           => 'before-context',
   0                => 'file-separator-null',
   null             => 'file-separator-null',
-  u                => 'find-all',
-  unrestricted     => 'find-all',
+  u                => 'dir',
+  unrestricted     => 'dir',
 ;
 
 # Options that only make sense after one main option
@@ -1582,10 +1582,6 @@ my sub option-find($value --> Nil) {
     set-result-flag('find', $value);
 }
 
-my sub option-find-all($value --> Nil) {
-    set-filesystem-flag('find-all', $value);
-}
-
 my sub option-formula($value --> Nil) {
     set-csv-flag('formula', $value);
 }
@@ -2148,7 +2144,7 @@ my sub move-filesystem-options-to-rak(--> Nil) {
         else {
             if %filesystem<file>:exists {
                 maybe-meh-together 'file', %filesystem<
-                  extensions known-extensions find-all
+                  extensions known-extensions
                 >:k;
                 my $file := %rak<file> := %filesystem<file>:delete;
                 meh "--/file only makes sense when used together with --find"
@@ -2156,13 +2152,9 @@ my sub move-filesystem-options-to-rak(--> Nil) {
             }
             elsif %filesystem<known-extensions>:delete -> $known {
                 maybe-meh-together 'known-extensions', %filesystem<
-                  extensions find-all
+                  extensions
                 >:k;
                 %rak<file> := $known;
-            }
-            elsif %filesystem<find-all>:delete {
-                maybe-meh-together 'find-all', %filesystem<dir extensions>:k;
-                %rak<file> := True;
             }
             elsif %filesystem<extensions>:delete -> $seen {
                 %rak<file> := $seen;

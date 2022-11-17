@@ -71,7 +71,6 @@ Filesystem filters:
  --extensions=spec       By group (e.g. #raku) and/or comma separated
  --file=expression       File basename filter, default: all
  --filesize=condition    Number of bytes of data used by file
- --find-all              Override --dir / --file defaults
  --group=selector        File is owned by group names / expression
  --gid=condition         File is owned by given gid
  --hard-links=condition  Number of hard-links to file on file system
