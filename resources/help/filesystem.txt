@@ -113,8 +113,8 @@ associated with the owner of file.  It is expected to return True
 to have the file accepted.  Note that this may actually only work
 on Unixy file systems.
 
- --uid=condition  File is owned by uid given
- --gid=condition  File is owned by gid given
+ --uid=condition  File is owned by numeric uid given
+ --gid=condition  File is owned by numeric gid given
 
 Refining by numeric meta value:
 
