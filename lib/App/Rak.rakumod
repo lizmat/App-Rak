@@ -2628,6 +2628,8 @@ my sub action-help(--> Nil) {
           !! $_
     }
 
+    activate-output-options;
+
     # let's produce the necessary help and search in it / paragraph
     if $pattern {
         %rak<sources>          := (Hows,);
@@ -2656,7 +2658,6 @@ my sub action-help(--> Nil) {
         prepare-needle;
         run-rak;
 
-        activate-output-options;
         %listing<show-filename> := False unless %listing<show-filename>:exists;
         %listing<trim>          := False unless %listing<trim>:exists;
         rak-results;

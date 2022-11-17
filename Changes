@@ -4,6 +4,7 @@ Revision history for App-Rak
      - Bump dependency on "rak" to get IO hiding fix for data fetched
        from URLs.
      - Fix issue with --find --/human spotted by Márton Polgár
+     - Make sure that --help=section will also run through any pager
 
 0.2.7  2022-11-16T13:12:17+01:00
      - Add support for --headers argument, which is a sub-option of
