@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.2.8  2022-11-18T13:33:16+01:00
      - Bump dependency on "rak" to get IO hiding fix for data fetched
        from URLs.
      - Fix issue with --find --/human spotted by Márton Polgár
