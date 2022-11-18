@@ -2,6 +2,11 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.2.9  2022-11-18T17:34:39+01:00
+     - Bump dependency on "rak" to get --files|paths-from=- fix
+     - Can not use --paths=- to read paths from STDIN, please use
+       --paths-from=- instead
+
 0.2.8  2022-11-18T13:33:16+01:00
      - Bump dependency on "rak" to get IO hiding fix for data fetched
        from URLs.

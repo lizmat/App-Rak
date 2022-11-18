@@ -1229,7 +1229,7 @@ Flag. Indicate whether **all** lines from source should be produced if at least 
 --paths=path1,path2
 -------------------
 
-Indicates the path specification to be used instead of from any positional arguments. "-" can be specified to read path specifications from STDIN. Multiple path specifications should be separated by comma's.
+Indicates the path specification to be used instead of from any positional arguments. Multiple path specifications should be separated by comma's.
 
 --paths-from=filename
 ---------------------

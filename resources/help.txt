@@ -51,7 +51,7 @@ Code pattern helpers:
 
 Haystack specification:
  path1 path2 ...          All other arguments are paths (default: current dir)
- --path=specification     Comma separated list of paths instead of ^^
+ --paths=specification    Comma separated list of paths instead of ^^
  --files-from=file        Read files to inspect from given file
  --paths-from=file        Read path specifications from given file
  --under-version-control  Select paths that are under version control

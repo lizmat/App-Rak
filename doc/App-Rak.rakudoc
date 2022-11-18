@@ -1537,8 +1537,7 @@ least one line matches.  Highlighting will still be performed, if so
 =head2 --paths=path1,path2
 
 Indicates the path specification to be used instead of from any positional
-arguments.  "-" can be specified to read path specifications from STDIN.
-Multiple path specifications should be separated by comma's.
+arguments.  Multiple path specifications should be separated by comma's.
 
 =head2 --paths-from=filename
 
