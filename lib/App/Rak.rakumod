@@ -3160,7 +3160,7 @@ my sub action-unicode(--> Nil) {
 
     class Unicodes {
         method lines() {
-            (0..0x10FFFF).map: {
+            (0..0x10FFFF).hyper(batch => 2048).map: {
                 my $uniname := .uniname;
                 $uniname
                   unless $uniname.starts-with('<') && $uniname.ends-with('>')
