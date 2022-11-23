@@ -2130,7 +2130,9 @@ my sub move-filesystem-options-to-rak(--> Nil) {
         meh "Cannot use &mm(%filesystem.keys.sort) when reading from STDIN"
           if %filesystem;
         %listing<show-filename> := False
-          if $source-for ne 'paths-from' && $source-for ne 'files-from';
+          if $source-for
+          && $source-for ne 'paths-from'
+          && $source-for ne 'files-from';
     }
     elsif %filesystem {
         if %filesystem<under-version-control> {
