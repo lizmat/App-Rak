@@ -551,12 +551,10 @@ my sub codify(Str:D $code) {
       !! $code.starts-with('/') && $code.ends-with('/') && $code.chars > 2
         ?? regexify($code)
         !! $code.starts-with('{') && $code.ends-with('}')
-          ?? (prelude() ~ 'my $ := -> $_ ' ~ $code).EVAL
-          !! $code.starts-with('-> $') && $code.ends-with('}')
+          ?? (prelude() ~ 'my $ := { my $*_ := $_; ' ~ $code.substr(1)).EVAL
+          !! $code.starts-with('*') && $code.chars > 1
             ?? (prelude() ~ 'my $ := ' ~ $code).EVAL
-            !! $code.starts-with('*') && $code.chars > 1
-              ?? (prelude() ~ 'my $ := ' ~ $code).EVAL
-              !! $code but Type('contains')
+            !! $code but Type('contains')
 }
 
 # Pre-process literal strings looking like a regex

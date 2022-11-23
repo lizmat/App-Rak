@@ -55,7 +55,7 @@ If the pattern starts and ends with `/`, then it indicates a Raku [regex](https:
 
 ### { code }
 
-If the pattern starts with `{` and ends with `}`, then it indicates Raku code to be executed. **No** special processing of the given string between the curly braces will be done: the given code will be compiled as Raku code. During the search process, this code will be run for each item, available in `$_`.
+If the pattern starts with `{` and ends with `}`, then it indicates Raku code to be executed. **No** special processing of the given string between the curly braces will be done: the given code will be compiled as Raku code. During the search process, this code will be run for each item, available in `$_`. To facilitate the use of libraries that wish to access that topic, it is also available as the `$*_` dynamic variable.
 
 The dynamic variable `$*SOURCE` will contain the `IO::Path` object of the file being processed. Note that the Raku code will be called in a thread **unsafe** manner.
 

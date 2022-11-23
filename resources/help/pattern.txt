@@ -61,8 +61,11 @@ Code:
 If a string that starts with '{' and ends with '}' is specified, or
 a string that starts with '*', they will be considered to be Raku
 executable code and compiled as such.  Each item will be passed as
-a positional argument to the compiled code, and the code is expected
-to return a value that is either
+a positional argument to the compiled code, available in its scope
+as the topic (aka $_).  To facilitate the use of libraries that wish
+to access that topic, it is also available as the $*_ dynamic variable.
+
+The code is expected to return a value that is:
 
 1. True       produce item, unless --invert-match was specified
 2. False      do **NOT** produce item, unless --invert-match was specified

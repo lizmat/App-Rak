@@ -1,6 +1,7 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Introduce the $*_ dynamic variable inside { } patterns
 
 0.2.12  2022-11-23T13:07:47+01:00
      - Bump dependency on rak properly

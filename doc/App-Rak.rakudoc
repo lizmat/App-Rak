@@ -69,7 +69,8 @@ If the pattern starts with C<{> and ends with C<}>, then it indicates
 Raku code to be executed.  B<No> special processing of the given string
 between the curly braces will be done: the given code will be compiled as
 Raku code.  During the search process, this code will be run for each item,
-available in C<$_>.
+available in C<$_>.  To facilitate the use of libraries that wish to access
+that topic, it is also available as the C<$*_> dynamic variable.
 
 The dynamic variable C<$*SOURCE> will contain the C<IO::Path> object of the
 file being processed.  Note that the Raku code will be called in a thread
