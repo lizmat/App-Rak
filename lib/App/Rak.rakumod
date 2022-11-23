@@ -189,7 +189,7 @@ my $ignoremark;  # --ignoremark
 
 # allowed types with --type
 my constant %types = <
-  auto regex code contains words starts-with ends-with equal
+  auto regex code contains words starts-with ends-with equal json-path
 >.map: * => 1;
 my $type;  # --type (implicitely) specified
 
@@ -456,9 +456,9 @@ my sub meh($message) is hidden-from-backtrace {
 }
 
 # Quit if module not installed
-my sub meh-not-installed($module, $param) is hidden-from-backtrace {
+my sub meh-not-installed($module, $feature) is hidden-from-backtrace {
     meh qq:to/MEH/.chomp;
-Must have the $module module installed to do --$param.
+Must have the $module module installed to do $feature.
 You can do this by running 'zef install $module'.
 MEH
 }
@@ -515,6 +515,9 @@ my sub pre-process($pattern) {
         elsif $pattern.starts-with('§') {
             $pattern.substr(1) but Type<words>
         }
+        elsif $pattern.starts-with('jp:') {
+            q/{jp('/ ~ $pattern.substr(3) ~ q/').Slip}/
+        }
         else {
             $pattern  # could be some other pattern to interprete
         }
@@ -527,11 +530,19 @@ my sub pre-process($pattern) {
     elsif $type eq 'code' {
         '{' ~ $pattern ~ '}'
     }
+    elsif $type eq 'json-path' {
+        q/{jp('/ ~ $pattern ~ q/').Slip}/
+    }
 
     # some other known type, don't interprete
     else {
         $pattern but Type($type)
     }
+}
+
+# Return prelude from --repository and --module parameters
+my sub prelude() {
+    @repos.map({"use lib '$_'; "}).join ~ @modules.map({"use $_; "}).join
 }
 
 # Convert a string to code if possible, adhering to type
@@ -541,17 +552,12 @@ my sub codify(Str:D $code) {
           unless %rak<dont-catch>;
     }
 
-    # Return prelude from --repository and --module parameters
-    my sub prelude() {
-        @repos.map({"use lib '$_'; "}).join ~ @modules.map({"use $_; "}).join
-    }
-
     $code eq '*.defined'
       ?? &defined
       !! $code.starts-with('/') && $code.ends-with('/') && $code.chars > 2
         ?? regexify($code)
         !! $code.starts-with('{') && $code.ends-with('}')
-          ?? (prelude() ~ 'my $ := { my $*_ := $_; ' ~ $code.substr(1)).EVAL
+          ?? codify-curlies($code)
           !! $code.starts-with('*') && $code.chars > 1
             ?? (prelude() ~ 'my $ := ' ~ $code).EVAL
             !! $code but Type('contains')
@@ -560,6 +566,81 @@ my sub codify(Str:D $code) {
 # Pre-process literal strings looking like a regex
 my sub regexify($code) {
     "/{ ':i ' if $ignorecase }{ ':m ' if $ignoremark }$code.substr(1)".EVAL
+}
+
+# Convert a string with curlies to code if possible
+my sub codify-curlies(Str:D $code) {
+
+    # Wrapper for JSON::Path object
+    my class JP {
+        has $.jp;
+        method value()  { $!jp.value($*_) }
+        method values() { $!jp.values($*_) }
+        method paths()  { $!jp.paths($*_) }
+        method paths-and-values() { $!jp.paths-and-values($*_) }
+
+        method list() { $!jp.values($*_).List }
+        method List() { $!jp.values($*_).List }
+        method Slip() { $!jp.values($*_).Slip }
+        method Str()  { $!jp.values($*_).Str  }
+        method gist() { $!jp.values($*_).gist }
+    }
+
+    # Allow postcircumfixes on jp($path)
+    my multi sub postcircumfix:<[ ]>(JP:D $self) {
+        $self.values
+    }
+    my multi sub postcircumfix:<[ ]>(JP:D $self, Whatever) {
+        $self.values
+    }
+    my multi sub postcircumfix:<[ ]>(JP:D $self, Int:D $pos) {
+        $self.values[$pos]
+    }
+    my multi sub postcircumfix:<[ ]>(JP:D $self, @pos) {
+        $self.values[@pos]
+    }
+
+    # Allow for slip jp($path)
+    my multi sub slip(JP:D $self) {
+        $self.values.Slip
+    }
+
+    # Magic self-installing JSON::Path support
+    my $class;
+    my $lock := Lock.new;
+    my &jp = my sub jp-stub(str $path) {
+        $lock.protect: {
+            if $class<> =:= Any {
+                CATCH { meh-not-installed "JSON::Path", 'jp(path)' }
+                $class := 'use JSON::Path:ver<1.7>; JSON::Path'.EVAL;
+            }
+        }
+
+        my $jp := JP.new: jp => do {
+            CATCH {
+                if X::AdHoc.ACCEPTS($_) {
+                    my $m := .payload;
+                    if $m.starts-with('JSON path parse error') {
+                        my $pos  := $m.words.tail.Int;
+                        my $bon  := BON;
+                        my $boff := BOFF;
+                        exit note qq:to/ERROR/.chomp;
+$m:
+$path.substr(0,$pos)$bon$path.substr($pos,1)$boff$path.substr($pos + 1)
+{" " x $pos}⏏
+ERROR
+                    }
+                }
+                meh .Str unless %rak<dont-catch>;
+            }
+            $class.new($path)
+        }
+        &jp = my sub jp-live($) { $jp }
+        $jp
+    }
+
+    # Create the code and make sure $*_ is aliased
+    (prelude() ~ 'my $ := { my $*_ := $_; ' ~ $code.substr(1)).EVAL
 }
 
 # Convert a string to code, fail if not possible
@@ -1145,7 +1226,7 @@ my sub set-filesystem-name(str $name, $value, $name-getter, $id-getter --> Nil) 
 
     # Get lookuppers
     my (&name-getter, &id-getter) = do {
-        CATCH { meh-not-installed "P5$name-getter", $name }
+        CATCH { meh-not-installed "P5$name-getter", "--$name" }
         "use P5$name-getter; &$name-getter, &$id-getter".EVAL
     }
 
@@ -1198,7 +1279,7 @@ my sub external-execution(str $name, $value --> Nil) {
 # check sourcery availability
 my sub check-sourcery(str $name) {
     unless &sourcery {
-        CATCH { meh-not-installed 'sourcery', $name }
+        CATCH { meh-not-installed 'sourcery', "--$name" }
         (&sourcery, &sourcery-pattern) =
           "use sourcery; &sourcery, &needle".EVAL;
     }
@@ -1207,7 +1288,7 @@ my sub check-sourcery(str $name) {
 # check Edit::Files availability
 my sub check-EditFiles(str $name) {
     unless &edit-files {
-        CATCH { meh-not-installed 'Edit::Files', $name }
+        CATCH { meh-not-installed 'Edit::Files', "--$name" }
         &edit-files = "use Edit::Files; &edit-files".EVAL;
     }
 }
@@ -1215,7 +1296,7 @@ my sub check-EditFiles(str $name) {
 # check Text::CSV availability
 my sub check-TextCSV(str $name) {
     unless $TextCSV {
-        CATCH { meh-not-installed 'Text::CSV', $name }
+        CATCH { meh-not-installed 'Text::CSV', "--$name" }
         require Text::CSV;
         $TextCSV := Text::CSV;
     }
@@ -1224,7 +1305,7 @@ my sub check-TextCSV(str $name) {
 # check Git::Blame::File availability
 my sub check-GitBlameFile(str $name) {
     unless $GitBlameFile {
-        CATCH { meh-not-installed 'Git::Blame::File', $name }
+        CATCH { meh-not-installed 'Git::Blame::File', "--$name" }
         require Git::Blame::File;
         $GitBlameFile := Git::Blame::File;
     }
@@ -1827,7 +1908,7 @@ my sub option-output-file($value --> Nil) {
 
 my sub option-pager($value --> Nil) {
     Bool.ACCEPTS($value)
-      ?? meh "'pager--' expects a program specification"
+      ?? meh "'--pager' expects a program specification"
       !! ($pager = $value);
 }
 
@@ -2503,7 +2584,7 @@ my sub action-edit(--> Nil) {
             meh "File '$pattern' is not found or not readable"
               unless $io.r;
 
-            my $proc := run $*EXECUTABLE, 
+            my $proc := run $*EXECUTABLE,
               ('--ll-exception' if $verbose), $io, @positionals, :out, :err;
             if $proc.err.slurp(:close) -> $backtrace {
                 go-edit-error($backtrace);
@@ -2989,7 +3070,7 @@ my sub action-per-line(--> Nil) {
             meh "File '$pattern' is not found or not readable"
               unless $io.r;
 
-            my $proc := run $*EXECUTABLE, 
+            my $proc := run $*EXECUTABLE,
               ('--ll-exception' if $verbose), $io, @positionals, :out, :err;
             if $proc.err.slurp(:close) -> $backtrace {
                 $rak := Rak.new: result => produce-result($backtrace);
@@ -3236,7 +3317,7 @@ my sub action-vimgrep(--> Nil) {
             meh "File '$pattern' is not found or not readable"
               unless $io.r;
 
-            my $proc := run $*EXECUTABLE, 
+            my $proc := run $*EXECUTABLE,
               ('--ll-exception' if $verbose), $io, @positionals, :out, :err;
             if $proc.err.slurp(:close) -> $backtrace {
                 vimgreppify($backtrace);

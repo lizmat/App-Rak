@@ -59,9 +59,15 @@ If the pattern starts with `{` and ends with `}`, then it indicates Raku code to
 
 The dynamic variable `$*SOURCE` will contain the `IO::Path` object of the file being processed. Note that the Raku code will be called in a thread **unsafe** manner.
 
+The dynamic variable `$*_` will contain the topic with which the code was called. This to allow custom libraries to easily obtain the topic without the user needing to specify that again.
+
 ### *code
 
 If the pattern starts with `*`, then this is a short way of specifying Raku code as a pattern, using [Whatever-currying](https://docs.raku.org/type/Whatever#index-entry-Whatever-currying). Otherwise the same as `{ code }`.
+
+### jp:path
+
+If the pattern start with 'jp:', then interpret the rest of the pattern as a `JSON path`. Only makes sense when used together with `--json-per-file`, `--json-per-line` or `--json-per-elem`. Requires that the [`JSON::Path`](https://raku.land/cpan:JNTHN/JSON::Path) module is installed. Basically a shortcut to specifying `path --type=json-path`.
 
 ### ^string
 
@@ -1476,31 +1482,35 @@ If `--type=auto` is (implicitely) specified, will look for cues in a specified p
 
 ### regex
 
-If `type=regex` is specified, then a pattern will be interpreted as a regex, as if it was surrounded by slashes.
+If `--type=regex` is specified, then a pattern will be interpreted as a regex, as if it was surrounded by slashes.
 
 ### code
 
-If `type=code` is specified, then a pattern will be interpreted as Raku source code, as if it was surrounded by curly braces.
+If `--type=code` is specified, then a pattern will be interpreted as Raku source code, as if it was surrounded by curly braces.
+
+### json path
+
+If `--type=json-path` is specified, then a pattern will be interpreted as a `JSON path`. Only makes sense when used together with `--json-per-file`, `--json-per-line` or `--json-per-elem`. Requires that the [`JSON::Path`](https://raku.land/cpan:JNTHN/JSON::Path) module is installed.
 
 ### contains
 
-If `type=contains` is specified, then a pattern will be interpreted as a literal string, while honouring any `--smartcase`, `--smartmark`, `--ignorecase` and `--ignoremark` specifications.
+If `--type=contains` is specified, then a pattern will be interpreted as a literal string, while honouring any `--smartcase`, `--smartmark`, `--ignorecase` and `--ignoremark` specifications.
 
 ### words
 
-If `type=words` is specified, then a pattern will be interpreted as a literal string that should be bounded by word boundares at both ends, while honouring any `--smartcase`, `--smartmark`, `--ignorecase` and `--ignoremark` specifications.
+If `--type=words` is specified, then a pattern will be interpreted as a literal string that should be bounded by word boundares at both ends, while honouring any `--smartcase`, `--smartmark`, `--ignorecase` and `--ignoremark` specifications.
 
 ### starts-with
 
-If `type=starts-with` is specified, then a pattern will be interpreted as a literal string that should occur at the **start** of a line, while honouring any `--smartcase`, `--smartmark`, `--ignorecase` and `--ignoremark` specifications.
+If `--type=starts-with` is specified, then a pattern will be interpreted as a literal string that should occur at the **start** of a line, while honouring any `--smartcase`, `--smartmark`, `--ignorecase` and `--ignoremark` specifications.
 
 ### ends-with
 
-If `type=ends-with` is specified, then a pattern will be interpreted as a literal string that should occur at the **end** of a line, while honouring any `--smartcase`, `--smartmark`, `--ignorecase` and `--ignoremark` specifications.
+If `--type=ends-with` is specified, then a pattern will be interpreted as a literal string that should occur at the **end** of a line, while honouring any `--smartcase`, `--smartmark`, `--ignorecase` and `--ignoremark` specifications.
 
 ### equal
 
-If `type=equal` is specified, then a pattern will be interpreted as a literal string that should be **equal** to the line, while honouring any `--smartcase`, `--smartmark`, `--ignorecase` and `--ignoremark` specifications.
+If `--type=equal` is specified, then a pattern will be interpreted as a literal string that should be **equal** to the line, while honouring any `--smartcase`, `--smartmark`, `--ignorecase` and `--ignoremark` specifications.
 
 --trim
 ------

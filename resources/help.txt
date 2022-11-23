@@ -9,6 +9,7 @@ in --patterns-from=file option.
  '/ << bar >> /'          Raku regex indicated by being bounded by / /
  '{ .ends-with("bar") }'  Raku code indicated by being bounded by { }
  '*.starts-with("foo")'   Raku WhateverCode starting with *
+ jp:foo                   JSON path specification (with --json-per-xxx)
  §string   String should match as a word
  ^string   String should match at start of line
  string$   String should match at end of line
@@ -19,6 +20,7 @@ in --patterns-from=file option.
  --type=auto         Interpret special markers in pattern as above (default)
  --type=regex        Interpret pattern as a regex (without special markers)
  --type=code         Interpret pattern as code (without special markers)
+ --type=json-path    Interpret pattern as a JSON path (without jp: prefix)
  --type=words        Pattern must match as a word
  --type=starts-with  Pattern must match at start of line
  --type=ends-with    Pattern must match at end of line

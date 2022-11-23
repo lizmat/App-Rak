@@ -76,11 +76,23 @@ The dynamic variable C<$*SOURCE> will contain the C<IO::Path> object of the
 file being processed.  Note that the Raku code will be called in a thread
 B<unsafe> manner.
 
+The dynamic variable C<$*_> will contain the topic with which the code was
+called.  This to allow custom libraries to easily obtain the topic without
+the user needing to specify that again.
+
 =head3 *code
 
 If the pattern starts with C<*>, then this is a short way of specifying Raku
 code as a pattern, using
 L<Whatever-currying|https://docs.raku.org/type/Whatever#index-entry-Whatever-currying>.  Otherwise the same as C<{ code }>.
+
+=head3 jp:path
+
+If the pattern start with 'jp:', then interpret the rest of the pattern as
+a C<JSON path>.  Only makes sense when used together with C<--json-per-file>,
+C<--json-per-line> or C<--json-per-elem>.  Requires that the
+L<C<JSON::Path>|https://raku.land/cpan:JNTHN/JSON::Path> module is installed.
+Basically a shortcut to specifying C<path --type=json-path>.
 
 =head3 ^string
 
@@ -1847,44 +1859,51 @@ the L<pattern> for more information.
 
 =head3 regex
 
-If C<type=regex> is specified, then a pattern will be interpreted as a
+If C<--type=regex> is specified, then a pattern will be interpreted as a
 regex, as if it was surrounded by slashes.
 
 =head3 code
 
-If C<type=code> is specified, then a pattern will be interpreted as Raku
+If C<--type=code> is specified, then a pattern will be interpreted as Raku
 source code, as if it was surrounded by curly braces.
+
+=head3 json path
+
+If C<--type=json-path> is specified, then a pattern will be interpreted as
+a C<JSON path>.  Only makes sense when used together with C<--json-per-file>,
+C<--json-per-line> or C<--json-per-elem>.  Requires that the
+L<C<JSON::Path>|https://raku.land/cpan:JNTHN/JSON::Path> module is installed.
 
 =head3 contains
 
-If C<type=contains> is specified, then a pattern will be interpreted as a
+If C<--type=contains> is specified, then a pattern will be interpreted as a
 literal string, while honouring any C<--smartcase>, C<--smartmark>,
 C<--ignorecase> and C<--ignoremark> specifications.
 
 =head3 words
 
-If C<type=words> is specified, then a pattern will be interpreted as a
+If C<--type=words> is specified, then a pattern will be interpreted as a
 literal string that should be bounded by word boundares at both ends,
 while honouring any C<--smartcase>, C<--smartmark>, C<--ignorecase> and
 C<--ignoremark> specifications.
 
 =head3 starts-with
 
-If C<type=starts-with> is specified, then a pattern will be interpreted as
+If C<--type=starts-with> is specified, then a pattern will be interpreted as
 a literal string that should occur at the B<start> of a line, while honouring
 any C<--smartcase>, C<--smartmark>, C<--ignorecase> and C<--ignoremark>
 specifications.
 
 =head3 ends-with
 
-If C<type=ends-with> is specified, then a pattern will be interpreted as
+If C<--type=ends-with> is specified, then a pattern will be interpreted as
 a literal string that should occur at the B<end> of a line, while honouring
 any C<--smartcase>, C<--smartmark>, C<--ignorecase> and C<--ignoremark>
 specifications.
 
 =head3 equal
 
-If C<type=equal> is specified, then a pattern will be interpreted as a
+If C<--type=equal> is specified, then a pattern will be interpreted as a
 literal string that should be B<equal> to the line, while honouring
 any C<--smartcase>, C<--smartmark>, C<--ignorecase> and C<--ignoremark>
 specifications.

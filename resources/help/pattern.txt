@@ -25,11 +25,12 @@ Example:
 # produce any lines that have "foo" in them
 $ rak foo
 
-Patterns come in 3 flavours:
+Patterns come in 4 flavours:
 
 1. as a literal string
 2. as a regex (the Raku name for "regular expression")
 3. as a piece of code (a Callable in Raku)
+4. as a JSON path expression
 
 Whether something you specified is interpreted as a regex or as code, or
 just as a string, is determined by the --type argument.  By default, the
@@ -113,6 +114,29 @@ $ rak '.uc' --type=code
 
 # produce all lines, only uppercase the ones that have "rakudoc" in them
 $ rak '.contains("rakudoc") ?? .uc !! $_' --type=code
+
+JSON path:
+
+Interpret the pattern as a JSON path if the pattern begins with 'jp:'.
+Only makes sense when used together with --json-per-file, --json-per-line
+or --json-per-elem.  Requires that the JSON::Path module is installed.
+
+Examples:
+# produce all unique "auth" fields
+$ rak --json-per-file --unique jp:auth
+
+# produce all unique fields in the "tags" array
+$ rak --json-per-file --unique 'jp:tags[*]'
+
+Alternately, one can specify the --type=json-path argument, in which case
+the 'jp:' should be omitted:
+
+Examples:
+# produce all unique "auth" fields
+$ rak --json-per-file --type=json-path --unique auth
+
+# produce all unique fields in the "tags" array
+$ rak --json-per-file --type=json-path --unique 'tags[*]'
 
 Search types on literal strings:
 
