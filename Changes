@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.2.13  2022-11-23T22:43:08+01:00
      - Introduce the $*_ dynamic variable inside { } patterns
      - Add --type=json-path for JSON path support
      - Add jp: in a pattern as shortcut for JSON path support
