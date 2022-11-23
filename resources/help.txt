@@ -92,7 +92,6 @@ Filesystem filters:
  --is-world-executable   File can (not) be executed by anybody
  --is-world-readable     File can (not) be read by anybody
  --is-world-writable     File can (not) be written to by anybody
- --known-extensions      Only search files with known extensions
  --meta-modified=cond    Check on epoch when meta-info of file was last changed
  --mode=condition        The full mode value of the file
  --modified=condition    Check on epoch when file was last changed

@@ -1315,12 +1315,6 @@ on a C<CSV::Field> object are:
 =item is-utf8 - field contains decodable data beyond ASCII
 =item is-formula = field looks like it contains a spreadsheet formula
 
-=head2 --known-extensions
-
-Flag.  Indicate that only files with known extensions (occuring in any of
-the C<#groups>) should be searched.  Defaults to C<True> if a human is
-watching (aka STDOUT is connected to a terminal).
-
 =head2 --list-custom-options
 
 Flag.  If specified as the only option, will list all additional options
@@ -1369,7 +1363,7 @@ $ rak --list-known-extensions
    #jsonl: jsonl
 #markdown: md markdown
     #perl: (none) pl pm t
-  #python: py
+  #python: py ipynb
     #raku: (none) raku rakumod rakutest rakudoc nqp t pm6 pl6 pod6 t6
     #ruby: rb
     #text: (none) txt

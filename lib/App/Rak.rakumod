@@ -22,9 +22,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-11-15T21:06:14+01:00 by tools/makeOPTIONS.raku
+#- Generated on 2022-11-23T12:18:45+01:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta known-extensions list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -34,6 +34,7 @@ my constant %falsies =
   changed          => 'meta-modified',
   run              => 'exec',
   first-only       => 'only-first',
+  known-extensions => 'extensions=*',
 
 # from ack
   A                => 'after-context',
@@ -50,14 +51,14 @@ my constant %falsies =
   h                => 'no-show-filename',
   filename         => 'show-filename',
   heading          => 'group-matches',
-  help-types       => 'known-extensions',
+  help-types       => 'extensions=*',
   i                => 'ignorecase',
   ignore-case      => 'ignorecase',
   I                => 'no-ignorecase',
   ignore-dir       => 'dir',
   ignore-directory => 'dir',
-  k                => 'known-extensions',
-  known-types      => 'known-extensions',
+  k                => 'extensions=*',
+  known-types      => 'extensions=*',
   l                => 'files-with-matches',
   L                => 'files-without-matches',
   match            => 'pattern',
@@ -1758,13 +1759,6 @@ my sub option-keep-meta($value --> Nil) {
     set-csv-flag('keep-meta', $value);
 }
 
-my sub option-known-extensions($value --> Nil) {
-    meh "'--known-extensions' can only be specified as a flag"
-      unless Bool.ACCEPTS($value);
-    %filesystem<known-extensions> := codify-extensions @known-extensions
-      if $value;
-}
-
 my sub option-list-custom-options($value --> Nil) {
     set-action('list-custom-options', $value);
 }
@@ -2148,17 +2142,11 @@ my sub move-filesystem-options-to-rak(--> Nil) {
         else {
             if %filesystem<file>:exists {
                 maybe-meh-together 'file', %filesystem<
-                  extensions known-extensions
+                  extensions
                 >:k;
                 my $file := %rak<file> := %filesystem<file>:delete;
                 meh "--/file only makes sense when used together with --find"
                   if !$file && !%result<find>;
-            }
-            elsif %filesystem<known-extensions>:delete -> $known {
-                maybe-meh-together 'known-extensions', %filesystem<
-                  extensions
-                >:k;
-                %rak<file> := $known;
             }
             elsif %filesystem<extensions>:delete -> $seen {
                 %rak<file> := $seen;

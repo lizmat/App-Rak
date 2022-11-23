@@ -1048,11 +1048,6 @@ Flag. Only applicable if `--csv-per-line` has been specified. If specified, indi
 
   * is-formula = field looks like it contains a spreadsheet formula
 
---known-extensions
-------------------
-
-Flag. Indicate that only files with known extensions (occuring in any of the `#groups`) should be searched. Defaults to `True` if a human is watching (aka STDOUT is connected to a terminal).
-
 --list-custom-options
 ---------------------
 
@@ -1095,7 +1090,7 @@ $ rak --list-known-extensions
    #jsonl: jsonl
 #markdown: md markdown
     #perl: (none) pl pm t
-  #python: py
+  #python: py ipynb
     #raku: (none) raku rakumod rakutest rakudoc nqp t pm6 pl6 pod6 t6
     #ruby: rb
     #text: (none) txt
