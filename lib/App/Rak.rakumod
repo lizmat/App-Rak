@@ -146,7 +146,7 @@ my constant %exts =
   '#jsonl'    => <jsonl>,
   '#markdown' => <md markdown>,
   '#perl'     => ('', <pl pm t>).flat.List,
-  '#python'   => <py>,
+  '#python'   => <py ipynb>,
   '#raku'     => ('', <raku rakumod rakutest rakudoc nqp t pm6 pl6 pod6 t6>
                  ).flat.List,
   '#ruby'     => <rb>,

@@ -2,6 +2,7 @@ Revision history for App-Rak
 
 {{$NEXT}}
      - Make --unicode option about 2x as fast with hypering
+     - Add .ipynb as additional extension in the #python group
 
 0.2.10  2022-11-19T20:01:25+01:00
      - Bump dependency on "rak" to get readability fixes
