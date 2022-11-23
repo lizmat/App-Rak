@@ -33,10 +33,10 @@ interested in the files of the current directory).
 
 Specifies the extensions that a filename should have, to be accepted.
 Can either be a single extension (group), or a comma-separated list
-of extensions (groups).  Currently the predefined extension groups
-are: #raku, #perl, #cro, #text, #c, #c++, #yaml, #ruby, #python, #js,
-#html, #markdown, #json, #jsonl, #csv, #config and #text.  Conflicts
-with --file or --known-extensions.
+of extensions (groups), or '*' to indicate all known extensions.
+The predefined extension groups are: #raku, #perl, #cro, #text, #c,
+#c++, #yaml, #ruby, #python, #js, #html, #markdown, #json, #jsonl,
+#csv, #config and #text.  Conflicts with --file or --known-extensions.
 
 --file=expression
 

@@ -586,7 +586,7 @@ $ cat script | rak --execute-raku=-
 
 Indicate the extensions of the filenames that should be inspected. By default, only files with known extensions, will be searched.
 
-Extensions can be specified as a comma-separated list of either a a predefined group of extensions (indicated by `#name`), or a single extension.
+Extensions can be specified as a comma-separated list of either a a predefined group of extensions (indicated by `#name`), a single extension, or `*` to indicate all known extensions.
 
 ```bash
 # inspect files with extensions used by Raku and Perl

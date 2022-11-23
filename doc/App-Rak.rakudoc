@@ -763,8 +763,8 @@ Indicate the extensions of the filenames that should be inspected.
 By default, only files with known extensions, will be searched.
 
 Extensions can be specified as a comma-separated list of either a
-a predefined group of extensions (indicated by C<#name>), or a single
-extension.
+a predefined group of extensions (indicated by C<#name>), a single
+extension, or C<*> to indicate all known extensions.
 
 =begin code :lang<bash>
 

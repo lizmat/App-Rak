@@ -1540,6 +1540,9 @@ my sub option-extensions($value --> Nil) {
                 Empty
             }
         }
+        elsif $_ eq '*' {
+            @known-extensions.Slip
+        }
         else {
             $_
         }
