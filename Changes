@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.2.14  2022-11-24T22:31:37+01:00
      - Fix some verbosity when reading from STDIN
      - Merge consecutive regexes in multi-part needle into a
        single regex

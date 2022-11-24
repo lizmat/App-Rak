@@ -11,7 +11,9 @@ my $dir  = $*PROGRAM.parent.sibling("q");
 my $dira = $dir.absolute ~ $*SPEC.dir-sep;
 my $rel := $dir.relative ~ $*SPEC.dir-sep;
 my $dot  = $?FILE.IO.parent.parent;
-my $rak := $dot.add("bin").add("rak").relative;
+
+my $patterns := $dot.add("patterns");
+my $rak      := $dot.add("bin").add("rak").relative;
 
 my @filenames := <zero one two three four five six seven eight nine>;
 my %name2path  = @filenames.map: { $_ => $dir.add($_).absolute }
@@ -764,6 +766,15 @@ OK
 query-ok <*@ --type=starts-with q>, :!add-paths, :!head, ok => qq:to/OK/;
 foo
 1:{BON}*\@{BOFF}foo
+OK
+
+query-ok "--patterns-from=$patterns.relative()", :!head, ok => qq:to/OK/;
+eight
+9:{BON}eight{BOFF}
+
+nine
+9:{BON}eight{BOFF}
+10:{BON}nine{BOFF}
 OK
 
 done-testing;
