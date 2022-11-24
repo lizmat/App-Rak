@@ -69,6 +69,23 @@ If the pattern starts with `*`, then this is a short way of specifying Raku code
 
 If the pattern start with 'jp:', then interpret the rest of the pattern as a `JSON path`. Only makes sense when used together with `--json-per-file`, `--json-per-line` or `--json-per-elem`. Requires that the [`JSON::Path`](https://raku.land/cpan:JNTHN/JSON::Path) module is installed. Basically a shortcut to specifying `path --type=json-path`.
 
+#### Supported JSON path syntax
+
+    $           root node
+    .key        index hash key
+    ['key']     index hash key
+    [2]         index array element
+    [0,1]       index array slice
+    [4:5]       index array range
+    [:5]        index from the beginning
+    [-3:]       index to the end
+    .*          index all elements
+    [*]         index all elements
+    [?(expr)]   filter on Raku expression
+    ..key       search all descendants for hash key
+
+A query that is not rooted from $ or specified using .. will be evaluated from the document root (that is, same as an explicit $ at the start).
+
 ### ^string
 
 If the pattern starts with `^`, then it indicates the string should be at the **start** of each item. Basically a shortcut to specifying `string --type=starts-with`. Any `--smartcase`, `--smartmark`, `--ignorecase` or `--ignoremark` arguments will be honoured.

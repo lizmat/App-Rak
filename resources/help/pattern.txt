@@ -138,6 +138,24 @@ $ rak --json-per-file --type=json-path --unique auth
 # produce all unique fields in the "tags" array
 $ rak --json-per-file --type=json-path --unique 'tags[*]'
 
+The following syntax is supported
+
+  $           root node
+  .key        index hash key
+  ['key']     index hash key
+  [2]         index array element
+  [0,1]       index array slice
+  [4:5]       index array range
+  [:5]        index from the beginning
+  [-3:]       index to the end
+  .*          index all elements
+  [*]         index all elements
+  [?(expr)]   filter on Raku expression
+  ..key       search all descendants for hash key
+
+A query that is not rooted from $ or specified using .. will be evaluated
+from the document root (that is, same as an explicit $ at the start).
+
 Search types on literal strings:
 
 Literal strings matching can be further specialized with other values of the

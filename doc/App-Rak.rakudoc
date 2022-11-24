@@ -94,6 +94,24 @@ C<--json-per-line> or C<--json-per-elem>.  Requires that the
 L<C<JSON::Path>|https://raku.land/cpan:JNTHN/JSON::Path> module is installed.
 Basically a shortcut to specifying C<path --type=json-path>.
 
+=head4 Supported JSON path syntax
+
+  $           root node
+  .key        index hash key
+  ['key']     index hash key
+  [2]         index array element
+  [0,1]       index array slice
+  [4:5]       index array range
+  [:5]        index from the beginning
+  [-3:]       index to the end
+  .*          index all elements
+  [*]         index all elements
+  [?(expr)]   filter on Raku expression
+  ..key       search all descendants for hash key
+
+A query that is not rooted from $ or specified using .. will be evaluated
+from the document root (that is, same as an explicit $ at the start).
+
 =head3 ^string
 
 If the pattern starts with C<^>, then it indicates the string should be at
