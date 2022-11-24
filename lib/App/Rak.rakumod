@@ -420,8 +420,8 @@ my sub main() is export {
           && !(%result<categorize classify>:exists);
     }
     elsif $reading-from-stdin {
-        %result<show-item-number> := False
-          if %result<show-item-number>:!exists;
+        %listing<show-filename> := False
+          if %result<show-filename>:!exists;
     }
 
     # Perform the actual action
@@ -582,6 +582,7 @@ my sub codify-curlies(Str:D $code) {
         method paths-and-values() { $!jp.paths-and-values($*_) }
 
         method Seq()  { $!jp.values($*_)      }
+        method Bool() { $!jp.values($*_).Bool }
         method list() { $!jp.values($*_).List }
         method List() { $!jp.values($*_).List }
         method Slip() { $!jp.values($*_).Slip }
@@ -2361,8 +2362,9 @@ my sub move-result-options-to-rak(--> Nil) {
                 %rak<max-matches-per-source> := $max;
             }
 
-            with %result<show-item-number>:delete {
-                %rak<omit-item-number> := True unless $_;
+            if %result<show-item-number>:exists {
+                %rak<omit-item-number> := True
+                  unless %result<show-item-number>:delete;
             }
 
             if %result<find>:delete {
