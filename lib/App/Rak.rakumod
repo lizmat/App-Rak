@@ -574,16 +574,34 @@ my sub codify-curlies(Str:D $code) {
     # Wrapper for JSON::Path object
     my class JP {
         has $.jp;
+        has $.pattern;
+
         method value()  { $!jp.value($*_) }
         method values() { $!jp.values($*_) }
         method paths()  { $!jp.paths($*_) }
         method paths-and-values() { $!jp.paths-and-values($*_) }
 
+        method Seq()  { $!jp.values($*_)      }
         method list() { $!jp.values($*_).List }
         method List() { $!jp.values($*_).List }
         method Slip() { $!jp.values($*_).Slip }
-        method Str()  { $!jp.values($*_).Str  }
         method gist() { $!jp.values($*_).gist }
+        method Str()  {
+            $*_
+              ?? $!jp.values($*_).Str
+              !! meh qq:!c:to/ERROR/.chomp;
+Must do something with the JP object *inside* the pattern, such as:
+
+    '{jp("$.pattern").Slip}'
+
+to avoid late stringification of the JP object.
+ERROR
+        }
+
+        method words()  { $!jp.values($*_).Str.words.Slip }
+        method head(|c) { $!jp.values($*_).head(|c).Slip  }
+        method tail(|c) { $!jp.values($*_).tail(|c).Slip  }
+        method skip(|c) { $!jp.values($*_).skip(|c).Slip  }
     }
 
     # Allow postcircumfixes on jp($path)
@@ -594,10 +612,13 @@ my sub codify-curlies(Str:D $code) {
         $self.values
     }
     my multi sub postcircumfix:<[ ]>(JP:D $self, Int:D $pos) {
-        $self.values[$pos]
+        $self.values[$pos].Slip
     }
     my multi sub postcircumfix:<[ ]>(JP:D $self, @pos) {
-        $self.values[@pos]
+        $self.values[@pos].Slip
+    }
+    my multi sub postcircumfix:<[ ]>(JP:D $self, &pos) {
+        $self.values[&pos].Slip
     }
 
     # Allow for slip jp($path)
@@ -608,7 +629,7 @@ my sub codify-curlies(Str:D $code) {
     # Magic self-installing JSON::Path support
     my $class;
     my $lock := Lock.new;
-    my &jp = my sub jp-stub(str $path) {
+    my &jp = my sub jp-stub(str $pattern) {
         $lock.protect: {
             if $class<> =:= Any {
                 CATCH { meh-not-installed "JSON::Path", 'jp(path)' }
@@ -616,7 +637,7 @@ my sub codify-curlies(Str:D $code) {
             }
         }
 
-        my $jp := JP.new: jp => do {
+        my $jp := JP.new: :$pattern, jp => do {
             CATCH {
                 if X::AdHoc.ACCEPTS($_) {
                     my $m := .payload;
@@ -626,16 +647,16 @@ my sub codify-curlies(Str:D $code) {
                         my $boff := BOFF;
                         exit note qq:to/ERROR/.chomp;
 $m:
-$path.substr(0,$pos)$bon$path.substr($pos,1)$boff$path.substr($pos + 1)
+$pattern.substr(0,$pos)$bon$pattern.substr($pos,1)$boff$pattern.substr($pos + 1)
 {" " x $pos}⏏
 ERROR
                     }
                 }
                 meh .Str unless %rak<dont-catch>;
             }
-            $class.new($path)
+            $class.new($pattern)
         }
-        &jp = my sub jp-live($) { $jp }
+        &jp = my sub jp-live(str $) { $jp }
         $jp
     }
 

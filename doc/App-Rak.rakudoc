@@ -112,6 +112,42 @@ Basically a shortcut to specifying C<path --type=json-path>.
 A query that is not rooted from $ or specified using .. will be evaluated
 from the document root (that is, same as an explicit $ at the start).
 
+=head4 Full Raku support
+
+The C<jp:path> and C<--type=json-path> syntax are actually syntactic sugar
+for calling a dedicated C<jp> subroutine that takes a JSON path as its
+argument, and returns an instantiated C<JP> object.
+
+This means that:
+
+=begin code :lang<bash>
+
+$ rak --json-per-file jp:foo
+$ rak --json-per-file --type=json-path foo
+
+=end code
+
+are a different way of saying:
+
+=begin code :lang<bash>
+
+$ rak --json-per-file '{ jp("path").Slip }'
+
+=end code
+
+using the "pattern is Raku code" syntax.
+
+The following methods can be called on the C<JP> object:
+
+  .value             The first selected value.
+  .values            All selected values as a Seq.
+  .paths             The paths of all selected values as a Seq.
+  .paths-and-values  Interleaved selected paths and values.
+
+Without listing all of the methods that can be called on the C<JP> object,
+one should note that all efforts have been made to make the C<JP> object
+act like a C<Seq>.
+
 =head3 ^string
 
 If the pattern starts with C<^>, then it indicates the string should be at

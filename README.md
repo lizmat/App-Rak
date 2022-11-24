@@ -86,6 +86,34 @@ If the pattern start with 'jp:', then interpret the rest of the pattern as a `JS
 
 A query that is not rooted from $ or specified using .. will be evaluated from the document root (that is, same as an explicit $ at the start).
 
+#### Full Raku support
+
+The `jp:path` and `--type=json-path` syntax are actually syntactic sugar for calling a dedicated `jp` subroutine that takes a JSON path as its argument, and returns an instantiated `JP` object.
+
+This means that:
+
+```bash
+$ rak --json-per-file jp:foo
+$ rak --json-per-file --type=json-path foo
+```
+
+are a different way of saying:
+
+```bash
+$ rak --json-per-file '{ jp("path").Slip }'
+```
+
+using the "pattern is Raku code" syntax.
+
+The following methods can be called on the `JP` object:
+
+    .value             The first selected value.
+    .values            All selected values as a Seq.
+    .paths             The paths of all selected values as a Seq.
+    .paths-and-values  Interleaved selected paths and values.
+
+Without listing all of the methods that can be called on the `JP` object, one should note that all efforts have been made to make the `JP` object act like a `Seq`.
+
 ### ^string
 
 If the pattern starts with `^`, then it indicates the string should be at the **start** of each item. Basically a shortcut to specifying `string --type=starts-with`. Any `--smartcase`, `--smartmark`, `--ignorecase` or `--ignoremark` arguments will be honoured.

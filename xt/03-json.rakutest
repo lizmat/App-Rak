@@ -1,0 +1,67 @@
+BEGIN %*ENV<RAKU_TEST_DIE_ON_FAIL> = 1;
+use Test;
+
+plan 8;
+
+my $dir  = $*PROGRAM.parent;
+my $dira = $dir.absolute ~ $*SPEC.dir-sep;
+my $rel := $dir.relative ~ $*SPEC.dir-sep;
+my $dot  = $?FILE.IO.parent.parent;
+my $rak := $dot.add("bin").add("rak").relative;
+
+# using paths from here on out
+$dot   .= relative;
+$dir   .= absolute;
+
+my sub query-ok(
+  *@query,              # the actual parameters
+  :$ok is copy,         # the expected result
+  :$head = 1,           # whether to do the --only-first test with this number
+  :$add-human  = True,  # add human specification
+) is test-assertion {
+    my @args = $*EXECUTABLE.absolute, "-I$dot", $rak, @query.Slip;
+    @args.push: "--human" if $add-human;
+    $ok .= chomp;
+
+    # Logic to run the query
+    my sub run-query() {
+        my $proc := run @args, :out, :err;
+        my $key = "huh?";
+
+        is $proc.err.slurp(:close), "", "is '@query[]' STDERR clean?";
+        $proc.out.lines.map(*.subst($rel, :g)).join("\n")
+    }
+
+    # Base query
+    is run-query, $ok, "is '@query[]' result ok?";
+}
+
+query-ok <--json-per-file jp:auth --/dir>, ok => qq:to/OK/;
+META6.json
+zef:lizmat
+OK
+
+query-ok <--json-per-file authors --type=json-path --/dir>, ok => qq:to/OK/;
+META6.json
+Elizabeth Mattijsen
+OK
+
+query-ok <--json-per-file {~jp("license")} --/dir>, ok => qq:to/OK/;
+META6.json
+Artistic-2.0
+OK
+
+query-ok <--json-per-file {|jp("tags[*]")} --/dir>, ok => qq:to/OK/;
+META6.json
+ACK
+SEARCH
+TEXT
+EDITOR
+FIND
+JSON
+BLAME
+CSV
+GIT
+OK
+
+# vim: expandtab shiftwidth=4
