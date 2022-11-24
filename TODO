@@ -30,3 +30,8 @@ text.  Need to fix that with --blame-per-file/line.
 
 Options that can either be a flag or a string, appear not to be able to
 accept values when used with --save.
+
+Highlighting multiple patterns doesn't work in a mix of regular strings
+and regexes.  Looks like regexes are not highlighted if there are none
+regexes involved.  Is the highlighting then looking for the stringification
+of the regex?

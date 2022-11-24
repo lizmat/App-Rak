@@ -3587,14 +3587,47 @@ my sub prepare-needle() {
         if List.ACCEPTS($pattern) {
             my $matches-only := %result<matches-only>:delete;
 
-            $pattern := $pattern.map(&pre-process).List;
-            $needle := $pattern.map({
+            # Preprocess and attempt to unify consecutive regexes
+            my @regexes;
+            sub merge-regexes() {
+                 @regexes == 1
+                   ?? @regexes.splice.head
+                   !! "/@regexes.splice.map(*.substr: 1,*-1).join('|')/"
+            }
+            my @parts = $pattern.map: {
+                given pre-process($_) {
+                    if .starts-with('/') && .ends-with('/') {
+                        @regexes.push: $_;
+                        Empty
+                    }
+                    elsif @regexes {
+                        (merge-regexes,$_).Slip
+                    }
+                    else {
+                        $_
+                    }
+                }
+            }
+            @parts.push(merge-regexes) if @regexes;
+
+            # Create final needle
+            my sub make-callable($_) {
                 .can('type')
                   ?? needleify($_)
                   !! $matches-only
                     ?? codify-pattern-matches-only($_)
                     !! codify-pattern($_)
-            }).List
+            }
+
+            # Set up pattern for later highlighting purposes
+            if @parts == 1 {
+                $pattern := @parts.head;
+                $needle  := make-callable($pattern);
+            }
+            else {
+                $pattern := @parts;
+                $needle  := @parts.map(&make-callable).List;
+            }
         }
 
         # a single pattern

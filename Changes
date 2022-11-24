@@ -1,6 +1,9 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Fix some verbosity when reading from STDIN
+     - Merge consecutive regexes in multi-part needle into a
+       single regex
 
 0.2.13  2022-11-23T22:43:08+01:00
      - Introduce the $*_ dynamic variable inside { } patterns
