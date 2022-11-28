@@ -37,7 +37,6 @@ my sub query-ok(
 }
 
 query-ok <--csv-per-line {.<a>} csv/comma.csv>, ok => qq:to/OK/;
-comma.csv
 1:1
 2:4
 3:1
@@ -45,7 +44,6 @@ OK
 
 query-ok <--csv-per-line {.[0]} csv/noheader.csv --/headers>,
   ok => qq:to/OK/;
-noheader.csv
 1:1
 2:4
 3:1
