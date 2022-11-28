@@ -417,11 +417,11 @@ my sub main() is export {
     elsif @positionals == 1 && @positionals.head.IO.f {
         %listing<show-filename> := False
           if %listing<show-filename>:!exists
-          && !(%result<categorize classify>:exists);
+          && !(%result<categorize classify>:k);
     }
     elsif $reading-from-stdin {
         %listing<show-filename> := False
-          if %result<show-filename>:!exists;
+          unless %result<show-filename>:k;
     }
 
     # Perform the actual action
