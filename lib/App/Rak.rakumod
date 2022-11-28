@@ -313,6 +313,10 @@ elsif %config<(default)>:exists {
 
 my sub main() is export {
 
+    # Must have something to work with
+    meh "Should at least specify a pattern"
+      if !@*ARGS && !$pattern.defined;
+
     # Do the actual argument parsing
     for @*ARGS {
 
