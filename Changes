@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.2.15  2022-11-30T12:51:22+01:00
      - A pattern must be specified at least.  If a search without
        pattern is needed, one can use --pattern=
      - Make sure compilation on older Rakudos doesn't break because
