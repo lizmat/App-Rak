@@ -2061,7 +2061,7 @@ my sub option-save($value --> Nil) {
 }
 
 my sub option-sayer($value --> Nil) {
-    NYI '--sayer'
+    meh "--sayer option NYI";
 }
 
 my sub option-sep($value --> Nil) {

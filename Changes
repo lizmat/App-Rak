@@ -1,6 +1,10 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - A pattern must be specified at least.  If a search without
+       pattern is needed, one can use --pattern=
+     - Make sure compilation on older Rakudos doesn't break because
+       of lack of NYI subroutine
 
 0.2.14  2022-11-24T22:31:37+01:00
      - Fix some verbosity when reading from STDIN
