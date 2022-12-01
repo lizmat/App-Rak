@@ -574,11 +574,38 @@ my sub regexify($code) {
 
 # Convert a string with curlies to code if possible
 my sub codify-curlies(Str:D $code) {
+    my $class;  # placeholder for JSON::Path class
 
     # Wrapper for JSON::Path object
     my class JP {
         has $.jp;
         has $.pattern;
+
+        my $cache := Map.new;
+        method new($pattern) {
+            $cache{$pattern} // do {
+                CATCH {
+                    if X::AdHoc.ACCEPTS($_) {
+                        my $m := .payload;
+                        if $m.starts-with('JSON path parse error') {
+                            my $pos  := $m.words.tail.Int;
+                            my $bon  := BON;
+                            my $boff := BOFF;
+                            exit note qq:to/ERROR/.chomp;
+    $m:
+    $pattern.substr(0,$pos)$bon$pattern.substr($pos,1)$boff$pattern.substr($pos + 1)
+    {" " x $pos}⏏
+    ERROR
+                        }
+                    }
+                    meh .Str unless %rak<dont-catch>;
+                }
+                my $jp := $class.new($pattern);
+                my $JP := self.bless(:$jp, :$pattern);
+                $cache := Map.new: $cache, Pair.new: $pattern, $JP;
+                $JP
+            }
+        }
 
         method value()  { $!jp.value($*_) }
         method values() { $!jp.values($*_) }
@@ -632,37 +659,15 @@ ERROR
     }
 
     # Magic self-installing JSON::Path support
-    my $class;
     my $lock := Lock.new;
     my &jp = my sub jp-stub(str $pattern) {
-        $lock.protect: {
+        $lock.protect: {  # threadsafe loading of module
             if $class<> =:= Any {
                 CATCH { meh-not-installed "JSON::Path", 'jp(path)' }
                 $class := 'use JSON::Path:ver<1.7>; JSON::Path'.EVAL;
             }
         }
-
-        my $jp := JP.new: :$pattern, jp => do {
-            CATCH {
-                if X::AdHoc.ACCEPTS($_) {
-                    my $m := .payload;
-                    if $m.starts-with('JSON path parse error') {
-                        my $pos  := $m.words.tail.Int;
-                        my $bon  := BON;
-                        my $boff := BOFF;
-                        exit note qq:to/ERROR/.chomp;
-$m:
-$pattern.substr(0,$pos)$bon$pattern.substr($pos,1)$boff$pattern.substr($pos + 1)
-{" " x $pos}⏏
-ERROR
-                    }
-                }
-                meh .Str unless %rak<dont-catch>;
-            }
-            $class.new($pattern)
-        }
-        &jp = my sub jp-live(str $) { $jp }
-        $jp
+        (&jp = my sub jp-live(str $pattern) { JP.new($pattern) })($pattern)
     }
 
     # Create the code and make sure $*_ is aliased
