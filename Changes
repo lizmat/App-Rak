@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.2.16  2022-12-01T22:15:50+01:00
      - Turn the jp() specification inside a code pattern into a
        macro as it were, removing the need to specify quotes.  So
        { ~jp("auth") } should now be specified as { ~jp(auth) }
