@@ -115,7 +115,7 @@ from the document root (that is, same as an explicit $ at the start).
 =head4 Full Raku support
 
 The C<jp:path> and C<--type=json-path> syntax are actually syntactic sugar
-for calling a dedicated C<jp> subroutine that takes a JSON path as its
+for calling a dedicated C<jp> macro that takes an unquoted JSON path as its
 argument, and returns an instantiated C<JP> object.
 
 This means that:
@@ -131,7 +131,7 @@ are a different way of saying:
 
 =begin code :lang<bash>
 
-$ rak --json-per-file '{ jp("path").Slip }'
+$ rak --json-per-file '{ jp(path).Slip }'
 
 =end code
 

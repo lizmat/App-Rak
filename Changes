@@ -1,6 +1,12 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Turn the jp() specification inside a code pattern into a
+       macro as it were, removing the need to specify quotes.  So
+       { ~jp("auth") } should now be specified as { ~jp(auth) }
+     - Allow more than one call to the jp() macro in a code pattern,
+       allowing for things like {~jp(name) if jp(auth) eq "zef:lizmat"}
+       as a pattern
 
 0.2.15  2022-11-30T12:51:22+01:00
      - A pattern must be specified at least.  If a search without

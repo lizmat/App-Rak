@@ -157,7 +157,7 @@ A query that is not rooted from $ or specified using .. will be evaluated
 from the document root (that is, same as an explicit $ at the start).
 
 The "jp:path" and "--type=json-path" syntax are actually syntactic sugar
-for calling a dedicated "jp" subroutine that takes a JSON path as its
+for calling a dedicated "jp" macro that takes a JSON path as its unquoted
 argument, and returns an instantiated C<JP> object.
 
 This means that:
@@ -167,7 +167,7 @@ This means that:
 
 are a different way of saying:
 
-  $ rak --json-per-file '{ jp("path").Slip }'
+  $ rak --json-per-file '{ jp(foo).Slip }'
 
 using the "pattern is Raku code" syntax.
 

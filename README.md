@@ -88,7 +88,7 @@ A query that is not rooted from $ or specified using .. will be evaluated from t
 
 #### Full Raku support
 
-The `jp:path` and `--type=json-path` syntax are actually syntactic sugar for calling a dedicated `jp` subroutine that takes a JSON path as its argument, and returns an instantiated `JP` object.
+The `jp:path` and `--type=json-path` syntax are actually syntactic sugar for calling a dedicated `jp` macro that takes an unquoted JSON path as its argument, and returns an instantiated `JP` object.
 
 This means that:
 
@@ -100,7 +100,7 @@ $ rak --json-per-file --type=json-path foo
 are a different way of saying:
 
 ```bash
-$ rak --json-per-file '{ jp("path").Slip }'
+$ rak --json-per-file '{ jp(path).Slip }'
 ```
 
 using the "pattern is Raku code" syntax.

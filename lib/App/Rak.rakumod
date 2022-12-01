@@ -520,7 +520,7 @@ my sub pre-process($pattern) {
             $pattern.substr(1) but Type<words>
         }
         elsif $pattern.starts-with('jp:') {
-            q/{jp('/ ~ $pattern.substr(3) ~ q/').Slip}/
+            Q/{jp(/ ~ $pattern.substr(3) ~ Q/).Slip}/
         }
         else {
             $pattern  # could be some other pattern to interprete
@@ -535,7 +535,7 @@ my sub pre-process($pattern) {
         '{' ~ $pattern ~ '}'
     }
     elsif $type eq 'json-path' {
-        q/{jp('/ ~ $pattern ~ q/').Slip}/
+        Q/{jp(/ ~ $pattern ~ Q/).Slip}/
     }
 
     # some other known type, don't interprete
@@ -671,7 +671,13 @@ ERROR
     }
 
     # Create the code and make sure $*_ is aliased
-    (prelude() ~ 'my $ := { my $*_ := $_; ' ~ $code.substr(1)).EVAL
+    (prelude()
+      ~ 'my $ := { my $*_ := $_; '
+      ~ $code.substr(1)).subst(
+          / '('<( <-[()]>* )>')' || '('<( [ <-[()]>* <~~> <-[()]>* ]* )>')' /,
+          { "Q/$//" },
+          :global
+        ).EVAL
 }
 
 # Convert a string to code, fail if not possible
