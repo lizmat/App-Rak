@@ -425,7 +425,9 @@ my sub main() is export {
     }
     elsif $reading-from-stdin {
         %listing<show-filename> := False
-          unless %result<show-filename>:k;
+          unless %result<show-filename>:exists;
+        %result<show-item-number> := False
+          unless %result<show-item-number>:exists;
     }
 
     # Perform the actual action
