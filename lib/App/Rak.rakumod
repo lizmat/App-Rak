@@ -652,6 +652,9 @@ ERROR
     my multi sub postcircumfix:<[ ]>(JP:D $self, &pos) {
         $self.values[&pos].Slip
     }
+    my multi sub postcircumfix:<[ ]>(Str:D $string, \pos) {
+        $string.words[pos].Slip
+    }
 
     # Allow for slip jp($path)
     my multi sub slip(JP:D $self) {

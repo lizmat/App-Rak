@@ -1,6 +1,9 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Allow postcircumfix [] on strings to index into the .words of
+       the string.  This looks like it is the most useful functionality
+       within the context of Raku code patterns
 
 0.2.16  2022-12-01T22:15:50+01:00
      - Turn the jp() specification inside a code pattern into a
