@@ -2309,7 +2309,7 @@ my sub move-filesystem-options-to-rak(--> Nil) {
     %rak<is-text> := True
       unless $reading-from-stdin || (%rak<
         file is-text under-version-control
-      >:k);
+      >:k) || %result<find>;
 }
 
 my sub move-result-options-to-rak(--> Nil) {
