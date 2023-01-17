@@ -1,11 +1,15 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.2.17  2023-01-17T17:52:09+01:00
      - Allow postcircumfix [] on strings to index into the .words of
        the string.  This looks like it is the most useful functionality
        within the context of Raku code patterns
      - Default to *not* showing line numbers when reading from STDIN.
        Feels to me that is the most sane thing to do
+     - Update copyright year
+     - Default to --/is-text with --find, Márton Polgár++
 
 0.2.16  2022-12-01T22:15:50+01:00
      - Turn the jp() specification inside a code pattern into a

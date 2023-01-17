@@ -1024,7 +1024,7 @@ NOTE: support of this feature depends on Raku supporting that feature on the cur
 --is-text
 ---------
 
-Flag. If specified, will only select files that appear to contain text (rather than binary data). Use negation `--/is-text` to only select files with binary data.
+Flag. If specified, will only select files that appear to contain text (rather than binary data). Defaults to `True` if no other file filter has been specified, and `--find` is not specified either. Use negation `--/is-text` to only select files with binary data.
 
 Note: support for searching for binary data is not yet implemented, so `--/is-text` can only be used in conjunction with --find.
 
@@ -1672,7 +1672,7 @@ If you like this module, or what I’m doing more generally, committing to a [sm
 COPYRIGHT AND LICENSE
 =====================
 
-Copyright 2022 Elizabeth Mattijsen
+Copyright 2022, 2023 Elizabeth Mattijsen
 
 This library is free software; you can redistribute it and/or modify it under the Artistic License 2.0.
 

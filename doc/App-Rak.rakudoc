@@ -1278,8 +1278,9 @@ the current operating system.
 =head2 --is-text
 
 Flag.  If specified, will only select files that appear to contain text
-(rather than binary data).  Use negation C<--/is-text> to only select
-files with binary data.
+(rather than binary data).  Defaults to C<True> if no other file filter
+has been specified, and C<--find> is not specified either.  Use negation
+C<--/is-text> to only select files with binary data.
 
 Note: support for searching for binary data is not yet implemented, so
 C<--/is-text> can only be used in conjunction with --find.
@@ -2112,7 +2113,7 @@ deal to me!
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2022 Elizabeth Mattijsen
+Copyright 2022, 2023 Elizabeth Mattijsen
 
 This library is free software; you can redistribute it and/or modify it under
 the Artistic License 2.0.
