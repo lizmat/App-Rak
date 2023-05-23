@@ -94,8 +94,11 @@ C<--json-per-line> or C<--json-per-elem>.  Requires that the
 L<C<JSON::Path>|https://raku.land/cpan:JNTHN/JSON::Path> module is installed.
 Basically a shortcut to specifying C<path --type=json-path>.
 
-=head4 Supported JSON path syntax
 
+=begin table :caption<Supported JSON path syntax>
+
+  expression  meaning
+  -------------------
   $           root node
   .key        index hash key
   ['key']     index hash key
@@ -108,6 +111,8 @@ Basically a shortcut to specifying C<path --type=json-path>.
   [*]         index all elements
   [?(expr)]   filter on Raku expression
   ..key       search all descendants for hash key
+
+=end table
 
 A query that is not rooted from $ or specified using .. will be evaluated
 from the document root (that is, same as an explicit $ at the start).
@@ -139,6 +144,9 @@ using the "pattern is Raku code" syntax.
 
 The following methods can be called on the C<JP> object:
 
+=table
+  method             selected
+  ---------------------------
   .value             The first selected value.
   .values            All selected values as a Seq.
   .paths             The paths of all selected values as a Seq.
@@ -255,9 +263,12 @@ been met.
 C<App::Rak> currently supports all of Raku's
 L<loop phasers|https://docs.raku.org/language/phasers#FIRST>:
 
-=item FIRST - code to run when searching starts
-=item NEXT - code to run when searching a file is done
-=item LAST - code to run when searching is done
+=table
+  phaser   event
+  --------------
+  FIRST    code to run when searching starts
+  NEXT     code to run when searching a file is done
+  LAST     code to run when searching is done
 
 These phasers will be called in a B<thread-safe> manner.
 
@@ -747,11 +758,14 @@ with the C<--modify-files> and the C<--rename-files> option.
 Intended to be used by Raku ecosystem maintainers.  Indicates the name of
 zero or more Raku ecosystems of which to inspect the C<META6.json>
 information of all its modules.  Currently supported names are:
-
-=item p6c - the original git ecosystem (deprecated)
-=item cpan - the ecosystem piggybacking on PAUSE / CPAN (deprecated)
-=item fez - the currently recommended ecosystem for new modules / updates
-=item rea - the Raku Ecosystem Archive
+ 
+=table
+  name   description
+  ------------------
+  p6c    the original git ecosystem (deprecated)
+  cpan   the ecosystem piggybacking on PAUSE / CPAN (deprecated)
+  fez    the currently recommended ecosystem for new modules / updates
+  rea    the Raku Ecosystem Archive
 
 Defaults to C<rea> if specified as a flag.  Implies C<--json-per-elem>.
 
@@ -924,10 +938,13 @@ indicates the action to be taken when a field starts with an equal sign
 (indicating a formula of some kind in many spreadsheets).  The following
 values are recognized:
 
-=item none - take not action, just pass on
-=item die - throw an exception
-=item diag - report line and position where formula was found
-=item empty - replace the formula by an empty string
+=table
+  type   action
+  -------------
+  none   take not action, just pass on
+  die    throw an exception
+  diag   report line and position where formula was found
+  empty  replace the formula by an empty string
 
 =head2 --frequencies
 
@@ -1157,11 +1174,14 @@ the current operating system.
 Flag.  If specified, will negate the result of any match if it has a logical
 meaning:
 
-=item True -> False
-=item False -> True
-=item Nil -> True
-=item Empty -> True
-=item none of the above -> just that
+=table
+  given value        result
+  -------------------------
+  True               False
+  False              True
+  Nil                True
+  Empty              True
+  none of the above  just that
 
 =head2 --is-empty
 
@@ -1378,10 +1398,13 @@ each field as a C<CSV::Field|https://github.com/Tux/CSV/blob/master/doc/Text-CSV
 object rather than as a string.  The most important methods that can be called
 on a C<CSV::Field> object are:
 
-=item is-quoted - field was quoted
-=item is-binary - field contains undecodable data
-=item is-utf8 - field contains decodable data beyond ASCII
-=item is-formula = field looks like it contains a spreadsheet formula
+=table
+  method      meaning
+  -------------------
+  is-quoted   field was quoted
+  is-binary   field contains undecodable data
+  is-utf8     field contains decodable data beyond ASCII
+  is-formula  field looks like it contains a spreadsheet formula
 
 =head2 --list-custom-options
 
@@ -1836,10 +1859,13 @@ to C<False>.  If specified as a flag, will catch both STDOUT as well as
 STDERR output from the pattern's execution.  When specified as an option,
 will accept:
 
-=item out - only capture STDOUT
-=item err - only capture STDERR
-=item out,err - capture both STDIN as well as STDERR
-=item err,out - capture both STDIN as well as STDERR
+=table
+  flag(s)  action
+  ---------------
+  out      only capture STDOUT
+  err      only capture STDERR
+  out,err  capture both STDIN as well as STDERR
+  err,out  capture both STDIN as well as STDERR
 
 =head2 --smartcase
 

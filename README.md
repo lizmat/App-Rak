@@ -69,20 +69,15 @@ If the pattern starts with `*`, then this is a short way of specifying Raku code
 
 If the pattern start with 'jp:', then interpret the rest of the pattern as a `JSON path`. Only makes sense when used together with `--json-per-file`, `--json-per-line` or `--json-per-elem`. Requires that the [`JSON::Path`](https://raku.land/cpan:JNTHN/JSON::Path) module is installed. Basically a shortcut to specifying `path --type=json-path`.
 
-#### Supported JSON path syntax
-
-    $           root node
-    .key        index hash key
-    ['key']     index hash key
-    [2]         index array element
-    [0,1]       index array slice
-    [4:5]       index array range
-    [:5]        index from the beginning
-    [-3:]       index to the end
-    .*          index all elements
-    [*]         index all elements
-    [?(expr)]   filter on Raku expression
-    ..key       search all descendants for hash key
+<table class="pod-table">
+<caption>Supported JSON path syntax</caption>
+<thead><tr>
+<th>expression</th> <th>meaning</th>
+</tr></thead>
+<tbody>
+<tr> <td>$</td> <td>root node</td> </tr> <tr> <td>.key</td> <td>index hash key</td> </tr> <tr> <td>[&#39;key&#39;]</td> <td>index hash key</td> </tr> <tr> <td>[2]</td> <td>index array element</td> </tr> <tr> <td>[0,1]</td> <td>index array slice</td> </tr> <tr> <td>[4:5]</td> <td>index array range</td> </tr> <tr> <td>[:5]</td> <td>index from the beginning</td> </tr> <tr> <td>[-3:]</td> <td>index to the end</td> </tr> <tr> <td>.*</td> <td>index all elements</td> </tr> <tr> <td>[*]</td> <td>index all elements</td> </tr> <tr> <td>[?(expr)]</td> <td>filter on Raku expression</td> </tr> <tr> <td>..key</td> <td>search all descendants for hash key</td> </tr>
+</tbody>
+</table>
 
 A query that is not rooted from $ or specified using .. will be evaluated from the document root (that is, same as an explicit $ at the start).
 
@@ -107,10 +102,14 @@ using the "pattern is Raku code" syntax.
 
 The following methods can be called on the `JP` object:
 
-    .value             The first selected value.
-    .values            All selected values as a Seq.
-    .paths             The paths of all selected values as a Seq.
-    .paths-and-values  Interleaved selected paths and values.
+<table class="pod-table">
+<thead><tr>
+<th>method</th> <th>selected</th>
+</tr></thead>
+<tbody>
+<tr> <td>.value</td> <td>The first selected value.</td> </tr> <tr> <td>.values</td> <td>All selected values as a Seq.</td> </tr> <tr> <td>.paths</td> <td>The paths of all selected values as a Seq.</td> </tr> <tr> <td>.paths-and-values</td> <td>Interleaved selected paths and values.</td> </tr>
+</tbody>
+</table>
 
 Without listing all of the methods that can be called on the `JP` object, one should note that all efforts have been made to make the `JP` object act like a `Seq`.
 
@@ -190,11 +189,14 @@ The Raku Programming Language has a number of unique features that can be used w
 
 `App::Rak` currently supports all of Raku's [loop phasers](https://docs.raku.org/language/phasers#FIRST):
 
-  * FIRST - code to run when searching starts
-
-  * NEXT - code to run when searching a file is done
-
-  * LAST - code to run when searching is done
+<table class="pod-table">
+<thead><tr>
+<th>phaser</th> <th>event</th>
+</tr></thead>
+<tbody>
+<tr> <td>FIRST</td> <td>code to run when searching starts</td> </tr> <tr> <td>NEXT</td> <td>code to run when searching a file is done</td> </tr> <tr> <td>LAST</td> <td>code to run when searching is done</td> </tr>
+</tbody>
+</table>
 
 These phasers will be called in a **thread-safe** manner.
 
@@ -572,13 +574,14 @@ Flag. Indicate to **not** actually make any changes to any content modification 
 
 Intended to be used by Raku ecosystem maintainers. Indicates the name of zero or more Raku ecosystems of which to inspect the `META6.json` information of all its modules. Currently supported names are:
 
-  * p6c - the original git ecosystem (deprecated)
-
-  * cpan - the ecosystem piggybacking on PAUSE / CPAN (deprecated)
-
-  * fez - the currently recommended ecosystem for new modules / updates
-
-  * rea - the Raku Ecosystem Archive
+<table class="pod-table">
+<thead><tr>
+<th>name</th> <th>description</th>
+</tr></thead>
+<tbody>
+<tr> <td>p6c</td> <td>the original git ecosystem (deprecated)</td> </tr> <tr> <td>cpan</td> <td>the ecosystem piggybacking on PAUSE / CPAN (deprecated)</td> </tr> <tr> <td>fez</td> <td>the currently recommended ecosystem for new modules / updates</td> </tr> <tr> <td>rea</td> <td>the Raku Ecosystem Archive</td> </tr>
+</tbody>
+</table>
 
 Defaults to `rea` if specified as a flag. Implies `--json-per-elem`.
 
@@ -711,13 +714,14 @@ Special values that are allowed to produce all possible results are `∞` (aka `
 
 Only applicable if `--csv-per-line` has been specified. If specified, indicates the action to be taken when a field starts with an equal sign (indicating a formula of some kind in many spreadsheets). The following values are recognized:
 
-  * none - take not action, just pass on
-
-  * die - throw an exception
-
-  * diag - report line and position where formula was found
-
-  * empty - replace the formula by an empty string
+<table class="pod-table">
+<thead><tr>
+<th>type</th> <th>action</th>
+</tr></thead>
+<tbody>
+<tr> <td>none</td> <td>take not action, just pass on</td> </tr> <tr> <td>die</td> <td>throw an exception</td> </tr> <tr> <td>diag</td> <td>report line and position where formula was found</td> </tr> <tr> <td>empty</td> <td>replace the formula by an empty string</td> </tr>
+</tbody>
+</table>
 
 --frequencies
 -------------
@@ -924,15 +928,14 @@ NOTE: support of this feature depends on Raku supporting that feature on the cur
 
 Flag. If specified, will negate the result of any match if it has a logical meaning:
 
-  * True -> False
-
-  * False -> True
-
-  * Nil -> True
-
-  * Empty -> True
-
-  * none of the above -> just that
+<table class="pod-table">
+<thead><tr>
+<th>given value</th> <th>result</th>
+</tr></thead>
+<tbody>
+<tr> <td>True</td> <td>False</td> </tr> <tr> <td>False</td> <td>True</td> </tr> <tr> <td>Nil</td> <td>True</td> </tr> <tr> <td>Empty</td> <td>True</td> </tr> <tr> <td>none of the above</td> <td>just that</td> </tr>
+</tbody>
+</table>
 
 --is-empty
 ----------
@@ -1091,13 +1094,14 @@ $ rak '{ $_ with .<auth> }' --json-per-line
 
 Flag. Only applicable if `--csv-per-line` has been specified. If specified, indicates that meta-information will be kept for each field, by presenting each field as a `CSV::Field|https://github.com/Tux/CSV/blob/master/doc/Text-CSV.md#csvfield` object rather than as a string. The most important methods that can be called on a `CSV::Field` object are:
 
-  * is-quoted - field was quoted
-
-  * is-binary - field contains undecodable data
-
-  * is-utf8 - field contains decodable data beyond ASCII
-
-  * is-formula = field looks like it contains a spreadsheet formula
+<table class="pod-table">
+<thead><tr>
+<th>method</th> <th>meaning</th>
+</tr></thead>
+<tbody>
+<tr> <td>is-quoted</td> <td>field was quoted</td> </tr> <tr> <td>is-binary</td> <td>field contains undecodable data</td> </tr> <tr> <td>is-utf8</td> <td>field contains decodable data beyond ASCII</td> </tr> <tr> <td>is-formula</td> <td>field looks like it contains a spreadsheet formula</td> </tr>
+</tbody>
+</table>
 
 --list-custom-options
 ---------------------
@@ -1462,13 +1466,14 @@ If specified, indicates the command(s) to be executed in a shell. Any `$_` in th
 
 Flag and option. Only applicable if the pattern is a `Callable`. Indicates whether any output from the `Callable` pattern should be caught. Defaults to `False`. If specified as a flag, will catch both STDOUT as well as STDERR output from the pattern's execution. When specified as an option, will accept:
 
-  * out - only capture STDOUT
-
-  * err - only capture STDERR
-
-  * out,err - capture both STDIN as well as STDERR
-
-  * err,out - capture both STDIN as well as STDERR
+<table class="pod-table">
+<thead><tr>
+<th>flag(s)</th> <th>action</th>
+</tr></thead>
+<tbody>
+<tr> <td>out</td> <td>only capture STDOUT</td> </tr> <tr> <td>err</td> <td>only capture STDERR</td> </tr> <tr> <td>out,err</td> <td>capture both STDIN as well as STDERR</td> </tr> <tr> <td>err,out</td> <td>capture both STDIN as well as STDERR</td> </tr>
+</tbody>
+</table>
 
 --smartcase
 -----------
