@@ -10,7 +10,7 @@ use rak:ver<0.0.47>:auth<zef:lizmat>;              # rak Rak
 use Backtrace::Files:ver<0.0.3>:auth<zef:lizmat> <
   backtrace-files
 >;
-use String::Utils:ver<0.0.21>:auth<zef:lizmat> <
+use String::Utils:ver<0.0.21+>:auth<zef:lizmat> <
   after before between is-sha1 non-word has-marks
 >;
 
