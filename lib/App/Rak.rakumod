@@ -150,6 +150,13 @@ my constant %exts =
   '#python'   => <py ipynb>,
   '#raku'     => ('', <raku rakumod rakutest rakudoc nqp t pm6 pl6 pod6 t6>
                  ).flat.List,
+  # I am not sure should the binary formats be included or not:
+  # https://reference.wolfram.com/language/guide/WolframLanguageFileFormats.html
+  # Also #mathematica can be included as synonym of #wl .
+  '#wl'     => ('', <wl wlt m mt nb>).flat.List,
+  # I am including .Rmd because of .ipynb inclusion above.
+  # More generally, the extensions of the project https://quarto.org should be included.
+  '#r'     => ('', <r R Rmd>).flat.List,
   '#ruby'     => <rb>,
   '#text'     => ('', <txt>).flat.List,
   '#yaml'     => <yaml yml>,

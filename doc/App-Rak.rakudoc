@@ -864,8 +864,8 @@ $ rak foo --extensions=,foo
 =end code
 
 Predefined groups are C<#raku>, C<#perl>, C<#cro>, C<#text>, C<#c>, C<#c++>,
-C<#yaml>, C<#ruby>, C<#python>, C<#html>, C<#markdown>, C<#js>, C<#json>,
-C<#jsonl>, C<#csv>, C<#config> and C<#text>.
+C<#yaml>, C<#ruby>, C<#python>, C<#r>, C<#wl>, C<#html>, C<#markdown>, C<#js>, C<#json>,
+C<#jsonl>, C<#csv>, C<#config>, and C<#text>.
 
 The C<--list-known-extensions> argument can be used to see which predefined
 groups of extensions are supported, and which extensions they cover.
@@ -1455,9 +1455,11 @@ $ rak --list-known-extensions
 #markdown: md markdown
     #perl: (none) pl pm t
   #python: py ipynb
+       #r: (none) r R Rmd
     #raku: (none) raku rakumod rakutest rakudoc nqp t pm6 pl6 pod6 t6
     #ruby: rb
     #text: (none) txt
+      #wl: (none) wl m wlt mt nb
     #yaml: yaml yml
 
 =end code
