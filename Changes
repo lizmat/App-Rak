@@ -2,6 +2,9 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.2.20  2023-07-31T00:45:03+02:00
+     - Fix dependency in code (as in the META)
+
 0.2.19  2023-07-30T21:46:06+02:00
      - Add support for Wolfram Language / R extensions, antononcube++
      - Made dependency on String::Utils a bit more lenient
