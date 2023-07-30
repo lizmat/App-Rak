@@ -656,7 +656,7 @@ $ rak foo --extensions=
 $ rak foo --extensions=,foo
 ```
 
-Predefined groups are `#raku`, `#perl`, `#cro`, `#text`, `#c`, `#c++`, `#yaml`, `#ruby`, `#python`, `#html`, `#markdown`, `#js`, `#json`, `#jsonl`, `#csv`, `#config` and `#text`.
+Predefined groups are `#raku`, `#perl`, `#cro`, `#text`, `#c`, `#c++`, `#yaml`, `#ruby`, `#python`, `#r`, `#wl`, `#html`, `#markdown`, `#js`, `#json`, `#jsonl`, `#csv`, `#config`, and `#text`.
 
 The `--list-known-extensions` argument can be used to see which predefined groups of extensions are supported, and which extensions they cover.
 
@@ -1146,9 +1146,11 @@ $ rak --list-known-extensions
 #markdown: md markdown
     #perl: (none) pl pm t
   #python: py ipynb
+       #r: (none) r R Rmd
     #raku: (none) raku rakumod rakutest rakudoc nqp t pm6 pl6 pod6 t6
     #ruby: rb
     #text: (none) txt
+      #wl: (none) wl m wlt mt nb
     #yaml: yaml yml
 ```
 
@@ -1538,7 +1540,7 @@ If `--type=regex` is specified, then a pattern will be interpreted as a regex, a
 
 If `--type=code` is specified, then a pattern will be interpreted as Raku source code, as if it was surrounded by curly braces.
 
-### json path
+### json-path
 
 If `--type=json-path` is specified, then a pattern will be interpreted as a `JSON path`. Only makes sense when used together with `--json-per-file`, `--json-per-line` or `--json-per-elem`. Requires that the [`JSON::Path`](https://raku.land/cpan:JNTHN/JSON::Path) module is installed.
 

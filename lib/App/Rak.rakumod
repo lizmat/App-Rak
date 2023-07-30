@@ -306,7 +306,7 @@ elsif %config<(default)>:exists {
     named('(default)', True);
 }
 
-#--------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Actually set up all variables from the arguments specified and run.
 # Theory of operation:
 #
@@ -449,7 +449,7 @@ my sub main() is export {
 my sub s($elems)  { $elems == 1 ?? '' !! 's'  }
 my sub es($elems) { $elems == 1 ?? '' !! 'es' }
 
-# Properl show an option with one or two dashes
+# Properly show an option with one or two dashes
 sub o($option) {
     $option eq '(default)'
       ?? $option

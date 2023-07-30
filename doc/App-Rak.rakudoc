@@ -1950,7 +1950,7 @@ regex, as if it was surrounded by slashes.
 If C<--type=code> is specified, then a pattern will be interpreted as Raku
 source code, as if it was surrounded by curly braces.
 
-=head3 json path
+=head3 json-path
 
 If C<--type=json-path> is specified, then a pattern will be interpreted as
 a C<JSON path>.  Only makes sense when used together with C<--json-per-file>,
