@@ -2,6 +2,12 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.2.22  2024-05-08T22:15:02+02:00
+     - Upped dependency on "rak" to fix issue with --is-moarvm
+     - Add support for --mbc-frames and --mbc-strings options to
+       allow searches in MoarVM bytecode files
+     - Add tests for --pdf-xxx options
+
 0.2.21  2024-05-08T15:44:12+02:00
      - Upped dependency on "rak"
      - Fix --paths argument: can now specify multiple paths

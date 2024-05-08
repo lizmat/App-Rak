@@ -1176,6 +1176,20 @@ Flag. Indicate whether only the matched pattern should be produced, rather than 
 
 Indicate the maximum number of matches that should be produced per file. If specified as a flag, will assume **1** for its value. By default, will produce **all** possible matches in a file.
 
+--mbc-frames
+------------
+
+Flag. Indicates that the frames in a MoarVM bytecode file should be produced as a [`MoarVM::Bytecode::Frame`ihttps://raku.land/zef:lizmat/MoarVM::Bytecode#frame](`MoarVM::Bytecode::Frame`ihttps://raku.land/zef:lizmat/MoarVM::Bytecode#frame) to the matcher. Only makes sense if the pattern is a `Callable`. Will also set the `is-moarvm` flag to only select MoarVM bytecode files, unless reading from STDIN.
+
+Requires the [`MoarVM::Bytecode`](https://raku.land/zef:lizmat/MoarVM::Bytecode) Raku module to be installed.
+
+--mbc-strings
+-------------
+
+Flag. Indicates that the strings in the string hap in a MoarVM bytecode file should be produced to the matcher. Will also set the `is-moarvm` flag to only select MoarVM bytecode files, unless reading from STDIN.
+
+Requires the [`MoarVM::Bytecode`](https://raku.land/zef:lizmat/MoarVM::Bytecode) Raku module to be installed.
+
 ---meta-modified=condition
 --------------------------
 

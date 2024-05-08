@@ -5,7 +5,7 @@ use highlighter:ver<0.0.18>:auth<zef:lizmat>; # columns highlighter matches Type
 use IO::Path::AutoDecompress:ver<0.0.2>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.5>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.50>:auth<zef:lizmat>;              # rak Rak
+use rak:ver<0.0.51>:auth<zef:lizmat>;              # rak Rak
 
 use Backtrace::Files:ver<0.0.3>:auth<zef:lizmat> <
   backtrace-files
@@ -22,9 +22,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2024-05-08T15:38:31+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2024-05-08T19:41:02+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file mbc-frames mbc-strings meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -1943,6 +1943,16 @@ my sub option-max-matches-per-file($value --> Nil) {
     set-result-flag-or-Int('max-matches-per-file', $value);
 }
 
+my sub option-mbc-frames($value --> Nil) {
+    check-MoarVMBytecode('mbc-frames');
+    set-action('mbc-frames', $value);
+}
+
+my sub option-mbc-strings($value --> Nil) {
+    check-MoarVMBytecode('mbc-strings');
+    set-action('mbc-strings', $value);
+}
+
 my sub option-meta-modified($value --> Nil) {
     set-filesystem-Instant('meta-modified', $value);
 }
@@ -2366,7 +2376,7 @@ my sub move-filesystem-options-to-rak(--> Nil) {
 
     %rak<is-text> := True
       unless $reading-from-stdin || (%rak<
-        file is-text under-version-control is-pdf
+        file is-text under-version-control is-pdf is-moarvm
       >:k) || %result<find>;
 }
 
@@ -3081,49 +3091,57 @@ my sub action-modify-files(--> Nil) {
     rak-stats;
 }
 
-my sub action-pdf-info(--> Nil) {
-    meh-for 'pdf-info', <modify>;
+my sub handle-mbc(str $what, &handler --> Nil) {
+    meh-for $what, <modify>;
 
     prepare-needle;
-    %filesystem<is-pdf> //= True unless $reading-from-stdin;
+    %filesystem<is-moarvm> //= True unless $reading-from-stdin;
     move-filesystem-options-to-rak;
     move-result-options-to-rak;
-    %rak<produce-one> := -> $file { $PDFExtract.new(:$file).info }
+    %rak<produce-many> := &handler;
 
     activate-output-options;
     run-rak;
     rak-results;
     rak-stats;
+}
+
+my sub action-mbc-frames(--> Nil) {
+    handle-mbc 'mbc-frames', -> $io { $MoarVMBytecode.new($io).frames }
+}
+
+my sub action-mbc-strings(--> Nil) {
+    handle-mbc 'mbc-strings', -> $io { $MoarVMBytecode.new($io).strings }
+}
+
+my sub handle-pdf(str $what, str $producer, &handler --> Nil) {
+    meh-for $what, <modify>;
+
+    prepare-needle;
+    %filesystem<is-pdf> //= True unless $reading-from-stdin;
+    move-filesystem-options-to-rak;
+    move-result-options-to-rak;
+    %rak{$producer} := &handler;
+
+    activate-output-options;
+    run-rak;
+    rak-results;
+    rak-stats;
+}
+
+my sub action-pdf-info(--> Nil) {
+    handle-pdf 'pdf-info', 'produce-one',
+      -> $file { $PDFExtract.new(:$file).info }
 }
 
 my sub action-pdf-per-file(--> Nil) {
-    meh-for 'pdf-per-file', <modify>;
-
-    prepare-needle;
-    %filesystem<is-pdf> //= True unless $reading-from-stdin;
-    move-filesystem-options-to-rak;
-    move-result-options-to-rak;
-    %rak<produce-one> := -> $file { $PDFExtract.new(:$file).text }
-
-    activate-output-options;
-    run-rak;
-    rak-results;
-    rak-stats;
+    handle-pdf 'pdf-per-file', 'produce-one',
+      -> $file { $PDFExtract.new(:$file).text }
 }
 
 my sub action-pdf-per-line(--> Nil) {
-    meh-for 'pdf-per-line', <modify>;
-
-    prepare-needle;
-    %filesystem<is-pdf> //= True unless $reading-from-stdin;
-    move-filesystem-options-to-rak;
-    move-result-options-to-rak;
-    %rak<produce-many> := -> $file { $PDFExtract.new(:$file).text.lines }
-
-    activate-output-options;
-    run-rak;
-    rak-results;
-    rak-stats;
+    handle-pdf 'pdf-per-line', 'produce-many',
+      -> $file { $PDFExtract.new(:$file).text.lines }
 }
 
 my sub action-per-file(--> Nil) {

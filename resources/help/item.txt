@@ -179,25 +179,6 @@ Requires that the Text::CSV module is installed.
 For more information about Text::CSV, see
 https://raku.land/github:Tux/Text::CSV .
 
---pdf-info
-
-Attempt to interprete file as a PDF file, and by pass its meta-information
-as a single hash to the pattern matcher.  Only makes sense if the pattern
-is a Callable pattern  Only looks at PDF files (as if --is-pdf has been
-specified).
-
---pdf-per-file
-
-Attempt to interprete file as a PDF file, and by pass its text as a single
-string to the pattern matcher.  Only looks at PDF files (as if --is-pdf
-has been specified).
-
---pdf-per-line
-
-Attempt to interprete file as a PDF file, and by pass its text contents
-as lines to the pattern matcher.  Only looks at PDF files (as if
---is-pdf has been specified).
-
 --headers
 
 Only applicable when --csv-per-line is also specified.  It defaults to
@@ -222,6 +203,37 @@ $ rak --csv-per-line --headers='<a b>' '{.<a> if .<n> eq "foo"}' info.csv
 
 # Use alternate column names using mapping
 $ rak --csv-per-line --headers=':foo<a>, :bar<b>' '{.<a> if .<n> eq "foo"}' info.csv
+
+--pdf-info
+
+Attempt to interprete file as a PDF file, and by pass its meta-information
+as a single hash to the pattern matcher.  Only makes sense if the pattern
+is a Callable pattern  Only looks at PDF files (as if --is-pdf has been
+specified).
+
+--pdf-per-file
+
+Attempt to interprete file as a PDF file, and by pass its text as a single
+string to the pattern matcher.  Only looks at PDF files (as if --is-pdf
+has been specified).
+
+--pdf-per-line
+
+Attempt to interprete file as a PDF file, and by pass its text contents
+as lines to the pattern matcher.  Only looks at PDF files (as if
+--is-pdf has been specified).
+
+--mbc-frames
+
+Attempt to interprete files as a MoarVM bytecode file and pass
+MoarVM::Bytecode::Frame objects to the pattern matcher.  Only looks at
+MoarVM bytecode files (as if --is-moarvm has been specified).
+
+--mbc-strings
+
+Attempt to interprete files as a MoarVM bytecode file and pass each
+string in its string heap to the pattern matcher.  Only looks at
+MoarVM bytecode files (as if --is-moarvm has been specified).
 
 --unicode
 

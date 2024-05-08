@@ -1491,6 +1491,26 @@ Indicate the maximum number of matches that should be produced per file.
 If specified as a flag, will assume B<1> for its value.  By default, will
 produce B<all> possible matches in a file.
 
+=head2 --mbc-frames
+
+Flag.  Indicates that the frames in a MoarVM bytecode file should be
+produced as a L<C<MoarVM::Bytecode::Frame>ihttps://raku.land/zef:lizmat/MoarVM::Bytecode#frame>
+to the matcher.  Only makes sense if the pattern is a C<Callable>.  Will
+also set the C<is-moarvm> flag to only select MoarVM bytecode files,
+unless reading from STDIN.
+
+Requires the L<C<MoarVM::Bytecode>|https://raku.land/zef:lizmat/MoarVM::Bytecode>
+Raku module to be installed.
+
+=head2 --mbc-strings
+
+Flag.  Indicates that the strings in the string hap in a MoarVM bytecode
+file should be produced to the matcher.  Will also set the C<is-moarvm>
+flag to only select MoarVM bytecode files, unless reading from STDIN.
+
+Requires the L<C<MoarVM::Bytecode>|https://raku.land/zef:lizmat/MoarVM::Bytecode>
+Raku module to be installed.
+
 =head2 ---meta-modified=condition
 
 If specified, indicates the C<Callable> that should return True to include a

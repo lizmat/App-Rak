@@ -46,6 +46,8 @@ Item producers:
  --json-per-line   Interpret each line as JSON for pattern matching
  --blame-per-file  Produce Git::Blame::File object for pattern matcing
  --blame-per-line  Produce Git::Blame::Line objects for pattern matching
+ --mbc-frames      Produce MoarVM::Bytecode::Frame objects for matching
+ --mbc-strings     Produce MoarVM::Bytecode string-heap strings for matching
  --unicode         Produce names of codepoints for pattern matching
 
 Code pattern helpers:
