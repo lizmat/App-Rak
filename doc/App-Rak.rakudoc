@@ -564,14 +564,15 @@ If the Callable returns C<True>, then the filename will be produced.  If
 anything else is returned, then the stringification of that object will be
 produced.
 
+Requires the L<C<Git::Blame::File>|https://raku.land/zef:lizmat/Git::Blame::File>
+Raku module to be installed.
+
 =begin code :lang<bash>
 
 # show files with more than 10 commits
 $ rak '*.commits > 10' --blame-per-file --files-with-matches
 
 =end code
-
-Requires that the L<C<Git::Blame::File>|https://raku.land/zef:lizmat/Git::Blame::File> module is installed.
 
 =head2 --blame-per-line
 
@@ -788,6 +789,9 @@ inspection and/or changes.  Defaults to C<False>.  Optionally takes the
 name of the editor to be used.  If no editor is specified, will use what
 is in the C<EDITOR> environment variable.  If that is not specified either,
 will call "vim".
+
+Requires the L<C<Edit::Files>|https://raku.land/zef:lizmat/Edit::Files>
+Raku module to be installed.
 
 =head2 --eol=lf|cr|crlf
 
@@ -1226,6 +1230,11 @@ select files that are B<not> writable by the members of the group of the owner.
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
 
+=head2 --is-moarvm
+
+Flag.  If specified, will only select files that appear to be MoarVM
+bytecode files. Defaults to C<False>.
+
 =head2 --is-owned-by-group
 
 Flag. If specified, will only select files that are owned by the group of
@@ -1270,6 +1279,11 @@ B<not> writable by the owner.
 
 NOTE: support of this feature depends on Raku supporting that feature on
 the current operating system.
+
+=head2 --is-pdf
+
+Flag.  If specified, will only select files that appear to be PDF files.
+Defaults to C<False>.
 
 =head2 --is-readable
 
@@ -1647,6 +1661,34 @@ indicated file and interprets each line as a pattern according to the rules
 (implicitly) set with the C<--type> argument.  If the file specification is
 C<"-">, then the patterns will be read from STDIN.
 
+=head2 --pdf-info
+
+Flag.  Indicates that the meta-info of any PDF file should be produced
+as single hash to the matcher.  Only makes sense if the pattern is a
+C<Callable>.  Will also set the C<is-pdf> flag to only select PDF files,
+unless reading from STDIN.
+
+Requires the L<C<PDF::Extract>|https://raku.land/zef:librasteve/PDF::Extract>
+Raku module to be installed.
+
+=head2 --pdf-per-file
+
+Flag.  Indicates that any PDF file text contents should be produced as
+single text to the matcher.  Will also set the C<is-pdf> flag to only
+select PDF files, unless reading from STDIN.
+
+Requires the L<C<PDF::Extract>|https://raku.land/zef:librasteve/PDF::Extract>
+Raku module to be installed.
+
+=head2 --pdf-per-line
+
+Flag.  Indicates that any PDF file text contents should be produced as
+lines to the matcher.  Will also set the C<is-pdf> flag to only select
+PDF files, unless reading from STDIN.
+
+Requires the L<C<PDF::Extract>|https://raku.land/zef:librasteve/PDF::Extract>
+Raku module to be installed.
+
 =head2 --per-file[=code]
 
 Indicate whether matching should be done per file, rather than per line.
@@ -1900,8 +1942,8 @@ $ rak --sourcery 'say "foo"' --edit
 
 =end code
 
-Requires that the L<C<sourcery>|https://raku.land/zef:lizmat/sourcery> module
-is installed.
+Requires the L<C<sourcery>|https://raku.land/zef:lizmat/sourcery> module
+to be installed.
 
 =head2 --stats
 
@@ -1954,8 +1996,8 @@ source code, as if it was surrounded by curly braces.
 
 If C<--type=json-path> is specified, then a pattern will be interpreted as
 a C<JSON path>.  Only makes sense when used together with C<--json-per-file>,
-C<--json-per-line> or C<--json-per-elem>.  Requires that the
-L<C<JSON::Path>|https://raku.land/cpan:JNTHN/JSON::Path> module is installed.
+C<--json-per-line> or C<--json-per-elem>.  Requires the
+L<C<JSON::Path>|https://raku.land/cpan:JNTHN/JSON::Path> module to be installed.
 
 =head3 contains
 

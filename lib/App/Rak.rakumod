@@ -5,12 +5,12 @@ use highlighter:ver<0.0.18>:auth<zef:lizmat>; # columns highlighter matches Type
 use IO::Path::AutoDecompress:ver<0.0.2>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.5>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.47>:auth<zef:lizmat>;              # rak Rak
+use rak:ver<0.0.50>:auth<zef:lizmat>;              # rak Rak
 
 use Backtrace::Files:ver<0.0.3>:auth<zef:lizmat> <
   backtrace-files
 >;
-use String::Utils:ver<0.0.21+>:auth<zef:lizmat> <
+use String::Utils:ver<0.0.22+>:auth<zef:lizmat> <
   after before between is-sha1 non-word has-marks
 >;
 
@@ -22,9 +22,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2022-11-23T12:18:45+01:00 by tools/makeOPTIONS.raku
+#- Generated on 2024-05-08T15:38:31+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -175,8 +175,10 @@ elsif %*ENV<RAK_CONFIG>:!exists {  # want to have the default config
 }
 
 # Links to optional classes
-my $TextCSV;
 my $GitBlameFile;
+my $MoarVMBytecode;
+my $PDFExtract;
+my $TextCSV;
 my &edit-files;
 my &sourcery;
 my &sourcery-pattern;
@@ -321,8 +323,18 @@ elsif %config<(default)>:exists {
 my sub main() is export {
 
     # Must have something to work with
-    meh "Should at least specify a pattern"
-      if !@*ARGS && !$pattern.defined;
+    meh q:to/MEH/.chomp if !@*ARGS && !$pattern.defined;
+Should at least specify a pattern.  For instance:
+
+  rak foo
+
+will look for "foo" in all text files in the current directory
+and any sub-directories. See:
+
+  rak --help
+
+for (much) more information.
+MEH
 
     # Do the actual argument parsing
     for @*ARGS {
@@ -1342,21 +1354,37 @@ my sub check-EditFiles(str $name) {
     }
 }
 
-# check Text::CSV availability
-my sub check-TextCSV(str $name) {
-    unless $TextCSV {
-        CATCH { meh-not-installed 'Text::CSV', "--$name" }
-        require Text::CSV;
-        $TextCSV := Text::CSV;
-    }
-}
-
 # check Git::Blame::File availability
 my sub check-GitBlameFile(str $name) {
     unless $GitBlameFile {
         CATCH { meh-not-installed 'Git::Blame::File', "--$name" }
         require Git::Blame::File;
         $GitBlameFile := Git::Blame::File;
+    }
+}
+
+# check MoarVM::Bytecode availability
+my sub check-MoarVMBytecode(str $name) {
+    unless $MoarVMBytecode {
+        CATCH { meh-not-installed 'MoarVM::Bytecode', "--$name" }
+        $MoarVMBytecode := "use MoarVM::Bytecode; MoarVM::Bytecode".EVAL;
+    }
+}
+
+# check PDF::Extract availability
+my sub check-PDFExtract(str $name) {
+    unless $PDFExtract {
+        CATCH { meh-not-installed 'PDF::Extract', "--$name" }
+        $PDFExtract := "use PDF::Extract; Extract".EVAL;
+    }
+}
+
+# check Text::CSV availability
+my sub check-TextCSV(str $name) {
+    unless $TextCSV {
+        CATCH { meh-not-installed 'Text::CSV', "--$name" }
+        require Text::CSV;
+        $TextCSV := Text::CSV;
     }
 }
 
@@ -1819,6 +1847,10 @@ my sub option-is-group-writable($value --> Nil) {
     set-filesystem-flag('is-group-writable', $value);
 }
 
+my sub option-is-moarvm($value --> Nil) {
+    set-filesystem-flag('is-moarvm', $value);
+}
+
 my sub option-is-owned-by-group($value --> Nil) {
     set-filesystem-flag('is-owned-by-group', $value);
 }
@@ -1837,6 +1869,10 @@ my sub option-is-owner-readable($value --> Nil) {
 
 my sub option-is-owner-writable($value --> Nil) {
     set-filesystem-flag('is-owner-writable', $value);
+}
+
+my sub option-is-pdf($value --> Nil) {
+    set-filesystem-flag('is-pdf', $value);
 }
 
 my sub option-is-readable($value --> Nil) {
@@ -1976,7 +2012,7 @@ my sub option-passthru-context($value --> Nil) {
 my sub option-paths($value --> Nil) {
     Bool.ACCEPTS($value)
       ?? meh "'--paths' must be a path specification, not a flag"
-      !! set-source('paths', $value);
+      !! set-source('paths', $value.split(","));
 }
 
 my sub option-paths-from($value --> Nil) {
@@ -2027,6 +2063,21 @@ my sub option-patterns-from($value --> Nil) {
     else {
         meh "Could not read from '$value' to obtain patterns";
     }
+}
+
+my sub option-pdf-info($value --> Nil) {
+    check-PDFExtract('pdf-per-file');
+    set-action('pdf-info', $value);
+}
+
+my sub option-pdf-per-file($value --> Nil) {
+    check-PDFExtract('pdf-per-file');
+    set-action('pdf-per-file', $value);
+}
+
+my sub option-pdf-per-line($value --> Nil) {
+    check-PDFExtract('pdf-per-line');
+    set-action('pdf-per-line', $value);
 }
 
 my sub option-per-file($value --> Nil) {
@@ -2315,7 +2366,7 @@ my sub move-filesystem-options-to-rak(--> Nil) {
 
     %rak<is-text> := True
       unless $reading-from-stdin || (%rak<
-        file is-text under-version-control
+        file is-text under-version-control is-pdf
       >:k) || %result<find>;
 }
 
@@ -3027,6 +3078,51 @@ my sub action-modify-files(--> Nil) {
 
     my $*N = 0;
     run-rak(:eagerly);
+    rak-stats;
+}
+
+my sub action-pdf-info(--> Nil) {
+    meh-for 'pdf-info', <modify>;
+
+    prepare-needle;
+    %filesystem<is-pdf> //= True unless $reading-from-stdin;
+    move-filesystem-options-to-rak;
+    move-result-options-to-rak;
+    %rak<produce-one> := -> $file { $PDFExtract.new(:$file).info }
+
+    activate-output-options;
+    run-rak;
+    rak-results;
+    rak-stats;
+}
+
+my sub action-pdf-per-file(--> Nil) {
+    meh-for 'pdf-per-file', <modify>;
+
+    prepare-needle;
+    %filesystem<is-pdf> //= True unless $reading-from-stdin;
+    move-filesystem-options-to-rak;
+    move-result-options-to-rak;
+    %rak<produce-one> := -> $file { $PDFExtract.new(:$file).text }
+
+    activate-output-options;
+    run-rak;
+    rak-results;
+    rak-stats;
+}
+
+my sub action-pdf-per-line(--> Nil) {
+    meh-for 'pdf-per-line', <modify>;
+
+    prepare-needle;
+    %filesystem<is-pdf> //= True unless $reading-from-stdin;
+    move-filesystem-options-to-rak;
+    move-result-options-to-rak;
+    %rak<produce-many> := -> $file { $PDFExtract.new(:$file).text.lines }
+
+    activate-output-options;
+    run-rak;
+    rak-results;
     rak-stats;
 }
 

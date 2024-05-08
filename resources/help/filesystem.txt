@@ -51,13 +51,28 @@ is also specified.
 
 Refining by content:
 
+--is-moarvm
+
+Flag.  If specified with a True value, indicates that only files that
+appear to be MoarVM bytecode files, should be selected.  If specified
+with a False value, indicates that only files that do **NOT** appear
+to be MoarVM bytecode files, should be selected.
+
+--is-pdf
+
+Flag.  If specified with a True value, indicates that only files that
+appear to be PDF files, should be selected.  If specified with a False
+value, indicates that only files that do **NOT** appear to be PDF
+files, should be selected.
+
 --is-text
 
-Flag.  If specified with a True value, indicates that only files that appear
-to contain text (rather than binary data) should be selected.  If specified
-with a False value, indicates that only files with binary data should be
-selected.  However, actual searching for binary data is not yet implemented,
-so this feature can only be used in conjunction with --find.
+Flag.  If specified with a True value, indicates that only files that
+appear to contain text (rather than binary data) should be selected.
+If specified with a False value, indicates that only files with binary
+data should be selected.  However, actual searching for binary data is
+not yet implemented, so this feature can only be used in conjunction
+with --find.
 
 --accept=code
 

@@ -37,12 +37,15 @@ Item producers:
  --per-line[=producer]  Produce lines for pattern matching
  --per-file[=producer]  Produce whole file for pattern matching
  --find            Produce absolute paths for pattern matching
+ --csv-per-line    Produce rows from Text::CSV object for pattern matching
+ --pdf-info        Produce meta-info of PDF file as a single hash
+ --pdf-per-file    Produce text of PDF file as a single string
+ --pdf-per-line    Produce text of PDF file as lines of text
  --json-per-file   Interpret whole file as a single JSON for matching
  --json-per-elem   Interpret whole file as JSON, match each top level element
  --json-per-line   Interpret each line as JSON for pattern matching
  --blame-per-file  Produce Git::Blame::File object for pattern matcing
  --blame-per-line  Produce Git::Blame::Line objects for pattern matching
- --csv-per-line    Produce rows from Text::CSV object for pattern matching
  --unicode         Produce names of codepoints for pattern matching
 
 Code pattern helpers:
@@ -81,19 +84,21 @@ Filesystem filters:
  --inode=condition       Inode number of file on file system
  --is-empty              File does (not) contain any data
  --is-executable         File can (not) be executed by owner
- --is-readable           File can (not) be read by owner
- --is-writable           File can (not) be written to by owner
  --is-group-executable   File can (not) be executed by group members of owner
  --is-group-readable     File can (not) be read by group members of owner
  --is-group-writable     File can (not) be written to by group members of owner
+ --is-moarvm             File is (not) a MoarVM bytecode file
  --is-owned-by-group     File is (not) owned by group of user
  --is-owned-by-user      File is (not) owned by user
+ --is-pdf                File is (not) a PDF file
+ --is-readable           File can (not) be read by owner
  --is-sticky             Has STICKY bit set in attributes
  --is-symbolic-link      File is (not) a symbolic link
  --is-text               File contains (does not contain) text
  --is-world-executable   File can (not) be executed by anybody
  --is-world-readable     File can (not) be read by anybody
  --is-world-writable     File can (not) be written to by anybody
+ --is-writable           File can (not) be written to by owner
  --meta-modified=cond    Check on epoch when meta-info of file was last changed
  --mode=condition        The full mode value of the file
  --modified=condition    Check on epoch when file was last changed

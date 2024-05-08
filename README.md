@@ -432,12 +432,12 @@ Flag. Only makes sense if the pattern is a `Callable`. If specified, indicates t
 
 If <git blame> information can be obtained, then the associated `Git::Blame::File` object will be presented to the pattern `Callable`. If the Callable returns `True`, then the filename will be produced. If anything else is returned, then the stringification of that object will be produced.
 
+Requires the [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File) Raku module to be installed.
+
 ```bash
 # show files with more than 10 commits
 $ rak '*.commits > 10' --blame-per-file --files-with-matches
 ```
-
-Requires that the [`Git::Blame::File`](https://raku.land/zef:lizmat/Git::Blame::File) module is installed.
 
 --blame-per-line
 ----------------
@@ -599,6 +599,8 @@ Assumes `zef` is installed and its meta information is available.
 ---------------
 
 Indicate whether the patterns found should be fed into an editor for inspection and/or changes. Defaults to `False`. Optionally takes the name of the editor to be used. If no editor is specified, will use what is in the `EDITOR` environment variable. If that is not specified either, will call "vim".
+
+Requires the [`Edit::Files`](https://raku.land/zef:lizmat/Edit::Files) Raku module to be installed.
 
 --eol=lf|cr|crlf
 ----------------
@@ -970,6 +972,11 @@ Flag. If specified, will only select files that can be written to by members of 
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
 
+--is-moarvm
+-----------
+
+Flag. If specified, will only select files that appear to be MoarVM bytecode files. Defaults to `False`.
+
 --is-owned-by-group
 -------------------
 
@@ -1004,6 +1011,11 @@ NOTE: support of this feature depends on Raku supporting that feature on the cur
 Flag. If specified, will only select files that can be written to by the owner. Use negation `--/is-owner-writable` to only select files that are **not** writable by the owner.
 
 NOTE: support of this feature depends on Raku supporting that feature on the current operating system.
+
+--is-pdf
+--------
+
+Flag. If specified, will only select files that appear to be PDF files. Defaults to `False`.
 
 --is-readable
 -------------
@@ -1298,6 +1310,27 @@ Alternative way to specify the pattern to search for. If (implicitly) specified,
 
 Alternative way to specify one or more patterns to search for. Reads the indicated file and interprets each line as a pattern according to the rules (implicitly) set with the `--type` argument. If the file specification is `"-"`, then the patterns will be read from STDIN.
 
+--pdf-info
+----------
+
+Flag. Indicates that the meta-info of any PDF file should be produced as single hash to the matcher. Only makes sense if the pattern is a `Callable`. Will also set the `is-pdf` flag to only select PDF files, unless reading from STDIN.
+
+Requires the [`PDF::Extract`](https://raku.land/zef:librasteve/PDF::Extract) Raku module to be installed.
+
+--pdf-per-file
+--------------
+
+Flag. Indicates that any PDF file text contents should be produced as single text to the matcher. Will also set the `is-pdf` flag to only select PDF files, unless reading from STDIN.
+
+Requires the [`PDF::Extract`](https://raku.land/zef:librasteve/PDF::Extract) Raku module to be installed.
+
+--pdf-per-line
+--------------
+
+Flag. Indicates that any PDF file text contents should be produced as lines to the matcher. Will also set the `is-pdf` flag to only select PDF files, unless reading from STDIN.
+
+Requires the [`PDF::Extract`](https://raku.land/zef:librasteve/PDF::Extract) Raku module to be installed.
+
 --per-file[=code]
 -----------------
 
@@ -1499,7 +1532,7 @@ Compatible with the `--edit`, `--vimgrep` and the implicit `per-line` option.
 $ rak --sourcery 'say "foo"' --edit
 ```
 
-Requires that the [`sourcery`](https://raku.land/zef:lizmat/sourcery) module is installed.
+Requires the [`sourcery`](https://raku.land/zef:lizmat/sourcery) module to be installed.
 
 --stats
 -------
@@ -1542,7 +1575,7 @@ If `--type=code` is specified, then a pattern will be interpreted as Raku source
 
 ### json-path
 
-If `--type=json-path` is specified, then a pattern will be interpreted as a `JSON path`. Only makes sense when used together with `--json-per-file`, `--json-per-line` or `--json-per-elem`. Requires that the [`JSON::Path`](https://raku.land/cpan:JNTHN/JSON::Path) module is installed.
+If `--type=json-path` is specified, then a pattern will be interpreted as a `JSON path`. Only makes sense when used together with `--json-per-file`, `--json-per-line` or `--json-per-elem`. Requires the [`JSON::Path`](https://raku.land/cpan:JNTHN/JSON::Path) module to be installed.
 
 ### contains
 
