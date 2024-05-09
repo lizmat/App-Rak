@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Allow --edit to work with --files-with-matches and
+       --files-without-matches
 
 0.2.23  2024-05-09T13:51:24+02:00
      - Upped dependency on "rak" to fix issue with readability of

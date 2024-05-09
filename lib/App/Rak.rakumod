@@ -2715,7 +2715,9 @@ my sub action-edit(--> Nil) {
 
     %rak<max-matches-per-source> := $_
       with %result<max-matches-per-file>:delete;
-    my $find := %result<find>:delete;
+    my $find                  := %result<find>:delete;
+    my $files-with-matches    := %result<files-with-matches>:delete;
+    my $files-without-matches := %result<files-without-matches>:delete;
 
     meh-for 'edit', <output-file pager result modify csv>;
 
@@ -2723,12 +2725,24 @@ my sub action-edit(--> Nil) {
     move-filesystem-options-to-rak;
     my $editor := Bool.ACCEPTS($action) ?? Any !! $action;
 
-    # find filenames to edit
+    # Find filenames to edit
     if $find {
         %rak<find>             := True;
         %rak<omit-item-number> := True;
         %rak<mapper> := -> $, @files --> Empty {
             edit-files @files, :$editor;
+        }
+    }
+
+    # Use filenames of (non-)matches
+    elsif $files-with-matches || $files-without-matches {
+        %rak<sources-only>         := True if $files-with-matches;
+        %rak<sources-without-only> := True if $files-without-matches;
+
+        my @files;
+        %rak<mapper> := -> $io --> Empty {
+            LAST edit-files @files, :$editor;
+            @files.push: $io.relative;
         }
     }
 
