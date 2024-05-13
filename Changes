@@ -3,6 +3,11 @@ Revision history for App-Rak
 {{$NEXT}}
      - Ignore --progress if STDERR is not a tty.  This allows
        --progress to be used as a default
+     - Ignore --progress with --edit option, as the editing can
+       actually be part of the lazy searching, and you don't
+       want the announcer running while editing a file
+     - Document the --encoding option
+     - Upped dependency on "rak" for hyperizing 2MB+ text files
 
 0.2.24  2024-05-13T15:50:05+02:00
      - Allow --edit to work with --files-with-matches and

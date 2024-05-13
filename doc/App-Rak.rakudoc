@@ -793,6 +793,12 @@ will call "vim".
 Requires the L<C<Edit::Files>|https://raku.land/zef:lizmat/Edit::Files>
 Raku module to be installed.
 
+=head2 --encoding[=utf8-c8]
+
+Indicate the encoding to be used when reading text files.  Defaults to
+L<C<utf8-c8>|https://docs.raku.org/language/unicode#UTF8-C8>.  Other
+encodings are e.g. C<utf8> and C<ascii>.
+
 =head2 --eol=lf|cr|crlf
 
 Only applicable if C<--csv-per-line> has been specified.  Indicate a

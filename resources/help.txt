@@ -36,6 +36,7 @@ String search pattern modifiers:
 Item producers:
  --per-line[=producer]  Produce lines for pattern matching
  --per-file[=producer]  Produce whole file for pattern matching
+ --encoding[=utf8-c8]   Encoding to be used when reading text files
  --find            Produce absolute paths for pattern matching
  --csv-per-line    Produce rows from Text::CSV object for pattern matching
  --pdf-info        Produce meta-info of PDF file as a single hash

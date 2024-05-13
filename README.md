@@ -602,6 +602,11 @@ Indicate whether the patterns found should be fed into an editor for inspection 
 
 Requires the [`Edit::Files`](https://raku.land/zef:lizmat/Edit::Files) Raku module to be installed.
 
+--encoding[=utf8-c8]
+--------------------
+
+Indicate the encoding to be used when reading text files. Defaults to [`utf8-c8`](https://docs.raku.org/language/unicode#UTF8-C8). Other encodings are e.g. `utf8` and `ascii`.
+
 --eol=lf|cr|crlf
 ----------------
 

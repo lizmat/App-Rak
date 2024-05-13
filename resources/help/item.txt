@@ -31,6 +31,12 @@ Examples:
 # all names of files that have the string "foo" in them
 $ rak --per-file --files-with-matches foo
 
+--encoding[=utf8-c8]
+
+Encoding to be used when reading text files.  Defaults to "utf8-c8".
+Other options are "utf8" and "ascii", but these encoding are more
+prone to producing errors.
+
 --find
 
 Produce the paths from the haystack specification and the filesystem
