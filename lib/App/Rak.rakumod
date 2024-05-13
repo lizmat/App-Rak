@@ -2128,7 +2128,7 @@ my sub option-progress($value --> Nil) {
       ?? $value
         ?? $writing-to-stderr
           ?? (%rak<progress> := &progress)
-          !! meh "--progress can only write to STDERR"
+          !! Nil
         !! Nil
       !! meh "'--progress' must be a flag"
 }
