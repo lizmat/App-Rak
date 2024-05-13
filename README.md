@@ -1176,10 +1176,17 @@ Flag. Indicate whether only the matched pattern should be produced, rather than 
 
 Indicate the maximum number of matches that should be produced per file. If specified as a flag, will assume **1** for its value. By default, will produce **all** possible matches in a file.
 
+--mbc
+-----
+
+Flag. Indicates that a [`MoarVM::Bytecode`](https://raku.land/zef:lizmat/MoarVM::Bytecode) object should be produced for each MoarVM bytecode file, to be presented to the matcher. Only makes sense if the pattern is a `Callable`. Will also set the `is-moarvm` flag to only select MoarVM bytecode files, unless reading from STDIN.
+
+Requires the [`MoarVM::Bytecode`](https://raku.land/zef:lizmat/MoarVM::Bytecode) Raku module to be installed.
+
 --mbc-frames
 ------------
 
-Flag. Indicates that the frames in a MoarVM bytecode file should be produced as a [`MoarVM::Bytecode::Frame`ihttps://raku.land/zef:lizmat/MoarVM::Bytecode#frame](`MoarVM::Bytecode::Frame`ihttps://raku.land/zef:lizmat/MoarVM::Bytecode#frame) to the matcher. Only makes sense if the pattern is a `Callable`. Will also set the `is-moarvm` flag to only select MoarVM bytecode files, unless reading from STDIN.
+Flag. Indicates that the frames in a MoarVM bytecode file should be produced as a [`MoarVM::Bytecode::Frame`](https://raku.land/zef:lizmat/MoarVM::Bytecode#frame) to the matcher. Only makes sense if the pattern is a `Callable`. Will also set the `is-moarvm` flag to only select MoarVM bytecode files, unless reading from STDIN.
 
 Requires the [`MoarVM::Bytecode`](https://raku.land/zef:lizmat/MoarVM::Bytecode) Raku module to be installed.
 
@@ -1366,6 +1373,11 @@ Optionally takes a `Callable` specification: this will be given an `IO::Path` ob
 # look for foo in only the last 10 lines of each file
 $ rak foo --per-line='*.lines.tail(10)'
 ```
+
+--progress
+----------
+
+Flag. If specified, will produce a progress indicator on STDERR that indicates the number of files checked, number of lines checked and number of matches, updated 5 times per second. Defaults to `False`.
 
 --proximate=[N]
 ---------------
@@ -1726,7 +1738,7 @@ If you like this module, or what I’m doing more generally, committing to a [sm
 COPYRIGHT AND LICENSE
 =====================
 
-Copyright 2022, 2023 Elizabeth Mattijsen
+Copyright 2022, 2023, 2024 Elizabeth Mattijsen
 
 This library is free software; you can redistribute it and/or modify it under the Artistic License 2.0.
 

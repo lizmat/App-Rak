@@ -223,6 +223,12 @@ Attempt to interprete file as a PDF file, and by pass its text contents
 as lines to the pattern matcher.  Only looks at PDF files (as if
 --is-pdf has been specified).
 
+--mbc
+
+Attempt to interprete files as a MoarVM bytecode file and pass one
+MoarVM::Bytecode object to the pattern matcher for each file.  Only looks
+at MoarVM bytecode files (as if --is-moarvm has been specified).
+
 --mbc-frames
 
 Attempt to interprete files as a MoarVM bytecode file and pass

@@ -1491,10 +1491,21 @@ Indicate the maximum number of matches that should be produced per file.
 If specified as a flag, will assume B<1> for its value.  By default, will
 produce B<all> possible matches in a file.
 
+=head2 --mbc
+
+Flag.  Indicates that a L<C<MoarVM::Bytecode>|https://raku.land/zef:lizmat/MoarVM::Bytecode>
+object should be produced for each MoarVM bytecode file, to be presented
+to the matcher.  Only makes sense if the pattern is a C<Callable>.  Will
+also set the C<is-moarvm> flag to only select MoarVM bytecode files,
+unless reading from STDIN.
+
+Requires the L<C<MoarVM::Bytecode>|https://raku.land/zef:lizmat/MoarVM::Bytecode>
+Raku module to be installed.
+
 =head2 --mbc-frames
 
 Flag.  Indicates that the frames in a MoarVM bytecode file should be
-produced as a L<C<MoarVM::Bytecode::Frame>ihttps://raku.land/zef:lizmat/MoarVM::Bytecode#frame>
+produced as a L<C<MoarVM::Bytecode::Frame>|https://raku.land/zef:lizmat/MoarVM::Bytecode#frame>
 to the matcher.  Only makes sense if the pattern is a C<Callable>.  Will
 also set the C<is-moarvm> flag to only select MoarVM bytecode files,
 unless reading from STDIN.
@@ -1741,6 +1752,12 @@ presented to the matcher.
 $ rak foo --per-line='*.lines.tail(10)'
 
 =end code
+
+=head2 --progress
+
+Flag.  If specified, will produce a progress indicator on STDERR that
+indicates the number of files checked, number of lines checked and number
+of matches, updated 5 times per second.  Defaults to C<False>.
 
 =head2 --proximate=[N]
 
@@ -2203,7 +2220,7 @@ deal to me!
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2022, 2023 Elizabeth Mattijsen
+Copyright 2022, 2023, 2024 Elizabeth Mattijsen
 
 This library is free software; you can redistribute it and/or modify it under
 the Artistic License 2.0.

@@ -5,12 +5,12 @@ use highlighter:ver<0.0.18>:auth<zef:lizmat>; # columns highlighter matches Type
 use IO::Path::AutoDecompress:ver<0.0.2>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.5>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.52>:auth<zef:lizmat>;              # rak Rak
+use rak:ver<0.0.53>:auth<zef:lizmat>;              # rak Rak
 
 use Backtrace::Files:ver<0.0.3>:auth<zef:lizmat> <
   backtrace-files
 >;
-use String::Utils:ver<0.0.22+>:auth<zef:lizmat> <
+use String::Utils:ver<0.0.23+>:auth<zef:lizmat> <
   after before between is-sha1 non-word has-marks
 >;
 
@@ -22,9 +22,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2024-05-08T19:41:02+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2024-05-12T20:26:03+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file mbc-frames mbc-strings meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file mbc mbc-frames mbc-strings meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line progress proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -134,6 +134,7 @@ my sub seconds($format) {
 # Make sure we remember if there's a human watching (terminal connected)
 my $reading-from-stdin := !$*IN.t;
 my $writing-to-stdout  := $*OUT.t;
+my $writing-to-stderr  := $*ERR.t;
 
 # Set up default extension sets
 my constant %exts =
@@ -1140,10 +1141,14 @@ my sub show-results(--> Nil) {
 
 # Statistics to show
 my sub rak-stats(:$count-only --> Nil) {
-    if $rak.stats -> %s {
+
+    # Stop any progress reporting
+    $rak.stop-progress;
+
+    if $rak.stats {
         if $count-only && !$verbose {
-            sayer %s<nr-matches> + %s<nr-changes>
-              ~ " matches in %s<nr-sources> files";
+            note $rak.nr-matches + $rak.nr-changes
+              ~ " matches in $rak.nr-sources() files";
         }
         else {
             my str @stats;
@@ -1153,23 +1158,26 @@ my sub rak-stats(:$count-only --> Nil) {
                 @stats.unshift: $bar;
                 @stats.push: $bar;
             }
-            @stats.push: "    Number of files: %s<nr-sources>";
+            @stats.push: "    Number of files: $rak.nr-sources()";
 
-            if %s<nr-items> -> $items {
+            if $rak.nr-items -> $items {
                 @stats.push: "    Number of lines: $items";
             }
-            if %s<nr-matches> -> $matches {
+            if $rak.nr-matches -> $matches {
                 @stats.push: "  Number of matches: $matches";
             }
-            if %s<nr-passthrus> -> $passthrus {
+            if $rak.nr-passthrus -> $passthrus {
                 @stats.push: "Number of passthrus: $passthrus";
             }
-            if %s<nr-changes> -> $changes {
+            if $rak.nr-changes -> $changes {
                 @stats.push: "  Number of changes: $changes";
             }
 
-            sayer @stats.join("\n");
+            note @stats.join("\n");
         }
+    }
+    elsif $rak.nr-sources == 0 {
+        note "Path specification did not select any files, so there was nothing to match.";
     }
 }
 
@@ -1943,6 +1951,11 @@ my sub option-max-matches-per-file($value --> Nil) {
     set-result-flag-or-Int('max-matches-per-file', $value);
 }
 
+my sub option-mbc($value --> Nil) {
+    check-MoarVMBytecode('mbc');
+    set-action('mbc', $value);
+}
+
 my sub option-mbc-frames($value --> Nil) {
     check-MoarVMBytecode('mbc-frames');
     set-action('mbc-frames', $value);
@@ -2102,6 +2115,24 @@ my sub option-per-line($value --> Nil) {
       !! convert-to-simple-Callable($value, 'per-line');
 }
 
+my sub option-progress($value --> Nil) {
+    my $ERR := PROCESS::<$ERR>;
+
+    multi sub progress() { $ERR.print: (" " x 80) ~ "\r" }
+    multi sub progress($p) {
+        my $progress := "$p.nr-sources() / $p.nr-items() / $p.nr-matches()";
+        $ERR.print: (" " x (80 - $progress.chars)) ~ $progress ~ "\r";
+    }
+
+    Bool.ACCEPTS($value)
+      ?? $value
+        ?? $writing-to-stderr
+          ?? (%rak<progress> := &progress)
+          !! meh "--progress can only write to STDERR"
+        !! Nil
+      !! meh "'--progress' must be a flag"
+}
+
 my sub option-proximate($value --> Nil) {
     set-listing-flag-or-Int('proximate', $value);
 }
@@ -2232,6 +2263,7 @@ my sub option-unicode($value --> Nil) {
 
 my sub option-unique($value --> Nil) {
     set-result-flag('unique', $value);
+    set-rak-flag('sort', True);
 }
 
 my sub option-user($value --> Nil) {
@@ -3041,7 +3073,7 @@ my sub action-modify-files(--> Nil) {
 
     %rak<with-line-endings> := True unless %rak<with-line-endings>:exists;
     %rak<passthru-context>  := %listing<passthru-context>:delete  // True;
-    %rak<sort>              := *.absolute;
+    %rak<sort-sources>      := *.absolute;
     %rak<mapper> := -> $io, @matches --> Empty {
         ++$nr-files-seen;
 
@@ -3105,14 +3137,14 @@ my sub action-modify-files(--> Nil) {
     rak-stats;
 }
 
-my sub handle-mbc(str $what, &handler --> Nil) {
+my sub handle-mbc(str $what, str $producer, &handler --> Nil) {
     meh-for $what, <modify>;
 
     prepare-needle;
     %filesystem<is-moarvm> //= True unless $reading-from-stdin;
     move-filesystem-options-to-rak;
     move-result-options-to-rak;
-    %rak<produce-many> := &handler;
+    %rak{$producer} := &handler;
 
     activate-output-options;
     run-rak;
@@ -3120,12 +3152,19 @@ my sub handle-mbc(str $what, &handler --> Nil) {
     rak-stats;
 }
 
+my sub action-mbc(--> Nil) {
+    handle-mbc 'mbc', 'produce-one',
+      -> $io { $MoarVMBytecode.new($io) }
+}
+
 my sub action-mbc-frames(--> Nil) {
-    handle-mbc 'mbc-frames', -> $io { $MoarVMBytecode.new($io).frames }
+    handle-mbc 'mbc-frames', 'produce-many',
+      -> $io { $MoarVMBytecode.new($io).frames }
 }
 
 my sub action-mbc-strings(--> Nil) {
-    handle-mbc 'mbc-strings', -> $io { $MoarVMBytecode.new($io).strings }
+    handle-mbc 'mbc-strings', 'produce-many',
+      -> $io { $MoarVMBytecode.new($io).strings }
 }
 
 my sub handle-pdf(str $what, str $producer, &handler --> Nil) {
@@ -3359,7 +3398,7 @@ my sub action-rename-files(--> Nil) {
     %rak<omit-item-number> := True;
     %rak<map-all>          := True;
     %rak<old-new>          := True;
-    %rak<sort>             := *.absolute;
+    %rak<sort-sources>     := *.absolute;
     %rak<mapper> := -> $, @files --> Empty {
         my @existed;
         my @done;

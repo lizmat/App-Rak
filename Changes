@@ -1,8 +1,26 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.2.24  2024-05-13T15:50:05+02:00
      - Allow --edit to work with --files-with-matches and
        --files-without-matches
+     - Add support for --mbc option to allow searches on the
+       structure of a MoarVM bytecode file
+     - Upped dependency on "rak" to follow renaming of the
+       ":sort" argument to ":sort-sources", for ":progress"
+       support and several race condition fixes and general
+       improvements
+     - Alert to possible erroneous path specification if not
+       a single source file was found
+     - Add support for --progress option, writing search result
+       progress to STDERR
+     - The --unique option will now sort the result using
+       foldcase logic
+     - Update help on --only-first: the default is 1000, not 1
+     - Stats output is now done on STDERR instead of STDOUT,
+       as it's not really part of the result
+     - Update copyright year
 
 0.2.23  2024-05-09T13:51:24+02:00
      - Upped dependency on "rak" to fix issue with readability of

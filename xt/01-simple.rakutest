@@ -34,11 +34,12 @@ $paths .= absolute;
 
 my sub query-ok(
   *@query,              # the actual parameters
-  :$ok is copy,         # the expected result
+  :$ok is copy = "",    # the expected result
   :$head = 1,           # whether to do the --only-first test with this number
   :$add-paths  = True,  # add paths specification
   :$add-human  = True,  # add human specification
   :$add-degree = True,  # add degree specification
+  :$ERR        = "",    # expected output on STDERR
   :$add-absolute,       # add absolute specification
 ) is test-assertion {
     my @args = $*EXECUTABLE.absolute, "-I$dot", $rak, @query.Slip;
@@ -53,7 +54,7 @@ my sub query-ok(
         my $proc := run @args, :out, :err;
         my $key = "huh?";
 
-        is $proc.err.slurp(:close), "", "is '@query[]' STDERR clean?";
+        is $proc.err.slurp(:close), $ERR, "is '@query[]' STDERR correct?";
         $add-absolute
           ?? $proc.out.lines.join("\n")
           !! $proc.out.lines.map(*.subst($rel, :g)).join("\n")
@@ -232,30 +233,30 @@ OK
 
 for </\w+/>, <*.words.Slip> {
     query-ok $_, '--unique', ok => q:to/OK/;
-zero
-one
-two
-four
-five
-SIX
-seven
 eight
+five
+four
 nine
+one
+seven
+SIX
+two
+zero
 OK
 }
 
 for <*.defined>, <{$_}> {
     query-ok $_, '--unique', ok => q:to/OK/;
-zero
-one
-two
 
-four
-five
-SIX
-seven
 eight
+five
+four
 nine
+one
+seven
+SIX
+two
+zero
 OK
 }
 
@@ -279,46 +280,51 @@ query-ok '*.comb.Slip', '--frequencies', ok => q:to/OK/;
 2:h
 OK
 
-query-ok 'zero', '--stats-only', :!head, ok => qq:to/OK/;
+query-ok 'zero', '--stats-only', :!head, ERR => qq:to/ERR/;
 ----------------------
 Statistics for 'zero':
 ----------------------
     Number of files: 10
     Number of lines: 55
   Number of matches: 10
-OK
+ERR
 
 query-ok 'zero', '--count-only', :!head, ok => qq:to/OK/;
 10 matches in 10 files
 OK
 
-query-ok 'eight', <--stats --/highlight>, :!head, ok => qq:to/OK/;
+query-ok 'eight', <--stats --/highlight>, :!head,
+  ok => qq:to/OK/, ERR => qq:to/ERR/;
 eight
 9:eight
 
 nine
 9:eight
+OK
 -----------------------
 Statistics for 'eight':
 -----------------------
     Number of files: 10
     Number of lines: 55
   Number of matches: 2
-OK
+ERR
 
-query-ok 'eight', '--stats', '--highlight', :!head, ok => qq:to/OK/;
+my $bon8boff := BON ~ "eight" ~ BOFF;
+query-ok 'eight', '--stats', '--highlight', :!head,
+  ok => qq:to/OK/, ERR => qq:to/ERR/;
 eight
-9:{BON}eight{BOFF}
+9:$bon8boff
 
 nine
-9:{BON}eight{BOFF}
+9:$bon8boff
+OK
 -----------------------
 Statistics for 'eight':
 -----------------------
     Number of files: 10
     Number of lines: 55
   Number of matches: 2
-OK
+ERR
 
 query-ok 'seven', :head(2), ok => qq:to/OK/;
 seven

@@ -37,12 +37,12 @@ my sub query-ok(
 }
 
 query-ok '--mbc-frames', Q/*.name/, 'mbc', '--unique', ok => qq:to/OK/;
+
+<dependencies+deserialize>
+<load>
 <unit-outer>
 <unit>
 eigenstates
-<dependencies+deserialize>
-
-<load>
 OK
 
 query-ok <--mbc-strings distribution mbc --/highlight>, ok => qq:to/OK/;

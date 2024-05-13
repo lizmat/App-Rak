@@ -36,8 +36,13 @@ logical paragraph of any match.
 
 --help=faq foo
 
-Show information about "foo" in the given subject only, and show the entire
-logical paragraph of any match.
+Show information about "foo" in the given subject only, and show the
+entire logical paragraph of any match.
+
+--progress
+
+Show progress of searching as "nr-files / nr-lines / nr-matches" on
+STDERR, updated 5 times per second
 
 --version
 
@@ -45,5 +50,4 @@ Show version information about the "rak" command line interface.
 
 --verbose
 
-If specified with a True value, will show more information if that
-is possible, depending on the other arguments.
+Show more information if possible, depending on the other arguments.

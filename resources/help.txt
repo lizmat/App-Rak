@@ -46,6 +46,7 @@ Item producers:
  --json-per-line   Interpret each line as JSON for pattern matching
  --blame-per-file  Produce Git::Blame::File object for pattern matcing
  --blame-per-line  Produce Git::Blame::Line objects for pattern matching
+ --mbc             Produce one MoarVM::Bytecode object per file for matching
  --mbc-frames      Produce MoarVM::Bytecode::Frame objects for matching
  --mbc-strings     Produce MoarVM::Bytecode string-heap strings for matching
  --unicode         Produce names of codepoints for pattern matching
@@ -142,7 +143,7 @@ Listing modifiers:
  --highlight-before=xxx      String to put before match
  --highlight-after=yyy       String to put after match
  --proximate[=N]             Grouping of matched lines
- --only-first[=N]            Show only the N results, N defaults to 1
+ --only-first[=N]            Only N results, default N = 1, absence = 1000
  --output-file=filename      Store output to indicated file (default: STDOUT)
  --output-dir=directory      Store output ino indicated directory / group
  --pager                     Pager to use (default: RAK_PAGER // none)
@@ -181,6 +182,7 @@ General options:
    pattern    | philosophy | resource | result    | special  | string
  --help foo      Search for "foo" in all help subjects
  --help=faq foo  Search for "foo" in subject "faq"
+ --progress      Show search progress on STDERR
  --version       Show version information
  --verbose       Be more verbose, if applicable
 

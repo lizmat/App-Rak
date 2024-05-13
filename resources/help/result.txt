@@ -24,7 +24,6 @@ Example:
 # categorize by the first two letters of a line
 $ rak --categorize='*.substr(0,2).comb'
 
-
 --classify=classifier
 
 If specified, indicates the Callable that should return a key for a
@@ -95,4 +94,5 @@ See also --stats.
 
 --unique
 
-Only produce unique items (or whatever a Callable pattern produced).
+Only produce unique items (or whatever a Callable pattern produced)
+sorted by foldcase logic.
