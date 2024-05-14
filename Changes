@@ -2,6 +2,13 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.2.26  2024-05-14T19:25:29+02:00
+     - Upped dependency on "rak" for fix on hyperizing 2MB+
+       text files
+     - Adapt "only first xx matches shown" message depending on
+       whether they were actually shown, or written to a file or
+       pipe
+
 0.2.25  2024-05-14T12:47:25+02:00
      - Ignore --progress if STDERR is not a tty.  This allows
        --progress to be used as a default

@@ -17,8 +17,6 @@ Ideas / Todo's
   the rest of the pattern as a JSON::Path specification.
 - XPath en XML file support
 - add Log::Timeline support somehow
-- Allow for hypering withing a file if the file is larger than X bytes
-  (probably 1MB)
 - conflicts with variables set in default custom list, should not result
   in errors, e.g. making --smartcase a default, and then specifying some
   combination of options incompatible with --smartcase.

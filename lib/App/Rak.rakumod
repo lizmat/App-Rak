@@ -5,7 +5,7 @@ use highlighter:ver<0.0.18>:auth<zef:lizmat>; # columns highlighter matches Type
 use IO::Path::AutoDecompress:ver<0.0.2>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.5>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.55>:auth<zef:lizmat>;              # rak Rak
+use rak:ver<0.0.56>:auth<zef:lizmat>;              # rak Rak
 
 use Backtrace::Files:ver<0.0.3>:auth<zef:lizmat> <
   backtrace-files
@@ -815,9 +815,6 @@ my sub run-rak(:$eagerly --> Nil) {
     meh "Searching for binary data NYI, did you forget a --find?"
       if %rak<is-text>:exists && !%rak<is-text> && !%rak<find>;
 
-    if $debug-rak {
-        note .key ~ ': ' ~ .value.raku for %rak.sort(*.key);
-    }
     if (
       %global.keys, %result.keys, %csv.keys, %modify.keys
     ).flat -> @unhandled {
@@ -829,6 +826,10 @@ TEXT
     }
 
     %rak<eager> := True if $eagerly;
+    if $debug-rak {
+        note .key ~ ': ' ~ .value.raku for %rak.sort(*.key);
+    }
+
     $rak := do if List.ACCEPTS($needle) {
         my sub gatherer($haystack) {
             for $needle -> &code {
@@ -1135,8 +1136,10 @@ my sub show-results(--> Nil) {
         }
     }
 
-    note "** Stopped showing results after $seen matches **"
-      if $seen > 1 && $seen == $stop-after;
+    if $seen > 1 && $seen == $stop-after {
+        my str $what = $writing-to-stdout ?? "showing" !! "producing";
+        note "** Stopped $what results after $seen matches **";
+    }
 }
 
 # Statistics to show
