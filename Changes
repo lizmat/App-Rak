@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.2.25  2024-05-14T12:47:25+02:00
      - Ignore --progress if STDERR is not a tty.  This allows
        --progress to be used as a default
      - Ignore --progress with --edit option, as the editing can
