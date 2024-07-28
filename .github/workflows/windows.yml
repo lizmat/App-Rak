@@ -17,6 +17,10 @@ jobs:
         raku-version:
           - 'latest'
     runs-on: ${{ matrix.os }}
+
+    # Workaround for path length errors during precompilation of longer repo names
+    TMPDIR: /tmp
+
     steps:
       - uses: actions/checkout@v3
       - uses: Raku/setup-raku@v1
