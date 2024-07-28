@@ -5,7 +5,7 @@ use highlighter:ver<0.0.18>:auth<zef:lizmat>; # columns highlighter matches Type
 use IO::Path::AutoDecompress:ver<0.0.2>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.5>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.3>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.56>:auth<zef:lizmat>;              # rak Rak
+use rak:ver<0.0.57>:auth<zef:lizmat>;              # rak Rak
 
 use Backtrace::Files:ver<0.0.3>:auth<zef:lizmat> <
   backtrace-files
@@ -826,6 +826,18 @@ TEXT
     }
 
     %rak<eager> := True if $eagerly;
+    if %rak<sources-only>
+      || %rak<sources-without-only>
+      || (%rak<max-matches-per-source>:exists) {
+    }
+    else {
+        %rak<max-matches-per-source> := %listing<only-first>:exists
+          ?? %listing<only-first>
+          !! (%listing<human> // $writing-to-stdout)
+            ?? 1000
+            !! 0;
+    }
+
     if $debug-rak {
         note .key ~ ': ' ~ .value.raku for %rak.sort(*.key);
     }
@@ -1026,14 +1038,16 @@ my sub show-results(--> Nil) {
                                     # Callable, which cannot have any
                                     # highlighting, so don't bother
                                     sayer "$linenr:$_" for @(.value);
+                                    ++$seen;
                                 }
                                 else {
                                     sayer $linenr ~ ':' ~ (.matched
                                       ?? line-post-proc stringify(.value)
                                       !! stringify(.value)
                                     );
+                                    ++$seen if .matched;
                                 }
-                                last RESULT if ++$seen == $stop-after;
+                                last RESULT if $seen == $stop-after;
                                 $last-linenr = $linenr;
                             }
                         }
@@ -1048,6 +1062,7 @@ my sub show-results(--> Nil) {
                                     # Callable, which cannot have any
                                     # highlighting, so don't bother
                                     sayer "$source:$linenr:$_" for @(.value);
+                                    ++$seen;
                                 }
                                 else {
                                     sayer $source
@@ -1056,8 +1071,9 @@ my sub show-results(--> Nil) {
                                       ?? line-post-proc stringify(.value)
                                       !! stringify(.value)
                                     );
+                                    ++$seen if .matched;
                                 }
-                                last RESULT if ++$seen == $stop-after;
+                                last RESULT if $seen == $stop-after;
                                 $last-linenr = $linenr;
                             }
                         }
@@ -1072,6 +1088,7 @@ my sub show-results(--> Nil) {
                                     # Callable, which cannot have any
                                     # highlighting, so don't bother
                                     sayer "$linenr:$_" for @(.value);
+                                    ++$seen;
                                 }
                                 else {
                                     sayer $linenr
@@ -1079,8 +1096,9 @@ my sub show-results(--> Nil) {
                                       ?? line-post-proc stringify(.value)
                                       !! stringify(.value)
                                     );
+                                    ++$seen if .matched;
                                 }
-                                last RESULT if ++$seen == $stop-after;
+                                last RESULT if $seen == $stop-after;
                                 $last-linenr = $linenr;
                             }
                         }

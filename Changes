@@ -1,6 +1,10 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Upped dependency on "rak" which uses "ParaSeq" for
+       better asynchronous performance.
+     - Add separate CI badges for each OS
+     - Add sponsor button
 
 0.2.26  2024-05-14T19:25:29+02:00
      - Upped dependency on "rak" for fix on hyperizing 2MB+

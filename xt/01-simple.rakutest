@@ -149,7 +149,7 @@ nine
 8:{BON}seven{BOFF}
 OK
 
-query-ok </o$/ --find>, :add-absolute, ok => qq:to/OK/;
+query-ok </o$/ --find>, :add-absolute, :!head, ok => qq:to/OK/;
 {$dira}tw{BON}o{BOFF}
 {$dira}zer{BON}o{BOFF}
 OK
@@ -375,7 +375,7 @@ query-ok <eig --highlight-before=* --highlight-after=## --/show-filename>,
 9:*eig##ht
 OK
 
-query-ok <seven --context=2>, :head(2), ok => qq:to/OK/;
+query-ok <seven --context=2>, :head(4), ok => qq:to/OK/;
 seven
 6:five
 7:SIX
@@ -395,7 +395,7 @@ nine
 10:nine
 OK
 
-query-ok <seven --before-context=2 --/highlight>, :head(2), ok => q:to/OK/;
+query-ok <seven --before-context=2 --/highlight>, :head(4), ok => q:to/OK/;
 seven
 6:five
 7:SIX
@@ -455,7 +455,7 @@ my $user := ~$*USER;
 my $uid  := +$*USER;
 for "--user=$user", qq/--user=*eq"$user"/, "--user=$user,$user",
     "--uid=$uid", "--uid=*==$uid" {
-    query-ok '--find', $_, ok => qq:to/OK/;
+    query-ok '--find', $_, :!head, ok => qq:to/OK/;
 eight
 five
 four
@@ -478,7 +478,7 @@ my $group := ~$*GROUP;
 my $gid   := +$*GROUP;
 for "--group=$group", qq/--group=*eq"$group"/, "--group=$group,$group",
     "--gid=$gid", "--gid=*==$gid" {
-    query-ok '--find', $_, ok => qq:to/OK/;
+    query-ok '--find', $_, :!head, ok => qq:to/OK/;
 eight
 five
 four
@@ -634,6 +634,7 @@ OK
 # This check is a little brittle
 query-ok '--ecosystem', q/{ .<name> eq "eigenstates" && .<version> }/,
   :!add-paths, ok => q:to/OK/;
+0.0.11
 0.0.10
 0.0.9
 0.0.8
@@ -654,6 +655,7 @@ query-ok '--ecosystem=fez', q/{ .<name> eq "eigenstates" && .<version> }/,
 0.0.8
 0.0.9
 0.0.10
+0.0.11
 OK
 
 # This check is a little brittle
@@ -670,6 +672,7 @@ https://360.zef.pm
 0.0.8
 0.0.9
 0.0.10
+0.0.11
 OK
 
 query-ok '*.substr(0,1) eq "f"', '--classify=*.substr(0,1)', :head(2),
