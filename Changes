@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.3.0  2024-07-28T20:10:47+02:00
      - Upped dependency on "rak" which uses "ParaSeq" for
        better asynchronous performance.
      - Add separate CI badges for each OS
