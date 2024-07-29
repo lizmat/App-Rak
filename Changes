@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.3.1  2024-07-29T13:03:48+02:00
      - Upped dependency on "rak" to get PairChanged support
      - Allow *.subst("foo","bar") to be used with --modify-files
        *and* have statistics be properly updated.  finanalyst++
