@@ -27,8 +27,8 @@ jobs:
       - uses: Raku/setup-raku@v1
         with:
           raku-version: ${{ matrix.raku-version }}
-      - name: Install JSON::Fast::Hyper
-        run: zef install JSON::Fast::Hyper
+      - name: Install JSON::Fast
+        run: zef install JSON::Fast
       - name: Install rak
         run: zef install rak
       - name: Install Dependencies
