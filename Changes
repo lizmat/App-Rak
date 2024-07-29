@@ -2,6 +2,10 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.3.2  2024-07-29T13:54:14+02:00
+     - Give each CSV file its own Text::CSV object, in the hope
+       that this will fix the race-condition that 0racle++ spotted
+
 0.3.1  2024-07-29T13:03:48+02:00
      - Upped dependency on "rak" to get PairChanged support
      - Allow *.subst("foo","bar") to be used with --modify-files

@@ -2699,9 +2699,8 @@ my sub action-csv-per-line(--> Nil) {
 
     %csv<auto-diag> := True unless %csv<auto-diag>:exists;
     my $headers := %csv<headers>:delete // True;
-    my $csv     := $TextCSV.new(|%csv);
-    %csv = ();
-    %rak<produce-many> := -> $io { $csv.csv: :$headers, :file($io.path) }
+    my %CSV      = %csv{}:p:delete;
+    %rak<produce-many> := -> $io { $TextCSV.new(|%CSV).csv: :$headers, :file($io.path) }
 
     activate-output-options;
     run-rak;
