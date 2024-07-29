@@ -1254,6 +1254,9 @@ Keep this line unchanged the file. NOTE: this means the exact `Nil` value.
 Keep this line unchanged the file. NOTE: this means the exact `Empty` value. This is typically returned as the result of a failed condition. For example, only change the string "foo" into "bar" if the line starts with "#":
 
 ```bash
+# replace "foo" by "bar" in all files
+$ rak '*.subst("foo","bar")' --modify-files
+
 # replace "foo" by "bar" in all comment lines
 $ rak '{ .subst("foo","bar") if .starts-with("#") }' --modify-files
 ```

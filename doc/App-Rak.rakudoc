@@ -1599,6 +1599,9 @@ only change the string "foo" into "bar" if the line starts with "#":
 
 =begin code :lang<bash>
 
+# replace "foo" by "bar" in all files
+$ rak '*.subst("foo","bar")' --modify-files
+
 # replace "foo" by "bar" in all comment lines
 $ rak '{ .subst("foo","bar") if .starts-with("#") }' --modify-files
 

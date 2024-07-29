@@ -1,6 +1,10 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Upped dependency on "rak" to get PairChanged support
+     - Allow *.subst("foo","bar") to be used with --modify-files
+       *and* have statistics be properly updated.  finanalyst++
+       for the bug report
 
 0.3.0  2024-07-28T20:10:47+02:00
      - Upped dependency on "rak" which uses "ParaSeq" for
