@@ -27,6 +27,8 @@ jobs:
       - uses: Raku/setup-raku@v1
         with:
           raku-version: ${{ matrix.raku-version }}
+      - name: Tell zef version
+        run: zef --version
       - name: Install JSON::Fast
         run: zef install JSON::Fast
       - name: Install rak
