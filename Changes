@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Upped all dependencies where applicable.
+     - Hoperfully fixed Windows CI for now.
 
 0.3.2  2024-07-29T13:54:14+02:00
      - Give each CSV file its own Text::CSV object, in the hope
