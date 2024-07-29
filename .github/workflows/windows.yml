@@ -23,13 +23,13 @@ jobs:
       TMPDIR: /tmp
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: Raku/setup-raku@v1
         with:
           raku-version: ${{ matrix.raku-version }}
 
       - name: Ensure TMPDIR exists
-         run: mkdir -p ${{ env.TMPDIR }}
+        run: mkdir -p ${{ env.TMPDIR }}
       - name: Tell zef version
         run: zef --version
       - name: Install JSON::Fast
