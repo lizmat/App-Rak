@@ -33,7 +33,7 @@ jobs:
       - name: Tell zef version
         run: zef --version
       - name: Install JSON::Fast
-        run: zef install JSON::Fast
+        run: zef install JSON::Fast --/test
       - name: Install rak
         run: zef install rak
       - name: Install Dependencies
