@@ -30,8 +30,8 @@ jobs:
 
       - name: Ensure TMPDIR exists
         run: mkdir -p ${{ env.TMPDIR }}
-      - name: Install JSON::Fast
-        run: zef install JSON::Fast --/test
+      - name: Install rak
+        run: zef install rak
       - name: Install Dependencies
         run: zef install --/test --test-depends --deps-only .
       - name: Run Special Tests
