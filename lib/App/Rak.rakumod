@@ -22,9 +22,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2024-07-30T12:20:12+02:00 by ./tools/makeOPTIONS.raku
+#- Generated on 2024-05-12T20:26:03+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file mbc mbc-frames mbc-strings meta-modified mode modified modify-files module not nots-from only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line progress proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file mbc mbc-frames mbc-strings meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line progress proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -191,8 +191,7 @@ my $output-file;  # process output file if defined
 my $output-dir;   # process output directory if defined
 my $debug-rak;    # process show rak args
 
-my $pattern;     # the acceptance pattern(s) specified (if any)
-my $not;         # the deny pattern(s) specified, if any
+my $pattern;     # the pattern specified (if any)
 my $smartcase;   # --smartcase
 my $smartmark;   # --smartmark
 my $ignorecase;  # --ignorecase
@@ -1508,64 +1507,6 @@ my sub set-listing-flag-or-Int(str $name, $value --> Nil) {
 }
 
 #-------------------------------------------------------------------------------
-# Helper subs for handling pattern specifications
-
-my sub handle-pattern($value, :$handle-not --> Nil) {
-    my str $type = $handle-not ?? 'not' !! 'pattern';
-    my $checkee := $handle-not ?? $not  !! $pattern;
-
-    Bool.ACCEPTS($value)
-      ?? meh "'--$type' must be a pattern specification, not a flag"
-      !! List.ACCEPTS($checkee)
-        ?? meh "Cannot specify --$type with --{$type}s-from at the same time"
-        !! $checkee.defined
-          ?? meh "Can only specify --$type once"
-          !! $handle-not
-            ?? ($not     := $value)
-            !! ($pattern := $value);
-}
-
-my sub handle-patterns-from($value, :$handle-not --> Nil) {
-    my str $type = $handle-not ?? '--not' !! '--pattern';
-    my str $from = $type ~ 's-from';
-    my $checkee := $handle-not ?? $not  !! $pattern;
-
-    # helper sub for getting pattern(s) from file
-    sub read-patterns($handle) {
-        if $handle.lines -> @patterns {
-            $handle-not
-              ?? ($not     := $_)
-              !! ($pattern := $_)
-             with @patterns == 1 ?? @patterns.head !! @patterns;
-        }
-        else {
-            meh "No patterns found in file '$value' with '$from'";
-        }
-    }
-
-    if Bool.ACCEPTS($value) {
-        meh "'$from' must be a file specification, not a flag"
-    }
-    elsif List.ACCEPTS($pattern) {
-        meh "Can only specify '$from' once"
-    }
-    elsif $pattern.defined {
-        meh "Cannot specify '$from' with '$type' already specified";
-    }
-    elsif $value eq '-' {
-        note "Reading from STDIN.\nPlease enter patterns for '$from' and ^D when done:"
-          unless $reading-from-stdin;
-        read-patterns($*IN);
-    }
-    elsif $value.IO.r {
-        read-patterns($value.IO);
-    }
-    else {
-        meh "Could not read from '$value' to obtain patterns";
-    }
-}
-
-#-------------------------------------------------------------------------------
 # One subroutine for each supported option.  Is assumed to do right thing for
 # that option by setting the appropriate global hashes.  Not expected to return
 # anything.  Existence of "&option-foo" means the option exists and is
@@ -2068,14 +2009,6 @@ my sub option-module($value --> Nil) {
       !! @modules.push($value)
 }
 
-my sub option-not($value --> Nil) {
-    handle-pattern($value, :handle-not);
-}
-
-my sub option-nots-from($value --> Nil) {
-    handle-patterns-from($value, :handle-not);
-}
-
 my sub option-only-first($value --> Nil) {
     set-listing-flag-or-Int(
       'only-first',
@@ -2133,11 +2066,47 @@ my sub option-paths-from($value --> Nil) {
 }
 
 my sub option-pattern($value --> Nil) {
-    handle-pattern($value);
+    Bool.ACCEPTS($value)
+      ?? meh "'--pattern' must be a pattern specification, not a flag"
+      !! List.ACCEPTS($pattern)
+        ?? meh "Cannot specify --pattern with --patterns-from at the same time"
+        !! $pattern.defined
+          ?? meh "Can only specify --pattern once"
+          !! ($pattern := $value);
 }
 
 my sub option-patterns-from($value --> Nil) {
-    handle-patterns-from($value);
+
+    # helper sub for getting pattern(s) from file
+    sub read-patterns($handle) {
+        if $handle.lines -> @patterns {
+            $pattern := @patterns == 1 ?? @patterns.head !! @patterns;
+        }
+        else {
+            meh "No patterns found, so no matches to be expected";
+        }
+    }
+
+    if Bool.ACCEPTS($value) {
+        meh "'--patterns-from' must be a file specification, not a flag"
+    }
+    elsif List.ACCEPTS($pattern) {
+        meh "Can only specify --patterns-from once"
+    }
+    elsif $pattern.defined {
+        meh "Cannot specify --patterns-from with a pattern already specified";
+    }
+    elsif $value eq '-' {
+        note "Reading from STDIN, please enter patterns and ^D when done:"
+          unless $reading-from-stdin;
+        read-patterns($*IN);
+    }
+    elsif $value.IO.r {
+        read-patterns($value.IO);
+    }
+    else {
+        meh "Could not read from '$value' to obtain patterns";
+    }
 }
 
 my sub option-pdf-info($value --> Nil) {
