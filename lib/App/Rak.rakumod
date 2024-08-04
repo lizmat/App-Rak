@@ -3,7 +3,7 @@ use as-cli-arguments:ver<0.0.8>:auth<zef:lizmat>;  # as-cli-arguments
 use has-word:ver<0.0.4>:auth<zef:lizmat>;          # has-word
 use highlighter:ver<0.0.19>:auth<zef:lizmat>; # columns highlighter matches Type
 use IO::Path::AutoDecompress:ver<0.0.3>:auth<zef:lizmat>; # IOAD
-use JSON::Fast::Hyper:ver<0.0.6>:auth<zef:lizmat>; # from-json to-json
+use JSON::Fast::Hyper:ver<0.0.7>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.4>:auth<zef:lizmat> $?DISTRIBUTION;
 use rak:ver<0.0.59>:auth<zef:lizmat>;              # rak Rak
 

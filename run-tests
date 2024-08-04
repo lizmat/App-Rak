@@ -12,12 +12,12 @@ say "Testing {
 my @failed;
 my $done   = 0;
 
-sub process($proc) {
+sub process($proc, $filename) {
     if $proc {
         $proc.out.slurp;
     }
     else {
-        @failed.push($_);
+        @failed.push($filename);
         if $proc.out.slurp -> $stdout {
             my @lines = $stdout.lines;
             with @lines.first(
@@ -38,14 +38,14 @@ sub process($proc) {
 sub install() {
     my $zef  := $*DISTRO.is-win ?? 'zef.bat' !! 'zef';
     my $proc := run $zef, "install", ".", "--verbose", "--/test", :out,:err,:merge;
-    process($proc);
+    process($proc, "*installation*");
 }
 
 sub test-dir($dir) {
     for $dir.IO.dir(:test(*.ends-with: '.t' | '.rakutest')).map(*.Str).sort {
         say "=== $_";
         my $proc := run "raku", "--ll-exception", "-I.", $_, :out,:err,:merge;
-        process($proc);
+        process($proc, $_);
         $done++;
     }
 }
@@ -55,7 +55,7 @@ test-dir("xt") if $author && "xt".IO.e;
 install if $install;
 
 if @failed {
-    say "FAILED: {+@failed} of $done:";
+    say "\nFAILED: {+@failed} of $done:";
     say "  $_" for @failed;
     exit +@failed;
 }

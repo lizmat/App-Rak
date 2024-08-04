@@ -94,7 +94,6 @@ C<--json-per-line> or C<--json-per-elem>.  Requires that the
 L<C<JSON::Path>|https://raku.land/cpan:JNTHN/JSON::Path> module is installed.
 Basically a shortcut to specifying C<path --type=json-path>.
 
-
 =begin table :caption<Supported JSON path syntax>
 
   expression  meaning
