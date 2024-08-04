@@ -71,6 +71,14 @@ $ rak --description="Perform search without regards to case" --save=i
 # Add custom option --y with description
 $ rak --description='Yep, there is a codepoint for it' --unicode --save=y
 
+--ack
+
+Attempt to interpret following arguments as if they were arguments to the
+"ack" utility.  This is incomplete and may be subtly different in behaviour.
+Intended as a temporary measure for people used to using "ack", while they
+train their muscle memory to use "rak" instead.
+
 --list-custom-options
 
-List all currently known custom options.  Must be the only argument.
+List all currently known custom options.  Must be the only argument, but
+can also be used in conjunction with --ack.

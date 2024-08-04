@@ -1,8 +1,10 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Added support for --ack to activate a compatibility
+       layer for former "ack" users.
      - Added dependency on Needle::Compile to handle all the
-       pattern to Callable issues
+       pattern to Callable issues (just for CI for now)
      - Upped all dependencies where applicable
      - Hoperfully fixed Windows CI for now
 

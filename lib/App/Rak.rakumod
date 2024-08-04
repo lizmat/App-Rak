@@ -23,9 +23,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2024-05-12T20:26:03+02:00 by tools/makeOPTIONS.raku
+#- Generated on 2024-08-04T16:31:51+02:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file mbc mbc-frames mbc-strings meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line progress proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed ack after-context allow-loose-escapes allow-loose-quotes allow-whitespace auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break checkout classify categorize context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file mbc mbc-frames mbc-strings meta-modified mode modified modify-files module only-first output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line progress proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -89,6 +89,52 @@ my constant %falsies =
   null             => 'file-separator-null',
   u                => 'dir',
   unrestricted     => 'dir',
+;
+
+# The JSON config to map "ack" arguments to "rak" arguments as closely as possible
+my constant %ack-interface-config =
+  "1"                => (:only-first,),
+  "A"                => (:after-context<!>,),
+  "B"                => (:before-context<!>,),
+  "c"                => (:count-only,),
+  "C"                => (:context<[2]>,),
+  "count"            => (:count-only,),
+  "dump"             => (:list-expanded-options,),
+  "f"                => (:find,),
+  "filename"         => (:show-filename,),
+  "follow"           => (:recurse-symlinked-dir,),
+  "group"            => (:group-matches,),
+  "h"                => (:!show-filename,),
+  "H"                => (:show-filename,),
+  "heading"          => (:group-matches,),
+  "help-types"       => (:extensions<[*]>,),
+  "i"                => (:ignorecase,),
+  "I"                => (:!ignorecase,),
+  "ignore-case"      => (:ignorecase,),
+  "ignore-dir"       => (:dir,),
+  "ignore-directory" => (:dir,),
+  "k"                => (:extensions<[*]>,),
+  "known-types"      => (:extensions<[*]>,),
+  "l"                => (:files-with-matches,),
+  "L"                => (:files-without-matches,),
+  "m"                => (:max-matches-per-file,),
+  "n"                => (:!dir,),
+  "man"              => (:help,),
+  "match"            => (:pattern,),
+  "max-count"        => (:max-matches-per-file,),
+  "o"                => (:matches-only,),
+  "output"           => (:pattern,),
+  "p"                => (:proximate<!>,),
+  "P"                => (:proximate<0>,),
+  "print0"           => (:file-separator-null,),
+  "S"                => (:smartcase,),
+  "smart-case"       => (:smartcase,),
+  "t"                => (:extensions<!>,),
+  "type"             => (:extensions<!>,),
+  "TYPE"             => (:extensions<!>,),
+  "v"                => (:invert-match,),
+  "with-filename"    => (:show-filename,),
+  "x"                => (:files-from<->,),
 ;
 
 # Options that only make sense after one main option
@@ -1524,6 +1570,10 @@ my sub option-accept($value --> Nil) {
 
 my sub option-accessed($value --> Nil) {
     set-filesystem-Instant('accessed', $value)
+}
+
+my sub option-ack($value --> Nil) {
+    %config := %ack-interface-config;
 }
 
 my sub option-after-context($value --> Nil) {

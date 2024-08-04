@@ -173,6 +173,7 @@ Option management:
  --save=name            Translate --name to all other options specified,
                         remove if --save was the only option specified
  --description=text     Add description to custom option
+ --ack                  Activate "ack" compatibility options
  --list-custom-options  List all previously saved options
 
 General options:

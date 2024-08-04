@@ -478,6 +478,24 @@ reliably.
 See "CHECKING TIMES ON FILES" for more information about features that
 can be used inside the C<Callable>.
 
+=head2 --ack
+
+Attempt to interpret following arguments as if they were arguments to the
+L<C<ack>|https://metacpan.org/pod/ack> utility.  This is incomplete and
+may be subtly different in behaviour.  Intended as a temporary measure
+for people used to using C<ack>, while they train their muscle memory
+to use B<rak> instead.
+
+If you'd like a list of the option configuration, you can use the
+C<--list-custom-options> argument.
+
+=begin code :lang<bash>
+
+# Show the current mappinng of "ack" to "rak" options
+$ rak --ack --list-custom-options
+
+=end code
+
 =head2 --after-context=N
 
 Indicate the number of lines that should be shown B<after> any line that

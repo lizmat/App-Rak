@@ -364,6 +364,18 @@ If specified, indicates the `Callable` that should return True to include a file
 
 See "CHECKING TIMES ON FILES" for more information about features that can be used inside the `Callable`.
 
+--ack
+-----
+
+Attempt to interpret following arguments as if they were arguments to the [`ack`](https://metacpan.org/pod/ack) utility. This is incomplete and may be subtly different in behaviour. Intended as a temporary measure for people used to using `ack`, while they train their muscle memory to use **rak** instead.
+
+If you'd like a list of the option configuration, you can use the `--list-custom-options` argument.
+
+```bash
+# Show the current mappinng of "ack" to "rak" options
+$ rak --ack --list-custom-options
+```
+
 --after-context=N
 -----------------
 
