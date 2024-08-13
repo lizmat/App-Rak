@@ -14,9 +14,9 @@
     "IO::Path::AutoDecompress:ver<0.0.3>:auth<zef:lizmat>",
     "JSON::Fast::Hyper:ver<0.0.7>:auth<zef:lizmat>",
     "META::constants:ver<0.0.4>:auth<zef:lizmat>",
-    "Needle::Compile:ver<0.0.4>:auth<zef:lizmat>",
+    "Needle::Compile:ver<0.0.6>:auth<zef:lizmat>",
     "rak:ver<0.0.59>:auth<zef:lizmat>",
-    "String::Utils:ver<0.0.24+>:auth<zef:lizmat>"
+    "String::Utils:ver<0.0.25+>:auth<zef:lizmat>"
   ],
   "description": "21st century grep / find / ack / ag / rg on steroids",
   "license": "Artistic-2.0",

@@ -1,18 +1,22 @@
 # The modules that we need here, with their full identities
 use as-cli-arguments:ver<0.0.8>:auth<zef:lizmat>;  # as-cli-arguments
 use has-word:ver<0.0.4>:auth<zef:lizmat>;          # has-word
-use highlighter:ver<0.0.19>:auth<zef:lizmat>; # columns highlighter matches
 use IO::Path::AutoDecompress:ver<0.0.3>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.7>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.4>:auth<zef:lizmat> $?DISTRIBUTION;
-use Needle::Compile:ver<0.0.4>:auth<zef:lizmat>;   # compile-needle Type
 use rak:ver<0.0.59>:auth<zef:lizmat>;              # rak Rak
 
 use Backtrace::Files:ver<0.0.4>:auth<zef:lizmat> <
   backtrace-files
 >;
-use String::Utils:ver<0.0.24+>:auth<zef:lizmat> <
-  after before between is-sha1 non-word has-marks
+use highlighter:ver<0.0.19>:auth<zef:lizmat> <
+  columns highlighter matches
+>;
+use Needle::Compile:ver<0.0.5>:auth<zef:lizmat> <
+  compile-needle implicit2explicit StrType Type
+>;
+use String::Utils:ver<0.0.25+>:auth<zef:lizmat> <
+  after before between has-marks is-sha1 non-word paragraphs
 >;
 
 # The epoch value when process started
@@ -238,16 +242,13 @@ my $output-file;  # process output file if defined
 my $output-dir;   # process output directory if defined
 my $debug-rak;    # process show rak args
 
-my $pattern;     # the pattern specified (if any)
+my @patterns;    # the specified patterns (if any)
+my $hpattern;    # the pattern used for highlighting
 my $smartcase;   # --smartcase
 my $smartmark;   # --smartmark
 my $ignorecase;  # --ignorecase
 my $ignoremark;  # --ignoremark
 
-# allowed types with --type
-my constant %types = <
-  auto regex code contains words starts-with ends-with equal json-path
->.map: * => 1;
 my $type;  # --type (implicitely) specified
 
 my @modules;  # list of modules to -use-
@@ -371,7 +372,7 @@ elsif %config<(default)>:exists {
 my sub main() is export {
 
     # Must have something to work with
-    meh q:to/MEH/.chomp if !@*ARGS && !$pattern.defined;
+    meh q:to/MEH/.chomp unless @*ARGS || @patterns;
 Should at least specify a pattern.  For instance:
 
   rak foo
@@ -447,7 +448,7 @@ MEH
     meh-unexpected if @unexpected;
 
     # Set up the pattern
-    $pattern := @positionals.shift if !$pattern.defined && @positionals;
+    @patterns.push(@positionals.shift) if !@patterns && @positionals;
 
     # from here on out, description is a noop
     %global<description>:delete;
@@ -536,6 +537,13 @@ You can do this by running 'zef install $module'.
 MEH
 }
 
+# Quit if a code compilation error occurred
+my sub meh-compilation($code, $_) {
+    %rak<dont-catch>
+      ?? .throw
+      !! meh "Could not compile '$code':\n$_.message()";
+}
+
 # Return string before marker, or string if no marker
 my sub before-or-string(str $string, str $marker) {
     before($string, $marker) // $string
@@ -567,205 +575,16 @@ my sub named-args(%args, *%wanted) {
     }
 }
 
-# Preprocess a pattern, checking types and contents
-my sub pre-process($pattern) {
-    if !$type || $type eq 'auto' {
-        if $pattern.starts-with('/')
-          && $pattern.ends-with('/')
-          && $pattern.chars > 2 {
-            non-word(my $target := $pattern.substr(1,*-1).trim)
-              ?? $pattern
-              !! $target but Type<contains>  # avoid using regex for / foo /
-        }
-        elsif $pattern.starts-with('^') {
-            $pattern.ends-with('$')
-              ?? $pattern.substr(1, *-1) but Type<equal>
-              !! $pattern.substr(1)      but Type<starts-with>
-        }
-        elsif $pattern.ends-with('$') {
-            $pattern.substr(0, *-1) but Type<ends-with>
-        }
-        elsif $pattern.starts-with('§') {
-            $pattern.substr(1) but Type<words>
-        }
-        elsif $pattern.starts-with('jp:') {
-            Q/{jp(/ ~ $pattern.substr(3) ~ Q/).Slip}/
-        }
-        else {
-            $pattern  # could be some other pattern to interprete
-        }
-    }
-    elsif $type eq 'regex' {
-        non-word(my $normalized := $pattern.trim)
-          ?? "/$pattern/"
-          !! $normalized but Type<contains>
-    }
-    elsif $type eq 'code' {
-        '{' ~ $pattern ~ '}'
-    }
-    elsif $type eq 'json-path' {
-        Q/{jp(/ ~ $pattern ~ Q/).Slip}/
-    }
-
-    # some other known type, don't interprete
-    else {
-        $pattern but Type($type)
-    }
-}
-
-# Return prelude from --repository and --module parameters
-my sub prelude() {
-    @repos.map({"use lib '$_'; "}).join ~ @modules.map({"use $_; "}).join
-}
-
 # Convert a string to code if possible, adhering to type
 my sub codify(Str:D $code) {
-    CATCH {
-        meh "Could not compile '$code':\n$_.message()"
-          unless %rak<dont-catch>;
-    }
+    CATCH { meh-compilation($code, $_) }
 
-    $code eq '*.defined'
-      ?? &defined
-      !! $code.starts-with('/') && $code.ends-with('/') && $code.chars > 2
-        ?? regexify($code)
-        !! $code.starts-with('{') && $code.ends-with('}')
-          ?? codify-curlies($code)
-          !! $code.starts-with('*') && $code.chars > 1
-            ?? (prelude() ~ 'my $ := ' ~ $code).EVAL
-            !! $code but Type('contains')
-}
-
-# Pre-process literal strings looking like a regex
-my sub regexify($code) {
-    "/{ ':i ' if $ignorecase }{ ':m ' if $ignoremark }$code.substr(1)".EVAL
-}
-
-# Convert a string with curlies to code if possible
-my sub codify-curlies(Str:D $code) {
-    my $class;  # placeholder for JSON::Path class
-
-    # Wrapper for JSON::Path object
-    my class JP {
-        has $.jp;
-        has $.pattern;
-
-        my $cache := Map.new;
-        method new($pattern) {
-            $cache{$pattern} // do {
-                CATCH {
-                    if X::AdHoc.ACCEPTS($_) {
-                        my $m := .payload;
-                        if $m.starts-with('JSON path parse error') {
-                            my $pos  := $m.words.tail.Int;
-                            my $bon  := BON;
-                            my $boff := BOFF;
-                            exit note qq:to/ERROR/.chomp;
-    $m:
-    $pattern.substr(0,$pos)$bon$pattern.substr($pos,1)$boff$pattern.substr($pos + 1)
-    {" " x $pos}⏏
-    ERROR
-                        }
-                    }
-                    meh .Str unless %rak<dont-catch>;
-                }
-                my $jp := $class.new($pattern);
-                my $JP := self.bless(:$jp, :$pattern);
-                $cache := Map.new: $cache, Pair.new: $pattern, $JP;
-                $JP
-            }
-        }
-
-        method value()  { $!jp.value($*_) }
-        method values() { $!jp.values($*_) }
-        method paths()  { $!jp.paths($*_) }
-        method paths-and-values() { $!jp.paths-and-values($*_) }
-
-        method Seq()  { $!jp.values($*_)      }
-        method Bool() { $!jp.values($*_).Bool }
-        method list() { $!jp.values($*_).List }
-        method List() { $!jp.values($*_).List }
-        method Slip() { $!jp.values($*_).Slip }
-        method gist() { $!jp.values($*_).gist }
-        method Str()  {
-            $*_
-              ?? $!jp.values($*_).Str
-              !! meh qq:!c:to/ERROR/.chomp;
-Must do something with the JP object *inside* the pattern, such as:
-
-    '{jp("$.pattern").Slip}'
-
-to avoid late stringification of the JP object.
-ERROR
-        }
-
-        method words()  { $!jp.values($*_).Str.words.Slip }
-        method head(|c) { $!jp.values($*_).head(|c).Slip  }
-        method tail(|c) { $!jp.values($*_).tail(|c).Slip  }
-        method skip(|c) { $!jp.values($*_).skip(|c).Slip  }
-    }
-
-    # Allow postcircumfixes on jp($path)
-    my multi sub postcircumfix:<[ ]>(JP:D $self) {
-        $self.values
-    }
-    my multi sub postcircumfix:<[ ]>(JP:D $self, Whatever) {
-        $self.values
-    }
-    my multi sub postcircumfix:<[ ]>(JP:D $self, Int:D $pos) {
-        $self.values[$pos].Slip
-    }
-    my multi sub postcircumfix:<[ ]>(JP:D $self, @pos) {
-        $self.values[@pos].Slip
-    }
-    my multi sub postcircumfix:<[ ]>(JP:D $self, &pos) {
-        $self.values[&pos].Slip
-    }
-    my multi sub postcircumfix:<[ ]>(Str:D $string, \pos) {
-        $string.words[pos].Slip
-    }
-
-    # Allow for slip jp($path)
-    my multi sub slip(JP:D $self) {
-        $self.values.Slip
-    }
-
-    # Magic self-installing JSON::Path support
-    my $lock := Lock.new;
-    my &jp = my sub jp-stub(str $pattern) {
-        $lock.protect: {  # threadsafe loading of module
-            if $class<> =:= Any {
-                CATCH { meh-not-installed "JSON::Path", 'jp(path)' }
-                $class := 'use JSON::Path:ver<1.7>; JSON::Path'.EVAL;
-            }
-        }
-        (&jp = my sub jp-live(str $pattern) { JP.new($pattern) })($pattern)
-    }
-
-    # Create the code and make sure $*_ is aliased
-    (prelude()
-      ~ 'my $ := { my $*_ := $_; '
-      ~ $code.substr(1)).subst(
-          / 'jp('<( <-[()]>* )>')' || 'jp('<( [<-[()]>* <~~> <-[()]>*]* )>')' /,
-          { "Q/$//" },
-          :global
-        ).EVAL
-}
-
-# Convert a string to code, fail if not possible
-my sub convert-to-matcher(Str:D $code) {
-    my $callable := codify($code);
-    Callable.ACCEPTS($callable)
-      ?? $callable
-      !! *.contains($callable)
-}
-
-# Convert a string to code, fail if not possible
-my sub convert-to-Callable(Str:D $code) {
-    my $callable := codify($code);
-    Callable.ACCEPTS($callable)
-      ?? $callable
-      !! meh "Does not look like a code specification: $code"
+    my $callable := compile-needle($code,
+      :$ignorecase, :$smartcase, :$ignoremark, :$smartmark, :@repos, :@modules
+    );
+    $callable ~~ Failure
+      ?? meh-compilation($code, $callable.exception)
+      !! $callable
 }
 
 # Convert a string to non-Regex code, fail if not possible
@@ -774,57 +593,6 @@ my sub convert-to-simple-Callable(Str:D $code, str $name) {
     Regex.ACCEPTS($callable)
       ?? meh "Cannot use a regular expression for --$name: '$code'"
       !! $callable
-}
-
-# Return Callable for a pattern that is not supposed to be code
-my sub needleify(Str:D $pattern) {
-    my $type := $pattern.type;
-
-    if $type eq 'contains' {
-        $ignorecase
-          ?? $ignoremark
-            ?? *.contains($pattern, :i, :m)
-            !! *.contains($pattern, :i)
-          !! $ignoremark
-            ?? *.contains($pattern, :m)
-            !! *.contains($pattern)
-    }
-    elsif $type eq 'words' {
-        $ignorecase
-          ?? $ignoremark
-            ?? *.Str.&has-word($pattern, :i, :m)
-            !! *.Str.&has-word($pattern, :i)
-          !! $ignoremark
-            ?? *.Str.&has-word($pattern, :m)
-            !! *.Str.&has-word($pattern)
-    }
-    elsif $type eq 'starts-with' {
-        $ignorecase
-          ?? $ignoremark
-            ?? *.starts-with($pattern, :i, :m)
-            !! *.starts-with($pattern, :i)
-          !! $ignoremark
-            ?? *.starts-with($pattern, :m)
-            !! *.starts-with($pattern)
-    }
-    elsif $type eq 'ends-with' {
-        $ignorecase
-          ?? $ignoremark
-            ?? *.ends-with($pattern, :i, :m)
-            !! *.ends-with($pattern, :i)
-          !! $ignoremark
-            ?? *.ends-with($pattern, :m)
-            !! *.ends-with($pattern)
-    }
-    else {  # $type eq 'equal' {
-        $ignorecase
-          ?? $ignoremark
-            ?? { .chars == $pattern.chars && .index($pattern, :i, :m).defined }
-            !! { .chars == $pattern.chars && .index($pattern, :i    ).defined }
-          !! $ignoremark
-            ?? { .chars == $pattern.chars && .index($pattern, :m).defined }
-            !! { $_ eq $pattern }
-    }
 }
 
 # Return a Seq with ~ paths substituted for actual home directory paths
@@ -1008,7 +776,7 @@ my sub show-results(--> Nil) {
                || $type eq 'ends-with' {
                 %nameds<type> := $type;
             }
-            $pattern
+            @patterns.head
         }
 
         $trim
@@ -1221,7 +989,7 @@ my sub rak-stats(:$count-only --> Nil) {
         else {
             my str @stats;
             unless $count-only {
-                @stats.push: "Statistics for '$pattern':";
+                @stats.push: "Statistics for '@patterns.head()':";
                 my str $bar = '-' x @stats[0].chars;
                 @stats.unshift: $bar;
                 @stats.push: $bar;
@@ -1704,7 +1472,7 @@ my sub option-device-number($value --> Nil) {
 my sub option-dir($value --> Nil) {
     %filesystem<dir> := Bool.ACCEPTS($value)
       ?? $value
-      !! convert-to-matcher($value);
+      !! codify($value);
 }
 
 my sub option-dont-catch($value --> Nil) {
@@ -1793,7 +1561,7 @@ my sub option-extensions($value --> Nil) {
 my sub option-file($value --> Nil) {
     %filesystem<file> := Bool.ACCEPTS($value)
       ?? $value
-      !! convert-to-matcher($value);
+      !! codify($value);
 }
 
 my sub option-file-separator-null($value --> Nil) {
@@ -2119,45 +1887,20 @@ my sub option-paths-from($value --> Nil) {
 my sub option-pattern($value --> Nil) {
     Bool.ACCEPTS($value)
       ?? meh "'--pattern' must be a pattern specification, not a flag"
-      !! List.ACCEPTS($pattern)
-        ?? meh "Cannot specify --pattern with --patterns-from at the same time"
-        !! $pattern.defined
-          ?? meh "Can only specify --pattern once"
-          !! ($pattern := $value);
+      !! @patterns.push($value)
 }
 
 my sub option-patterns-from($value --> Nil) {
 
-    # helper sub for getting pattern(s) from file
-    sub read-patterns($handle) {
-        if $handle.lines -> @patterns {
-            $pattern := @patterns == 1 ?? @patterns.head !! @patterns;
-        }
-        else {
-            meh "No patterns found, so no matches to be expected";
-        }
-    }
-
     if Bool.ACCEPTS($value) {
         meh "'--patterns-from' must be a file specification, not a flag"
-    }
-    elsif List.ACCEPTS($pattern) {
-        meh "Can only specify --patterns-from once"
-    }
-    elsif $pattern.defined {
-        meh "Cannot specify --patterns-from with a pattern already specified";
     }
     elsif $value eq '-' {
         note "Reading from STDIN, please enter patterns and ^D when done:"
           unless $reading-from-stdin;
-        read-patterns($*IN);
     }
-    elsif $value.IO.r {
-        read-patterns($value.IO);
-    }
-    else {
-        meh "Could not read from '$value' to obtain patterns";
-    }
+
+    @patterns.push: "file" => $value;
 }
 
 my sub option-pdf-info($value --> Nil) {
@@ -2316,7 +2059,7 @@ my sub option-trim($value --> Nil) {
 my sub option-type($value --> Nil) {
     Bool.ACCEPTS($value)
       ?? meh "'--type' must be specified with a string"
-      !! %types{$value}
+      !! StrType.ACCEPTS($value)
         ?? ($type := $value)
         !! meh "'$value' is not an expected --type";
 }
@@ -2699,6 +2442,8 @@ my sub action-checkout(--> Nil) {
     }
 
     %rak<mapper> := -> $, @matches --> Empty {
+        my $pattern := @patterns.head;
+
         if @matches {
             if @matches == 1 {
                 run 'git', 'checkout', @matches.head;
@@ -2761,6 +2506,8 @@ my sub action-csv-per-line(--> Nil) {
 
 my sub action-edit(--> Nil) {
     %rak<progress>:delete;  # no progress indicator if editing
+
+    my $pattern := @patterns.head;
 
     my sub go-edit-error($error --> Nil) {
         if backtrace-files($error).map: -> (:key($file), :value(@line)) {
@@ -2925,7 +2672,7 @@ my sub action-help(--> Nil) {
     activate-output-options;
 
     # let's produce the necessary help and search in it / paragraph
-    if $pattern {
+    if @patterns.head -> $pattern {
         %rak<sources>          := (Hows,);
         %rak<omit-item-number> := True;
         %rak<degree>           := 1;
@@ -3305,6 +3052,8 @@ my sub action-per-line(--> Nil) {
     }
 
     activate-output-options;
+    my $pattern := @patterns.head;
+
     if %result<sourcery>:delete {
         meh-for 'sourcery', <filesystem>;
 
@@ -3570,6 +3319,7 @@ my sub action-version(--> Nil) {
 }
 
 my sub action-vimgrep(--> Nil) {
+    my $pattern := @patterns.head;
 
     # helper sub for --backtrace and _-execute-raku
     my sub vimgreppify($error --> Nil) {
@@ -3801,115 +3551,24 @@ TEXT
     exit note @text.join("\n");
 }
 
-# Return Callable for given pattern
-my sub codify-pattern($pattern) {
-    Callable.ACCEPTS(my $needle := codify($pattern))
-      ?? $needle
-      !! needleify($needle)
-}
-
-# Return Callable for given pattern and matches only to be returned
-my sub codify-pattern-matches-only($pattern) {
-    my $needle := codify($pattern);
-
-    # already executable
-    if Callable.ACCEPTS($needle) {
-        if Regex.ACCEPTS($needle) {
-            my $old-needle := $needle;
-            *.&matches($old-needle)
-        }
-        else {
-            $needle
-        }
-    }
-
-    # not executable yet
-    else {
-        # Note that we if we want matches only and we didn't have
-        # a regex yet, we must use the highlighter.matches method
-        # to generate the matches from the string pattern.  If we
-        # would first convert to a Callable, we wouldn't be able
-        # to find the matches anymore, as a Callable can only say
-        # whether there was a match, not where.
-        *.&matches: $pattern, :$ignorecase, :$ignoremark, |(:$type if $type)
-    }
-}
-
 # Prepare the executable needle
 my sub prepare-needle() {
-    if $pattern {
-        if $smartcase {
-            $ignorecase.defined
-              ?? meh "Cannot specify --smartcase when --ignorecase is also specified"
-              !! ($ignorecase := !$pattern.contains(/ <:upper> /));
-        }
-        if $smartmark {
-            $ignoremark.defined
-              ?? meh "Cannot specify --smartmark when --ignoremark is also specified"
-              !! ($ignoremark := !has-marks($pattern));
-        }
-
-        # multiple patterns
-        if List.ACCEPTS($pattern) {
-            my $matches-only := %result<matches-only>:delete;
-
-            # Preprocess and attempt to unify consecutive regexes
-            my @regexes;
-            sub merge-regexes() {
-                 @regexes == 1
-                   ?? @regexes.splice.head
-                   !! "/@regexes.splice.map(*.substr: 1,*-1).join('|')/"
-            }
-            my @parts = $pattern.map: {
-                given pre-process($_) {
-                    if .starts-with('/') && .ends-with('/') {
-                        @regexes.push: $_;
-                        Empty
-                    }
-                    elsif @regexes {
-                        (merge-regexes,$_).Slip
-                    }
-                    else {
-                        $_
-                    }
-                }
-            }
-            @parts.push(merge-regexes) if @regexes;
-
-            # Create final needle
-            my sub make-callable($_) {
-                .can('type')
-                  ?? needleify($_)
-                  !! $matches-only
-                    ?? codify-pattern-matches-only($_)
-                    !! codify-pattern($_)
-            }
-
-            # Set up pattern for later highlighting purposes
-            if @parts == 1 {
-                $pattern := @parts.head;
-                $needle  := make-callable($pattern);
-            }
-            else {
-                $pattern := @parts;
-                $needle  := @parts.map(&make-callable).List;
-            }
-        }
-
-        # a single pattern
-        else {
-            $pattern := pre-process $pattern;
-            $needle := $pattern.can('type')
-              ?? needleify($pattern)
-              !! (%result<matches-only>:delete)
-                ?? codify-pattern-matches-only($pattern)
-                !! codify-pattern($pattern)
-        }
+    if @patterns {
+        $hpattern := implicit2explicit(@patterns.head);
+        $needle   := compile-needle(
+          @patterns,
+          :$ignorecase,
+          :$smartcase,
+          :$ignoremark,
+          :$smartmark,
+          :@repos,
+          :@modules
+        );
     }
 
     # put in a basic noop
     else {
-        $pattern := '*.defined';
+        $hpattern := '*.defined';
         $needle  := &defined;
     }
 
@@ -3928,7 +3587,7 @@ my sub as-options() {
     my @options;
     my sub add($name, $value) { @options.push: Pair.new: $name, $value }
 
-    add('pattern', $pattern)             if $pattern;
+    add('pattern', $hpattern)            if $hpattern;
     add('smartcase', $smartcase)         if $smartcase;
     add('ignorecase', $ignorecase)       if $ignorecase;
     add('ignoremark', $ignoremark)       if $ignoremark;
