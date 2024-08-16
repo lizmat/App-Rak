@@ -1,6 +1,16 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Complete migration to Needle::Compile, which introduces a
+       number of new features
+     - Remove dependency on "has-word", that logic is now handled
+       inside Needle::Compile
+     - BREAKING CHANGE: using jp() inside code needles now require
+       the expression to be quoted, just as if it is a normal
+       subroutine call.  The special handling of transparently
+       convering "jp(foo)" to "jp('foo')" was brittle and too much
+       magic.  The jp() function is now a normal, callable sub
+       like any other
 
 0.3.3  2024-08-04T17:40:00+02:00
      - Added support for --ack to activate a compatibility

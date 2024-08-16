@@ -1,6 +1,5 @@
 # The modules that we need here, with their full identities
 use as-cli-arguments:ver<0.0.8>:auth<zef:lizmat>;  # as-cli-arguments
-use has-word:ver<0.0.4>:auth<zef:lizmat>;          # has-word
 use IO::Path::AutoDecompress:ver<0.0.3>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.7>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.4>:auth<zef:lizmat> $?DISTRIBUTION;
@@ -9,14 +8,14 @@ use rak:ver<0.0.59>:auth<zef:lizmat>;              # rak Rak
 use Backtrace::Files:ver<0.0.4>:auth<zef:lizmat> <
   backtrace-files
 >;
-use highlighter:ver<0.0.19>:auth<zef:lizmat> <
+use highlighter:ver<0.0.20>:auth<zef:lizmat> <
   columns highlighter matches
 >;
-use Needle::Compile:ver<0.0.5>:auth<zef:lizmat> <
+use Needle::Compile:ver<0.0.7>:auth<zef:lizmat> <
   compile-needle implicit2explicit StrType Type
 >;
-use String::Utils:ver<0.0.25+>:auth<zef:lizmat> <
-  after before between has-marks is-sha1 non-word paragraphs
+use String::Utils:ver<0.0.26+>:auth<zef:lizmat> <
+  after before between has-marks is-sha1 non-word paragraphs regexify
 >;
 
 # The epoch value when process started
@@ -242,12 +241,13 @@ my $output-file;  # process output file if defined
 my $output-dir;   # process output directory if defined
 my $debug-rak;    # process show rak args
 
-my @patterns;    # the specified patterns (if any)
-my $hpattern;    # the pattern used for highlighting
-my $smartcase;   # --smartcase
-my $smartmark;   # --smartmark
-my $ignorecase;  # --ignorecase
-my $ignoremark;  # --ignoremark
+my @patterns;      # the specified patterns (if any)
+my @highlights;    # the pattern used for highlighting
+my $matches-only;  # whether to produce matches only
+my $smartcase;     # --smartcase
+my $smartmark;     # --smartmark
+my $ignorecase;    # --ignorecase
+my $ignoremark;    # --ignoremark
 
 my $type;  # --type (implicitely) specified
 
@@ -357,6 +357,36 @@ elsif %config<(default)>:exists {
     named('(default)', True);
 }
 
+# Helper sub to add a highlight spec
+my sub add-highlight($_) {
+
+    # Make sure highlightable patterns are added
+    if .key eq 'contains' | 'words' | 'starts-with' | 'ends-with' {
+        @highlights.push: $_;
+    }
+    elsif .key eq 'regex' {
+        @highlights.push: regexify .value,
+          :$ignorecase, :$smartcase, :$ignoremark, :$smartmark
+    }
+    elsif .key eq 'split' {
+        add-highlight(implicit2explicit($_)) for .value.words;
+    }
+    elsif .key eq 'and' {
+        add-highlight(.value)
+    }
+}
+
+# Helper sub to add a pattern
+my sub add-pattern($pattern --> Nil) {
+    $_ := $type && $type ne "auto"
+      ?? Pair.new($type, $pattern)
+      !! implicit2explicit($pattern);
+    @patterns.push: $_;
+
+    # Make sure highlightable patterns are added
+    add-highlight($_);
+}
+
 #-------------------------------------------------------------------------------
 # Actually set up all variables from the arguments specified and run.
 # Theory of operation:
@@ -448,7 +478,7 @@ MEH
     meh-unexpected if @unexpected;
 
     # Set up the pattern
-    @patterns.push(@positionals.shift) if !@patterns && @positionals;
+    add-pattern(@positionals.shift) if !@patterns && @positionals;
 
     # from here on out, description is a noop
     %global<description>:delete;
@@ -589,10 +619,15 @@ my sub codify(Str:D $code) {
 
 # Convert a string to non-Regex code, fail if not possible
 my sub convert-to-simple-Callable(Str:D $code, str $name) {
-    my $callable := codify($code);
-    Regex.ACCEPTS($callable)
-      ?? meh "Cannot use a regular expression for --$name: '$code'"
-      !! $callable
+    my $type := implicit2explicit($code).key;
+
+    $type eq 'regex'
+      ?? meh("Cannot use a regular expression for --$name: '$code'")
+      !! $type eq 'contains'
+        ?? Nil
+        !! compile-needle($code,
+             :$ignorecase, :$smartcase, :$ignoremark, :$smartmark, :@repos, :@modules
+           )
 }
 
 # Return a Seq with ~ paths substituted for actual home directory paths
@@ -727,7 +762,7 @@ my sub show-results(--> Nil) {
     if $human {
         $break         := ""   unless $break.defined;
         $group-matches := True unless $group-matches.defined;
-        $highlight     := True unless $highlight.defined;
+        $highlight     := !$matches-only unless $highlight.defined;
         $trim          := True unless $trim.defined;
         $only-first    := 1000 unless $only-first.defined;
     }
@@ -755,7 +790,8 @@ my sub show-results(--> Nil) {
     $pre  = BON  without $pre;
     $post = BOFF without $post;
 
-    my &line-post-proc := do if $highlight {
+    my &line-post-proc := do if $highlight && @highlights {
+
         my %nameds =
           (:$ignorecase if $ignorecase),
           (:$ignoremark if $ignoremark),
@@ -763,28 +799,12 @@ my sub show-results(--> Nil) {
             with %listing<summary-if-larger-than>:delete),
         ;
 
-        my $target := do if Regex.ACCEPTS($needle) {
-            $needle
-        }
-        else {
-            if !$type || $type eq 'auto' {
-                %nameds<type> := 'contains';
-            }
-            elsif $type eq 'contains'
-               || $type eq 'words'
-               || $type eq 'starts-with'
-               || $type eq 'ends-with' {
-                %nameds<type> := $type;
-            }
-            @patterns.head
-        }
-
         $trim
           ?? -> $line {
-                 highlighter $line.trim, $target, $pre, $post, |%nameds
+                 highlighter $line.trim, @highlights, $pre, $post, |%nameds
              }
           !! -> $line {
-                 highlighter $line, $target, $pre, $post, |%nameds
+                 highlighter $line, @highlights, $pre, $post, |%nameds
              }
     }
 
@@ -989,7 +1009,7 @@ my sub rak-stats(:$count-only --> Nil) {
         else {
             my str @stats;
             unless $count-only {
-                @stats.push: "Statistics for '@patterns.head()':";
+                @stats.push: "Statistics for '@patterns.head.value()':";
                 my str $bar = '-' x @stats[0].chars;
                 @stats.unshift: $bar;
                 @stats.push: $bar;
@@ -1092,29 +1112,33 @@ my sub set-filesystem-Instant(str $name, $value --> Nil) {
         $init-epoch - seconds(.substr(1, *-5))
     });
 
-    my $compiled := convert-to-simple-Callable($code, $name);
-    Callable.ACCEPTS($compiled)
-      ?? (%filesystem{$name} := $compiled)
-      !! meh "Problem compiling expression for '--$name': $value";
+    with convert-to-simple-Callable($code, $name) {
+        %filesystem{$name} := $_;
+    }
+    else {
+        meh "Problem compiling expression for '--$name': $value";
+    }
 }
 
 # handle file attributes that return an Int
 my sub set-filesystem-Int(str $name, $value --> Nil) {
-    meh "Must specify a condition for '--$name'" if Bool.ACCEPTS($value);
-
-    my $compiled := convert-to-simple-Callable($value, $name);
-    Callable.ACCEPTS($compiled)
-      ?? (%filesystem{$name} := $compiled)
-      !! meh "Problem compiling condition for '--$name': $value";
+    if Bool.ACCEPTS($value) {
+        meh "Must specify a condition for '--$name'";
+    }
+    orwith convert-to-simple-Callable($value, $name) {
+        %filesystem{$name} := $_;
+    }
+    else {
+        meh "Problem compiling condition for '--$name': $value";
+    }
 }
 
 # handle file attributes that return an id
 my sub set-filesystem-id(str $name, $value --> Nil) {
     meh "Must specify a condition for '--$name'" if Bool.ACCEPTS($value);
 
-    my $compiled := convert-to-simple-Callable($value, $name);
-    %filesystem{$name} := do if Callable.ACCEPTS($compiled) {
-        $compiled
+    %filesystem{$name} := do with convert-to-simple-Callable($value, $name) {
+        $_
     }
     elsif (try $value.Int) -> $id {
         my $ := * == $id
@@ -1125,7 +1149,9 @@ my sub set-filesystem-id(str $name, $value --> Nil) {
 }
 
 # handle file attributes that need a name
-my sub set-filesystem-name(str $name, $value, $name-getter, $id-getter --> Nil) {
+my sub set-filesystem-name(
+  str $name, $value is copy, $name-getter, $id-getter
+--> Nil) {
     meh "Must specify a condition or name for '--$name'"
       if Bool.ACCEPTS($value);
 
@@ -1142,36 +1168,48 @@ my sub set-filesystem-name(str $name, $value, $name-getter, $id-getter --> Nil) 
         }
     }
 
+    # See if we have a negation
+    my $not := do if $value.starts-with('!') {
+        $value = $value.substr(1);
+        True
+    }
+    else {
+        False
+    }
+
     # An actual condition
     my $compiled := convert-to-simple-Callable($value, $name);
-    %filesystem{$name} := do if Callable.ACCEPTS($compiled) {
-        -> $id { $compiled($_) with id-getter($id).head }
+    %filesystem{$name} := do if $compiled.defined {
+        $not
+          ?? -> $id { with id-getter($id).head { !$compiled($_) } }
+          !! -> $id { $compiled($_) with id-getter($id).head }
     }
 
-    # Negation of list of user names
-    elsif $compiled.starts-with('!') {
-        my int @ids = names2ids($compiled.substr(1));
-        my $id := @ids.head;
-        my $ := @ids == 1
-          ?? * != $id
-          !! { !($_ (elem) @ids) }
-    }
-
-    # List of user names
+    # List of user names (possibly negated)
     else {
-        my int @ids = names2ids($compiled);
+        my int @ids = names2ids($value);
         my $id := @ids.head;
         my $ := @ids == 1
-          ?? * == $id
-          !! * (elem) @ids
+          ?? $not
+            ?? * != $id
+            !! * == $id
+          !! $not
+            ?? * ∉ @ids
+            !! * ∈ @ids
     }
 }
 
 # handle file attributes that need a callable
 my sub set-filesystem-callable(str $name, $value --> Nil) {
-    Bool.ACCEPTS($value)
-      ?? meh "--$name cannot be specified as a flag"
-      !! (%filesystem{$name} := convert-to-simple-Callable($value, $name));
+    if Bool.ACCEPTS($value) {
+        meh "--$name cannot be specified as a flag";
+    }
+    orwith convert-to-simple-Callable($value, $name) {
+        %filesystem{$name} := $_;
+    }
+    else {
+        meh "Problem compiling condition for '--$name': $value";
+    }
 }
 
 # handle external execution
@@ -1290,9 +1328,15 @@ my sub set-result-flag-or-Int(str $name, $value --> Nil) {
     }
 }
 my sub set-result-Callable(str $name, $value --> Nil) {
-    Bool.ACCEPTS($value)
-      ?? meh("'--$name' can *not* be specified as a flag")
-      !! (%result{$name} := convert-to-simple-Callable($value, $name));
+    if Bool.ACCEPTS($value) {
+        meh("'--$name' can *not* be specified as a flag");
+    }
+    orwith convert-to-simple-Callable($value, $name) {
+        %result{$name} := $_;
+    }
+    else {
+        meh "Problem compiling condition for '--$name': $value";
+    }
 }
 
 # Set listing options
@@ -1447,7 +1491,7 @@ my sub option-degree($value --> Nil) {
     my $code;
     $code := convert-to-simple-Callable($value, 'degree')
       unless Bool.ACCEPTS($value);
-    my $integer := Callable.ACCEPTS($code)
+    my $integer := $code.defined
       ?? $code(Kernel.cpu-cores).Int
       !! $value.Int;
     Int.ACCEPTS($integer)
@@ -1784,7 +1828,9 @@ my sub option-list-known-extensions($value --> Nil) {
 }
 
 my sub option-matches-only($value --> Nil) {
-    set-result-flag('matches-only', $value);
+    Bool.ACCEPTS($value)
+      ?? ($matches-only := $value)
+      !! meh "'--matches-only' must be specified as a flag";
 }
 
 my sub option-max-matches-per-file($value --> Nil) {
@@ -1887,20 +1933,32 @@ my sub option-paths-from($value --> Nil) {
 my sub option-pattern($value --> Nil) {
     Bool.ACCEPTS($value)
       ?? meh "'--pattern' must be a pattern specification, not a flag"
-      !! @patterns.push($value)
+      !! add-pattern($value)
 }
 
 my sub option-patterns-from($value --> Nil) {
 
-    if Bool.ACCEPTS($value) {
-        meh "'--patterns-from' must be a file specification, not a flag"
-    }
-    elsif $value eq '-' {
-        note "Reading from STDIN, please enter patterns and ^D when done:"
-          unless $reading-from-stdin;
+    # helper sub for getting pattern(s) from file
+    sub read-patterns($handle) {
+        if $handle.lines -> @lines {
+            add-pattern($_) for @lines;
+        }
     }
 
-    @patterns.push: "file" => $value;
+     if Bool.ACCEPTS($value) {
+         meh "'--patterns-from' must be a file specification, not a flag"
+     }
+     elsif $value eq '-' {
+         note "Reading from STDIN, please enter patterns and ^D when done:"
+           unless $reading-from-stdin;
+        read-patterns($*IN);
+    }
+    elsif $value.IO.r {
+        read-patterns($value.IO);
+    }
+    else {
+        meh "Could not read from '$value' to obtain patterns";
+    }
 }
 
 my sub option-pdf-info($value --> Nil) {
@@ -1919,15 +1977,27 @@ my sub option-pdf-per-line($value --> Nil) {
 }
 
 my sub option-per-file($value --> Nil) {
-    set-action 'per-file', Bool.ACCEPTS($value)
-      ?? $value
-      !! convert-to-simple-Callable($value, 'per-file');
+    if Bool.ACCEPTS($value) {
+        set-action 'per-file', $value;
+    }
+    orwith convert-to-simple-Callable($value, 'per-file') {
+        set-action 'per-file', $_;
+    }
+    else {
+        meh "Problem compiling code for '--per-file': $value";
+    }
 }
 
 my sub option-per-line($value --> Nil) {
-    set-action 'per-line', Bool.ACCEPTS($value)
-      ?? $value
-      !! convert-to-simple-Callable($value, 'per-line');
+    if Bool.ACCEPTS($value) {
+        set-action 'per-line', $value;
+    }
+    orwith convert-to-simple-Callable($value, 'per-file') {
+        set-action 'per-line', $_;
+    }
+    else {
+        meh "Problem compiling code for '--per-line': $value";
+    }
 }
 
 my sub option-progress($value --> Nil) {
@@ -2058,7 +2128,7 @@ my sub option-trim($value --> Nil) {
 
 my sub option-type($value --> Nil) {
     Bool.ACCEPTS($value)
-      ?? meh "'--type' must be specified with a string"
+      ?? ($type := Any)
       !! StrType.ACCEPTS($value)
         ?? ($type := $value)
         !! meh "'$value' is not an expected --type";
@@ -3052,7 +3122,7 @@ my sub action-per-line(--> Nil) {
     }
 
     activate-output-options;
-    my $pattern := @patterns.head;
+    my $pattern := @patterns.head.value;
 
     if %result<sourcery>:delete {
         meh-for 'sourcery', <filesystem>;
@@ -3072,8 +3142,8 @@ my sub action-per-line(--> Nil) {
         $needle := -> $ {
             ++%linenrs{$*SOURCE} (elem) %result{$*SOURCE}
         }
-        $pattern      := sourcery-pattern $pattern;  # for highlighting
-        %rak<sources> := @sources;                   # only these files
+        @highlights.push: implicit2explicit sourcery-pattern $pattern;
+        %rak<sources> := @sources; # only these files
     }
 
     elsif %result<backtrace>:delete {
@@ -3553,24 +3623,19 @@ TEXT
 
 # Prepare the executable needle
 my sub prepare-needle() {
-    if @patterns {
-        $hpattern := implicit2explicit(@patterns.head);
-        $needle   := compile-needle(
-          @patterns,
-          :$ignorecase,
-          :$smartcase,
-          :$ignoremark,
-          :$smartmark,
-          :@repos,
-          :@modules
-        );
-    }
-
-    # put in a basic noop
-    else {
-        $hpattern := '*.defined';
-        $needle  := &defined;
-    }
+    $needle := @patterns
+      # A full blown needled
+      ?? compile-needle
+            @patterns,
+           :$ignorecase,
+           :$smartcase,
+           :$ignoremark,
+           :$smartmark,
+           :@repos,
+           :@modules,
+           :matches($matches-only)
+      # put in a basic noop
+      !! &defined;
 
     if $source-for {
         @positionals
@@ -3587,7 +3652,7 @@ my sub as-options() {
     my @options;
     my sub add($name, $value) { @options.push: Pair.new: $name, $value }
 
-    add('pattern', $hpattern)            if $hpattern;
+    add('pattern', @patterns)            if @patterns;
     add('smartcase', $smartcase)         if $smartcase;
     add('ignorecase', $ignorecase)       if $ignorecase;
     add('ignoremark', $ignoremark)       if $ignoremark;

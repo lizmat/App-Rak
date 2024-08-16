@@ -39,20 +39,10 @@ programming languages.
 Note: this project is now in beta-development phase.  Comments, suggestions
 and bug reports continue to be more than welcome!
 
-=head1 POSITIONAL ARGUMENTS
-
-=head2 pattern
-
-The pattern to search for.
-
-Can also be specified with the C<--pattern> option, in which case B<all>
-the positional arguments are considered to be a path specification.
+=head1 PATTERN SPECIFICATION
 
 Patterns will be interpreted in the following ways if B<no> C<--type>
 has been specified, or C<--type=auto> has been specified.
-
-Multiple patterns, stored in a file or read from STDIN, can also be specified
-with the <C--patterns-from> argument.
 
 =head3 / regex /
 
@@ -62,6 +52,9 @@ of the given string between slashes will be done: the given pattern will be
 parsed as a regex verbatim.  During the search process, each item will be
 matched against this regex.  Any C<--ignorecase> or C<--ignoremark> arguments
 will be honoured.
+
+One can also specify the regex type with C<--type=regex>, so that C</ foo />
+can be considered a shortcut for C<--type=regex foo>.
 
 =head3 { code }
 
@@ -80,11 +73,60 @@ The dynamic variable C<$*_> will contain the topic with which the code was
 called.  This to allow custom libraries to easily obtain the topic without
 the user needing to specify that again.
 
+One can also specify the code type with C<--type=code>, so that C<{ .uc }>
+can be considered a shortcut for C<--type=code .uc>.
+
 =head3 *code
 
 If the pattern starts with C<*>, then this is a short way of specifying Raku
 code as a pattern, using
-L<Whatever-currying|https://docs.raku.org/type/Whatever#index-entry-Whatever-currying>.  Otherwise the same as C<{ code }>.
+L<Whatever-currying|https://docs.raku.org/type/Whatever#index-entry-Whatever-currying>
+semantics.  Otherwise the same as C<{ code }>.
+
+=head3 ^string
+
+If the pattern starts with C<^>, then it indicates the string should be at
+the B<start> of each item.  Basically a shortcut to specifying
+C<--type=starts-with string>.  Any C<--smartcase>, C<--smartmark>,
+C<--ignorecase> or C<--ignoremark> arguments will be honoured.
+
+=head3 string$
+
+If the pattern ends with C<$>, then it indicates the string should be at
+the B<end> of each item.  Basically a shortcut to specifying
+C<--type=ends-with string>.  Any C<--smartcase>, C<--smartmark>,
+C<--ignorecase> or C<--ignoremark> arguments will be honoured.
+
+=head3 ^string$
+
+If the pattern starts with C<^> and ends with C<$>, then it indicates that
+the string should be equal to the item.  Basically a shortcut to specifying
+C<--type=equal string>.  Any C<--smartcase>, C<--ignorecase> or C<--ignoremark>
+arguments will be honoured.
+
+=head3 §string
+
+If the pattern starts with C<§>, then it indicates that the string should
+occur as a word (with word-boundaris on both ends) in the item.  Basically a
+shortcut to specifying C<--type=words string>.  Any C<--smartcase>,
+C<--smartmark>, C<--ignorecase> or C<--ignoremark> arguments will be honoured.
+
+=head3 !specification
+
+If the pattern starts with C<!>, then it indicates that the result of the
+pattern specification should be negated.
+
+=head3 &specification
+
+If the pattern starts with C<&>, then it indicates that the result of the
+pattern specification should be true B<as well as> the result of the
+previous pattern specification.
+
+=head3 s:string
+
+If the pattern starts with 's:', then it indicates that the string should be
+split on whitespace, and each part should be considered a separate pattern
+specification.  Basically a shortcut to specifying C<--type=split string>.
 
 =head3 jp:path
 
@@ -94,101 +136,22 @@ C<--json-per-line> or C<--json-per-elem>.  Requires that the
 L<C<JSON::Path>|https://raku.land/cpan:JNTHN/JSON::Path> module is installed.
 Basically a shortcut to specifying C<path --type=json-path>.
 
-=begin table :caption<Supported JSON path syntax>
-
-  expression  meaning
-  -------------------
-  $           root node
-  .key        index hash key
-  ['key']     index hash key
-  [2]         index array element
-  [0,1]       index array slice
-  [4:5]       index array range
-  [:5]        index from the beginning
-  [-3:]       index to the end
-  .*          index all elements
-  [*]         index all elements
-  [?(expr)]   filter on Raku expression
-  ..key       search all descendants for hash key
-
-=end table
-
-A query that is not rooted from $ or specified using .. will be evaluated
-from the document root (that is, same as an explicit $ at the start).
-
-=head4 Full Raku support
-
-The C<jp:path> and C<--type=json-path> syntax are actually syntactic sugar
-for calling a dedicated C<jp> macro that takes an unquoted JSON path as its
-argument, and returns an instantiated C<JP> object.
-
-This means that:
-
-=begin code :lang<bash>
-
-$ rak --json-per-file jp:foo
-$ rak --json-per-file --type=json-path foo
-
-=end code
-
-are a different way of saying:
-
-=begin code :lang<bash>
-
-$ rak --json-per-file '{ jp(path).Slip }'
-
-=end code
-
-using the "pattern is Raku code" syntax.
-
-The following methods can be called on the C<JP> object:
-
-=table
-  method             selected
-  ---------------------------
-  .value             The first selected value.
-  .values            All selected values as a Seq.
-  .paths             The paths of all selected values as a Seq.
-  .paths-and-values  Interleaved selected paths and values.
-
-Without listing all of the methods that can be called on the C<JP> object,
-one should note that all efforts have been made to make the C<JP> object
-act like a C<Seq>.
-
-=head3 ^string
-
-If the pattern starts with C<^>, then it indicates the string should be at
-the B<start> of each item.  Basically a shortcut to specifying
-C<string --type=starts-with>.  Any C<--smartcase>, C<--smartmark>,
-C<--ignorecase> or C<--ignoremark> arguments will be honoured.
-
-=head3 string$
-
-If the pattern ends with C<$>, then it indicates the string should be at
-the B<end> of each item.  Basically a shortcut to specifying
-C<string --type=ends-with>.  Any C<--smartcase>, C<--smartmark>,
-C<--ignorecase> or C<--ignoremark> arguments will be honoured.
-
-=head3 ^string$
-
-If the pattern starts with C<^> and ends with C<$>, then it indicates that
-the string should be equal to the item.  Basically a shortcut to specifying
-C<string --type=equal>.  Any C<--smartcase>, C<--ignorecase> or C<--ignoremark>
-arguments will be honoured.
-
-=head3 §string
-
-If the pattern starts with C<§>, then it indicates that the string should
-occur as a word (with word-boundaris on both ends) in the item.  Basically a
-shortcut to specifying C<string --type=words>.  Any C<--smartcase>,
-C<--smartmark>, C<--ignorecase> or C<--ignoremark> arguments will be honoured.
-
 =head3 string
 
 If there are no special start or end markers, then it indicates that the
 string should occur somewhere in the item.  Basically a shortcut to
 specifying C<string --type=contains>.  Any C<--smartcase>, C<--smartmark>,
 C<--ignorecase> or C<--ignoremark> arguments will be honoured.
+
+=head1 POSITIONAL ARGUMENTS
+
+=head2 pattern
+
+The pattern to search for, if no pattern was specified any other way.
+
+Patterns can also be specified with the C<--pattern>, C<--and>, C<--or>,
+C<--not> and C<--patterns-from> options, in which case B<all>
+other positional arguments are considered to be path specifications.
 
 =head2 path(s)
 
@@ -2232,6 +2195,69 @@ $ rak --find --created='* < "2h30m".ago'
 $ rak --find --modified='* > "Changes".IO.created'
 
 =end code
+
+=head1 JSON PATH SUPPORT
+
+=begin table :caption<Supported JSON path syntax>
+
+  expression  meaning
+  -------------------
+  $           root node
+  .key        index hash key
+  ['key']     index hash key
+  [2]         index array element
+  [0,1]       index array slice
+  [4:5]       index array range
+  [:5]        index from the beginning
+  [-3:]       index to the end
+  .*          index all elements
+  [*]         index all elements
+  [?(expr)]   filter on Raku expression
+  ..key       search all descendants for hash key
+
+=end table
+
+A query that is not rooted from $ or specified using .. will be evaluated
+from the document root (that is, same as an explicit $ at the start).
+
+=head4 Full Raku support
+
+The C<jp:path> and C<--type=json-path> syntax are actually syntactic sugar
+for calling a dedicated C<jp> macro that takes an unquoted JSON path as its
+argument, and returns an instantiated C<JP> object.
+
+This means that:
+
+=begin code :lang<bash>
+
+$ rak --json-per-file jp:foo
+$ rak --json-per-file --type=json-path foo
+
+=end code
+
+are a different way of saying:
+
+=begin code :lang<bash>
+
+$ rak --json-per-file '{ jp("path").Slip }'
+
+=end code
+
+using the "pattern is Raku code" syntax.
+
+The following methods can be called on the C<JP> object:
+
+=table
+  method             selected
+  ---------------------------
+  .value             The first selected value.
+  .values            All selected values as a Seq.
+  .paths             The paths of all selected values as a Seq.
+  .paths-and-values  Interleaved selected paths and values.
+
+Without listing all of the methods that can be called on the C<JP> object,
+one should note that all efforts have been made to make the C<JP> object
+act like a C<Seq>.
 
 =head1 AUTHOR
 

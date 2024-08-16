@@ -35,23 +35,16 @@ App::Rak provides a CLI called `rak` that allows you to look for a pattern in (a
 
 Note: this project is now in beta-development phase. Comments, suggestions and bug reports continue to be more than welcome!
 
-POSITIONAL ARGUMENTS
-====================
-
-pattern
--------
-
-The pattern to search for.
-
-Can also be specified with the `--pattern` option, in which case **all** the positional arguments are considered to be a path specification.
+PATTERN SPECIFICATION
+=====================
 
 Patterns will be interpreted in the following ways if **no** `--type` has been specified, or `--type=auto` has been specified.
-
-Multiple patterns, stored in a file or read from STDIN, can also be specified with the <C--patterns-from> argument.
 
 ### / regex /
 
 If the pattern starts and ends with `/`, then it indicates a Raku [regex](https://docs.raku.org/language/regexes). **No** special processing of the given string between slashes will be done: the given pattern will be parsed as a regex verbatim. During the search process, each item will be matched against this regex. Any `--ignorecase` or `--ignoremark` arguments will be honoured.
+
+One can also specify the regex type with `--type=regex`, so that `/ foo /` can be considered a shortcut for `--type=regex foo`.
 
 ### { code }
 
@@ -61,77 +54,57 @@ The dynamic variable `$*SOURCE` will contain the `IO::Path` object of the file b
 
 The dynamic variable `$*_` will contain the topic with which the code was called. This to allow custom libraries to easily obtain the topic without the user needing to specify that again.
 
+One can also specify the code type with `--type=code`, so that `{ .uc }` can be considered a shortcut for `--type=code .uc`.
+
 ### *code
 
-If the pattern starts with `*`, then this is a short way of specifying Raku code as a pattern, using [Whatever-currying](https://docs.raku.org/type/Whatever#index-entry-Whatever-currying). Otherwise the same as `{ code }`.
+If the pattern starts with `*`, then this is a short way of specifying Raku code as a pattern, using [Whatever-currying](https://docs.raku.org/type/Whatever#index-entry-Whatever-currying) semantics. Otherwise the same as `{ code }`.
+
+### ^string
+
+If the pattern starts with `^`, then it indicates the string should be at the **start** of each item. Basically a shortcut to specifying `--type=starts-with string`. Any `--smartcase`, `--smartmark`, `--ignorecase` or `--ignoremark` arguments will be honoured.
+
+### string$
+
+If the pattern ends with `$`, then it indicates the string should be at the **end** of each item. Basically a shortcut to specifying `--type=ends-with string`. Any `--smartcase`, `--smartmark`, `--ignorecase` or `--ignoremark` arguments will be honoured.
+
+### ^string$
+
+If the pattern starts with `^` and ends with `$`, then it indicates that the string should be equal to the item. Basically a shortcut to specifying `--type=equal string`. Any `--smartcase`, `--ignorecase` or `--ignoremark` arguments will be honoured.
+
+### §string
+
+If the pattern starts with `§`, then it indicates that the string should occur as a word (with word-boundaris on both ends) in the item. Basically a shortcut to specifying `--type=words string`. Any `--smartcase`, `--smartmark`, `--ignorecase` or `--ignoremark` arguments will be honoured.
+
+### !specification
+
+If the pattern starts with `!`, then it indicates that the result of the pattern specification should be negated.
+
+### &specification
+
+If the pattern starts with `&`, then it indicates that the result of the pattern specification should be true **as well as** the result of the previous pattern specification.
+
+### s:string
+
+If the pattern starts with 's:', then it indicates that the string should be split on whitespace, and each part should be considered a separate pattern specification. Basically a shortcut to specifying `--type=split string`.
 
 ### jp:path
 
 If the pattern start with 'jp:', then interpret the rest of the pattern as a `JSON path`. Only makes sense when used together with `--json-per-file`, `--json-per-line` or `--json-per-elem`. Requires that the [`JSON::Path`](https://raku.land/cpan:JNTHN/JSON::Path) module is installed. Basically a shortcut to specifying `path --type=json-path`.
 
-<table class="pod-table">
-<caption>Supported JSON path syntax</caption>
-<thead><tr>
-<th>expression</th> <th>meaning</th>
-</tr></thead>
-<tbody>
-<tr> <td>$</td> <td>root node</td> </tr> <tr> <td>.key</td> <td>index hash key</td> </tr> <tr> <td>[&#39;key&#39;]</td> <td>index hash key</td> </tr> <tr> <td>[2]</td> <td>index array element</td> </tr> <tr> <td>[0,1]</td> <td>index array slice</td> </tr> <tr> <td>[4:5]</td> <td>index array range</td> </tr> <tr> <td>[:5]</td> <td>index from the beginning</td> </tr> <tr> <td>[-3:]</td> <td>index to the end</td> </tr> <tr> <td>.*</td> <td>index all elements</td> </tr> <tr> <td>[*]</td> <td>index all elements</td> </tr> <tr> <td>[?(expr)]</td> <td>filter on Raku expression</td> </tr> <tr> <td>..key</td> <td>search all descendants for hash key</td> </tr>
-</tbody>
-</table>
-
-A query that is not rooted from $ or specified using .. will be evaluated from the document root (that is, same as an explicit $ at the start).
-
-#### Full Raku support
-
-The `jp:path` and `--type=json-path` syntax are actually syntactic sugar for calling a dedicated `jp` macro that takes an unquoted JSON path as its argument, and returns an instantiated `JP` object.
-
-This means that:
-
-```bash
-$ rak --json-per-file jp:foo
-$ rak --json-per-file --type=json-path foo
-```
-
-are a different way of saying:
-
-```bash
-$ rak --json-per-file '{ jp(path).Slip }'
-```
-
-using the "pattern is Raku code" syntax.
-
-The following methods can be called on the `JP` object:
-
-<table class="pod-table">
-<thead><tr>
-<th>method</th> <th>selected</th>
-</tr></thead>
-<tbody>
-<tr> <td>.value</td> <td>The first selected value.</td> </tr> <tr> <td>.values</td> <td>All selected values as a Seq.</td> </tr> <tr> <td>.paths</td> <td>The paths of all selected values as a Seq.</td> </tr> <tr> <td>.paths-and-values</td> <td>Interleaved selected paths and values.</td> </tr>
-</tbody>
-</table>
-
-Without listing all of the methods that can be called on the `JP` object, one should note that all efforts have been made to make the `JP` object act like a `Seq`.
-
-### ^string
-
-If the pattern starts with `^`, then it indicates the string should be at the **start** of each item. Basically a shortcut to specifying `string --type=starts-with`. Any `--smartcase`, `--smartmark`, `--ignorecase` or `--ignoremark` arguments will be honoured.
-
-### string$
-
-If the pattern ends with `$`, then it indicates the string should be at the **end** of each item. Basically a shortcut to specifying `string --type=ends-with`. Any `--smartcase`, `--smartmark`, `--ignorecase` or `--ignoremark` arguments will be honoured.
-
-### ^string$
-
-If the pattern starts with `^` and ends with `$`, then it indicates that the string should be equal to the item. Basically a shortcut to specifying `string --type=equal`. Any `--smartcase`, `--ignorecase` or `--ignoremark` arguments will be honoured.
-
-### §string
-
-If the pattern starts with `§`, then it indicates that the string should occur as a word (with word-boundaris on both ends) in the item. Basically a shortcut to specifying `string --type=words`. Any `--smartcase`, `--smartmark`, `--ignorecase` or `--ignoremark` arguments will be honoured.
-
 ### string
 
 If there are no special start or end markers, then it indicates that the string should occur somewhere in the item. Basically a shortcut to specifying `string --type=contains`. Any `--smartcase`, `--smartmark`, `--ignorecase` or `--ignoremark` arguments will be honoured.
+
+POSITIONAL ARGUMENTS
+====================
+
+pattern
+-------
+
+The pattern to search for, if no pattern was specified any other way.
+
+Patterns can also be specified with the `--pattern`, `--and`, `--or`, `--not` and `--patterns-from` options, in which case **all** other positional arguments are considered to be path specifications.
 
 path(s)
 -------
@@ -1745,6 +1718,53 @@ $ rak --find --created='* < "2h30m".ago'
 # select all files that were modified after "Changes" was created
 $ rak --find --modified='* > "Changes".IO.created'
 ```
+
+JSON PATH SUPPORT
+=================
+
+<table class="pod-table">
+<caption>Supported JSON path syntax</caption>
+<thead><tr>
+<th>expression</th> <th>meaning</th>
+</tr></thead>
+<tbody>
+<tr> <td>$</td> <td>root node</td> </tr> <tr> <td>.key</td> <td>index hash key</td> </tr> <tr> <td>[&#39;key&#39;]</td> <td>index hash key</td> </tr> <tr> <td>[2]</td> <td>index array element</td> </tr> <tr> <td>[0,1]</td> <td>index array slice</td> </tr> <tr> <td>[4:5]</td> <td>index array range</td> </tr> <tr> <td>[:5]</td> <td>index from the beginning</td> </tr> <tr> <td>[-3:]</td> <td>index to the end</td> </tr> <tr> <td>.*</td> <td>index all elements</td> </tr> <tr> <td>[*]</td> <td>index all elements</td> </tr> <tr> <td>[?(expr)]</td> <td>filter on Raku expression</td> </tr> <tr> <td>..key</td> <td>search all descendants for hash key</td> </tr>
+</tbody>
+</table>
+
+A query that is not rooted from $ or specified using .. will be evaluated from the document root (that is, same as an explicit $ at the start).
+
+#### Full Raku support
+
+The `jp:path` and `--type=json-path` syntax are actually syntactic sugar for calling a dedicated `jp` macro that takes an unquoted JSON path as its argument, and returns an instantiated `JP` object.
+
+This means that:
+
+```bash
+$ rak --json-per-file jp:foo
+$ rak --json-per-file --type=json-path foo
+```
+
+are a different way of saying:
+
+```bash
+$ rak --json-per-file '{ jp("path").Slip }'
+```
+
+using the "pattern is Raku code" syntax.
+
+The following methods can be called on the `JP` object:
+
+<table class="pod-table">
+<thead><tr>
+<th>method</th> <th>selected</th>
+</tr></thead>
+<tbody>
+<tr> <td>.value</td> <td>The first selected value.</td> </tr> <tr> <td>.values</td> <td>All selected values as a Seq.</td> </tr> <tr> <td>.paths</td> <td>The paths of all selected values as a Seq.</td> </tr> <tr> <td>.paths-and-values</td> <td>Interleaved selected paths and values.</td> </tr>
+</tbody>
+</table>
+
+Without listing all of the methods that can be called on the `JP` object, one should note that all efforts have been made to make the `JP` object act like a `Seq`.
 
 AUTHOR
 ======

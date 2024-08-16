@@ -46,18 +46,18 @@ META6.json
 Elizabeth Mattijsen
 OK
 
-query-ok <--json-per-file {~jp(license)} --/dir>, ok => qq:to/OK/;
+query-ok <--json-per-file {~jp('license')} --/dir>, ok => qq:to/OK/;
 META6.json
 Artistic-2.0
 OK
 
 query-ok '--json-per-file', '--/dir',
-  Q/{~jp(name) if jp(auth) eq "zef:lizmat"}/, ok => qq:to/OK/;
+  Q/{~jp('name') if jp('auth') eq "zef:lizmat"}/, ok => qq:to/OK/;
 META6.json
 App::Rak
 OK
 
-query-ok <--json-per-file {|jp(tags[*])} --/dir>, ok => qq:to/OK/;
+query-ok <--json-per-file {|jp('tags[*]')} --/dir>, ok => qq:to/OK/;
 META6.json
 ACK
 SEARCH
