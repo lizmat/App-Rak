@@ -1,8 +1,12 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.3.4  2024-08-16T20:30:55+02:00
      - Complete migration to Needle::Compile, which introduces a
-       number of new features
+       number of new features, such as "!", "&", "s:" pattern
+       prefixes, and the --not, --and, --andnot, --or, --ornot
+       arguments
      - Remove dependency on "has-word", that logic is now handled
        inside Needle::Compile
      - BREAKING CHANGE: using jp() inside code needles now require
