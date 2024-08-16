@@ -1,22 +1,26 @@
 Pattern specification:
 ‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒‒
 
-There are 3 ways in which pattern(s) can be specified:
+There are 4 ways in which a primary pattern can be specified:
 
 1. As the first positional argument
 2. Or with the --pattern=foo argument
-3. Or using the --patterns-from=file argument
+3. Or with the --not=foo argument
+4. Or using the --patterns-from=file argument
 
-The first is easiest for a quick ad-hoc search.  The second can be handy
-if you want to create a short-cut to searching for a particular string with
---save.  The last one allows you set up a set of patterns to be searched
-for simultaneously.
+The first is easiest for a quick ad-hoc search.  The second and third can
+be handy if you want to create a short-cut to searching for (the absence
+of) a particular string with --save.  The last one allows you set up a
+set of patterns to be searched for simultaneously.
+
+The --not=foo argument negates the match, so will select items that do
+**NOT** match the pattern specification.
 
 If the --patterns-from=file argument is specified, it will read the content
 of the given file and process each line as a pattern specification, as
 described below.  When searching, each pattern is tried on an item, and
 accepted as soon as a pattern matched.  Any highlighting will occur on
-*that* match only.
+any of the patterns specified.
 
 If a literal string is specified as a pattern, then by default any item of
 which the stringification contains that string, will be accepted.
@@ -55,7 +59,7 @@ the string:
 
 Example:
 # produce any lines that have the word "bar" in them
-$ rak '<< bar >>' --type=regex
+$ rak --type=regex '<< bar >>'
 
 Code:
 
@@ -110,10 +114,10 @@ omit the initial '*'.
 
 Examples:
 # produce uppercased lines
-$ rak '.uc' --type=code
+$ rak --type=code .uc
 
 # produce all lines, only uppercase the ones that have "rakudoc" in them
-$ rak '.contains("rakudoc") ?? .uc !! $_' --type=code
+$ rak --type=code '.contains("rakudoc") ?? .uc !! $_'
 
 JSON path:
 
@@ -190,13 +194,14 @@ Literal strings matching can be further specialized with other values of the
  - starts-with  item must *start* with string
  - ends-with    item must *end* with string
  - equal        item must be *equal* to string
+ - split        split string on whitespace for separate patterns
 
 Examples:
 # produce any lines that have the word "bar" in them
-$ rak bar --type=words
+$ rak --type=words bar
 
 # produce any lines that start with "Example"
-$ rak Example --type=starts-with
+$ rak --type=starts-with Example
 
 Both literal string matching, as well as matching with a regex, are
 sensitive to the --smartcase, --ignorecase and --ignoremark arguments.
@@ -206,11 +211,12 @@ Shortcuts:
 Several shortcuts are available to indicate some type of behaviour for
 literal strings.  They are
 
- - string      string --type=contains
- - §string     string --type=words
- - ^string     string --type=starts-with
- - string$     string --type=ends-with
- - ^string$    string --type=equal
+ - string      --type=contains string
+ - §string     --type=words string
+ - ^string     --type=starts-with string
+ - string$     --type=ends-with string
+ - ^string$    --type=equal string
+ - !string     --type=not
 
 Examples:
 # produce any lines that have the word "bar" in them
@@ -218,3 +224,19 @@ $ rak §bar
 
 # produce any lines that start with "Example"
 $ rak ^Example
+
+Additional patterns:
+
+You can also specify additional patterns that should also (not) match:
+
+ - --and=bar      Must ALSO match anywhere in line
+ - --andnot=bar   Must ALSO NOT match anywhere in line
+ - --or=bar       May ALSO match anywhere in line
+ - --ornot=bar    May ALSO NOT match annywhere in line
+
+Examples:
+# produce any lines that have the words "foo" and "bar" in them
+$ rak §foo --and=§bar
+
+# produce any lines that start with "foo" but not have "bar" in them
+$ rak ^foo --andnot=bar

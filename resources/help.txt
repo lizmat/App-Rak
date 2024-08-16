@@ -9,12 +9,15 @@ in --patterns-from=file option.
  '/ << bar >> /'          Raku regex indicated by being bounded by / /
  '{ .ends-with("bar") }'  Raku code indicated by being bounded by { }
  '*.starts-with("foo")'   Raku WhateverCode starting with *
+ 's:foo bar'              Multiple patterns, split on whitespace:
  jp:foo                   JSON path specification (with --json-per-xxx)
  §string   String should match as a word
  ^string   String should match at start of line
  string$   String should match at end of line
  ^string$  String should match with line entirely
  string    String should match anywhere in line
+ !string   String should NOT match anywhere in line
+ &string   Additional string should ALSO match anywhere in line
 
  Pattern type overrides:
  --type=auto         Interpret special markers in pattern as above (default)
@@ -25,7 +28,15 @@ in --patterns-from=file option.
  --type=starts-with  Pattern must match at start of line
  --type=ends-with    Pattern must match at end of line
  --type=equal        Pattern must match entirely
+ --type=not          Pattern must NOT match
+ --type=split        Multiple patterns, split on whitespace
  --type=contains     Pattern must match anywhere (default if no markers)
+
+ Additional patterns:
+ --and=bar           Must ALSO match anywhere in line
+ --andnot=bar        Must ALSO NOT match anywhere in line
+ --or=bar            May ALSO match anywhere in line
+ --ornot=bar         May ALSO NOT match annywhere in line
 
 String search pattern modifiers:
  --ignorecase  Ignore distinction between upper, lower and title case letters

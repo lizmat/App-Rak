@@ -24,7 +24,7 @@ $ rak foo --files-with-matches
 $ rak foo --before=2 --after=2
 
 # lines with foo AND bar
-$ rak '{.contains("foo") && .contains("bar")}'
+$ rak foo --and=bar
 
 =end code
 
@@ -149,9 +149,9 @@ C<--ignorecase> or C<--ignoremark> arguments will be honoured.
 
 The pattern to search for, if no pattern was specified any other way.
 
-Patterns can also be specified with the C<--pattern>, C<--and>, C<--or>,
-C<--not> and C<--patterns-from> options, in which case B<all>
-other positional arguments are considered to be path specifications.
+Patterns can also be specified with the C<--pattern>, C<--not> and
+C<--patterns-from> options, in which case B<all> other positional
+arguments are considered to be path specifications.
 
 =head2 path(s)
 
@@ -484,6 +484,16 @@ indicates that whitespace is allowed around separators.
 Flag.  If specified with a True value, will accept compressed files
 with the C<.gz> (gzip) or C<.bz2> (bzip2) extension, if the extension was
 otherwise acceptable.  Will automatically decompress files for inspection.
+
+=head2 --and=foo
+
+Specify B<additional> pattern that should match as well as any previously
+specified pattern to produce a full match.
+
+=head2 --andnot=foo
+
+Specify B<additional> pattern that should B<not> match as well as any
+previously specified pattern to produce a full match.
 
 =head2 --auto-diag
 
@@ -1596,6 +1606,18 @@ either be a string, or a list of strings (which would add lines to the file).
 
 Indicate the Raku module that should be loaded.  Only makes sense if the
 pattern is a C<Callable>.
+
+=head2 --not=foo
+
+Specify B<primary> pattern that should B<not> match to produce a hit.
+
+=head2 --or=foo
+
+Specify B<additional> pattern that should match to produce a hit.
+
+=head2 --ornot=foo
+
+Specify B<additional> pattern that should B<not> match to produce a hit.
 
 =head2 --output-dir=directory
 

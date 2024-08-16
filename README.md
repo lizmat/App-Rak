@@ -25,7 +25,7 @@ $ rak foo --files-with-matches
 $ rak foo --before=2 --after=2
 
 # lines with foo AND bar
-$ rak '{.contains("foo") && .contains("bar")}'
+$ rak foo --and=bar
 ```
 
 DESCRIPTION
@@ -104,7 +104,7 @@ pattern
 
 The pattern to search for, if no pattern was specified any other way.
 
-Patterns can also be specified with the `--pattern`, `--and`, `--or`, `--not` and `--patterns-from` options, in which case **all** other positional arguments are considered to be path specifications.
+Patterns can also be specified with the `--pattern`, `--not` and `--patterns-from` options, in which case **all** other positional arguments are considered to be path specifications.
 
 path(s)
 -------
@@ -373,6 +373,16 @@ Only applicable if `--csv-per-line` has been specified. Flag. If specified, indi
 -----------------
 
 Flag. If specified with a True value, will accept compressed files with the `.gz` (gzip) or `.bz2` (bzip2) extension, if the extension was otherwise acceptable. Will automatically decompress files for inspection.
+
+--and=foo
+---------
+
+Specify **additional** pattern that should match as well as any previously specified pattern to produce a full match.
+
+--andnot=foo
+------------
+
+Specify **additional** pattern that should **not** match as well as any previously specified pattern to produce a full match.
 
 --auto-diag
 -----------
@@ -1254,6 +1264,21 @@ Inserts this value in the file instead of the given line. The value can either b
 ------------
 
 Indicate the Raku module that should be loaded. Only makes sense if the pattern is a `Callable`.
+
+--not=foo
+---------
+
+Specify **primary** pattern that should **not** match to produce a hit.
+
+--or=foo
+--------
+
+Specify **additional** pattern that should match to produce a hit.
+
+--ornot=foo
+-----------
+
+Specify **additional** pattern that should **not** match to produce a hit.
 
 --output-dir=directory
 ----------------------
