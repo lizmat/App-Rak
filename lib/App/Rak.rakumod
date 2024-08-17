@@ -18,6 +18,11 @@ use String::Utils:ver<0.0.26+>:auth<zef:lizmat> <
   after before between has-marks is-sha1 non-word paragraphs regexify
 >;
 
+# Returns the names of branch in current git repo
+my sub branches(|) { # Until this lives in a module somewhere
+    (run <git branch -r>, :out).out.lines.map(*.&after("/"))
+}
+
 # The epoch value when process started
 my $init-epoch = $*INIT-INSTANT.to-posix.head;
 
@@ -258,6 +263,8 @@ my @repos;    # list of repositories to include with -use lib-
 my $source-for;  # name of option providing sources
 my $source;      # associated value (if any)
 
+my $producer-for;  # name of option providing producer
+
 my $action-for;  # name of option to perform
 my $action;      # associated value (if any)
 
@@ -271,6 +278,10 @@ my %modify;      # arguments needed for --modify-files
 my $needle;  # Callable needle for rak
 my %rak;     # arguments to be sent to rak()
 my $rak;     # the result of calling rak()
+
+my $enc;      # actual encoding to be used inside rak
+my $headers;  # actual headers arg for CSV
+my %CSV;      # actual CSV arguments sent to rak
 
 # For now, the routine for outputting anything
 my &sayer = do {
@@ -1040,6 +1051,23 @@ my sub set-source(str $name, $value --> Nil) {
     $source     := $value;
 }
 
+# Indicate the producer
+my sub set-producer(str $name, $value, str $type = 'produce-one' --> Nil) {
+    if Bool.ACCEPTS($value) {
+        if $value {
+            meh qq:to/MEH/ with $producer-for;
+Can only have one producer at a time:
+'--$_' was specified before '--$name'
+MEH
+        }
+        else {
+            return;  # ignore --/producer
+        }
+    }
+    $producer-for := $name;
+    %rak{$type}   := $value;
+}
+
 # Indicate the action to be performed
 my sub set-action(str $name, $value --> Nil) {
     if Bool.ACCEPTS($value) {
@@ -1442,11 +1470,16 @@ my sub option-before-context($value --> Nil) {
 
 my sub option-blame-per-file($value --> Nil) {
     check-GitBlameFile('blame-per-file');
+    set-producer('blame-per-file', -> $io { $GitBlameFile.new($io) });
     set-action('blame-per-file', $value);
 }
 
 my sub option-blame-per-line($value --> Nil) {
     check-GitBlameFile('blame-per-line');
+    set-producer(
+      'blame-per-line',
+      -> $io { $GitBlameFile.new($io).lines, 'produce-many' }
+    );
     set-action('blame-per-line', $value);
 }
 
@@ -1466,6 +1499,7 @@ my sub option-break($value --> Nil) {
 }
 
 my sub option-checkout($value --> Nil) {
+    set-producer('checkout', &branches, 'produce-many');
     set-action('checkout', $value);
 }
 
@@ -1491,6 +1525,11 @@ my sub option-created($value --> Nil) {
 
 my sub option-csv-per-line($value --> Nil) {
     check-TextCSV('csv-per-line');
+    set-producer(
+      'csv-per-line',
+      -> $io { $TextCSV.new(|%CSV).csv: :$headers, :file($io.path) },
+      'produce-many'
+    );
     set-action('csv-per-line', $value);
 }
 
@@ -1537,12 +1576,21 @@ my sub option-dryrun($value --> Nil) {
 }
 
 my sub option-ecosystem($value --> Nil) {
+    set-producer(
+      'ecosystem',
+      -> $io {
+          with try from-json $io.slurp(:$enc) -> \data {
+              Seq.new: data.iterator
+          }
+      },
+      'produce-many'
+    );
     %result<ecosystem> := $value<> =:= True
       ?? ("rea",)
       !! (my @ecos is List = $value.split(',')).all (elem) <p6c cpan fez rea>
         ?? @ecos
         !! meh "Must specify one of p6c cpan fez rea with --ecosystem, not: $value";
-    set-action('json-per-elem', True);
+    set-action('ecosystem', True);
 }
 
 my sub option-edit($value --> Nil) {
@@ -1807,14 +1855,34 @@ my sub option-is-writable($value --> Nil) {
 }
 
 my sub option-json-per-elem($value --> Nil) {
+    set-producer(
+      'json-per-elem',
+      -> $io {
+          with try from-json $io.slurp(:$enc) -> \data {
+              Seq.new: data.iterator
+          }
+      },
+      'produce-many'
+    );
     set-action('json-per-elem', $value);
 }
 
 my sub option-json-per-file($value --> Nil) {
+    set-producer('json-per-file',-> $io { try from-json $io.slurp(:$enc) });
     set-action('json-per-file', $value);
 }
 
 my sub option-json-per-line($value --> Nil) {
+    set-producer(
+      'json-per-line',
+      -> $io {
+          with try $io.lines(:$enc) -> $seq {
+              $seq.map: { (try from-json($_)) // Empty }
+          }
+      },
+      'produce-many'
+    );
+
     set-action('json-per-line', $value);
 }
 
@@ -1998,10 +2066,10 @@ my sub option-pdf-per-line($value --> Nil) {
 
 my sub option-per-file($value --> Nil) {
     if Bool.ACCEPTS($value) {
-        set-action 'per-file', $value;
+        set-producer 'per-file', $value;
     }
     orwith convert-to-simple-Callable($value, 'per-file') {
-        set-action 'per-file', $_;
+        set-producer 'per-file', $_;
     }
     else {
         meh "Problem compiling code for '--per-file': $value";
@@ -2010,10 +2078,10 @@ my sub option-per-file($value --> Nil) {
 
 my sub option-per-line($value --> Nil) {
     if Bool.ACCEPTS($value) {
-        set-action 'per-line', $value;
+        set-producer 'per-line', $value, 'produce-many';
     }
     orwith convert-to-simple-Callable($value, 'per-file') {
-        set-action 'per-line', $_;
+        set-producer 'per-line', $_, 'produce-many';
     }
     else {
         meh "Problem compiling code for '--per-line': $value";
@@ -2489,8 +2557,7 @@ my sub action-blame-per-file(--> Nil) {
     %listing<group-matches> := False if %listing<group-matches>:!exists;
     %listing<has-break>     := False if %listing<has-break>:!exists;
 
-    %rak<batch>        := 1;
-    %rak<produce-one>  := -> $io { $GitBlameFile.new($io) }
+    %rak<batch> := 1;
 
     activate-output-options;
     run-rak;
@@ -2506,8 +2573,7 @@ my sub action-blame-per-line(--> Nil) {
     move-filesystem-options-to-rak;
     move-result-options-to-rak;
 
-    %rak<batch>        := 1;
-    %rak<produce-many> := -> $io { $GitBlameFile.new($io).lines }
+    %rak<batch> := 1;
 
     activate-output-options;
     run-rak;
@@ -2523,13 +2589,6 @@ my sub action-checkout(--> Nil) {
     %rak<sources>          := 'checkout';
     %rak<omit-item-number> := True;
     %rak<map-all>          := True;
-
-    my @branches;
-    %rak<produce-many> := -> $ {
-        @branches = (
-          run <git branch -r>, :out
-        ).out.lines.map(*.&after("/"));
-    }
 
     %rak<mapper> := -> $, @matches --> Empty {
         my $pattern := @patterns.head;
@@ -2560,6 +2619,7 @@ my sub action-checkout(--> Nil) {
         }
         else {
             sayer "No branch found with '" ~ BON ~ $pattern ~ BOFF ~ "'.";
+            my @branches = branches();
             if $verbose {
                 sayer "@branches.elems() branches known:";
                 sayer "  $_" for @branches;
@@ -2584,10 +2644,34 @@ my sub action-csv-per-line(--> Nil) {
     move-result-options-to-rak;
 
     %csv<auto-diag> := True unless %csv<auto-diag>:exists;
-    my $headers := %csv<headers>:delete // True;
-    my %CSV      = %csv{}:p:delete;
-    %rak<produce-many> := -> $io { $TextCSV.new(|%CSV).csv: :$headers, :file($io.path) }
 
+    # Set up args for producer
+    $headers := %csv<headers>:delete // True;
+    %CSV      = %csv{}:p:delete;
+
+    activate-output-options;
+    run-rak;
+    rak-results;
+    rak-stats;
+}
+
+my sub action-ecosystem(--> Nil) {
+    meh-for 'ecosystem', <csv modify filesystem>;
+
+    my $dir := ($*HOME // $*TMPDIR).add('.zef').add('store');
+    %rak<sources> := %result<ecosystem>:delete.map: {
+        $dir.add($_).add("$_.json")
+    }
+    %listing<show-filename> := False
+      if %listing<show-filename>:!exists;
+
+    move-result-options-to-rak;
+    %rak<omit-item-number> := True
+      unless %rak<unique frequencies omit-item-number>:k;
+
+    $enc := %rak<encoding>:delete // 'utf8-c8';
+
+    prepare-needle;
     activate-output-options;
     run-rak;
     rak-results;
@@ -2831,6 +2915,27 @@ my sub action-help(--> Nil) {
     }
 }
 
+my sub action-json-per-elem(--> Nil) {
+    meh-for 'json-per-elem', <csv modify>;
+
+    # Normal json-per-elem handling
+    %filesystem<file> //= codify-extensions %exts<#json>
+      unless $reading-from-stdin;
+    move-filesystem-options-to-rak;
+
+    move-result-options-to-rak;
+    %rak<omit-item-number> := True
+      unless %rak<unique frequencies omit-item-number>:k;
+
+    $enc := %rak<encoding>:delete // 'utf8-c8';
+
+    prepare-needle;
+    activate-output-options;
+    run-rak;
+    rak-results;
+    rak-stats;
+}
+
 my sub action-json-per-file(--> Nil) {
     meh-for 'json-per-file', <csv modify>;
 
@@ -2840,45 +2945,8 @@ my sub action-json-per-file(--> Nil) {
     move-filesystem-options-to-rak;
     move-result-options-to-rak;
 
-    my $enc := %rak<encoding>:delete // 'utf8-c8';
-    %rak<produce-one> := -> $io { try from-json $io.slurp(:$enc) }
+    $enc := %rak<encoding>:delete // 'utf8-c8';
 
-    activate-output-options;
-    run-rak;
-    rak-results;
-    rak-stats;
-}
-
-my sub action-json-per-elem(--> Nil) {
-    meh-for 'json-per-elem', <csv modify>;
-
-    if %result<ecosystem>:delete -> @ecosystems {
-        meh-for 'ecosystem', <filesystem>;
-        my $dir := ($*HOME // $*TMPDIR).add('.zef').add('store');
-        %rak<sources> := @ecosystems.map: { $dir.add($_).add("$_.json") }
-        %listing<show-filename> := False
-          if %listing<show-filename>:!exists;
-    }
-
-    # Normal json-per-elem handling
-    else {
-        %filesystem<file> //= codify-extensions %exts<#json>
-          unless $reading-from-stdin;
-        move-filesystem-options-to-rak;
-    }
-
-    move-result-options-to-rak;
-    %rak<omit-item-number> := True
-      unless %rak<unique frequencies omit-item-number>:k;
-
-    my $enc := %rak<encoding>:delete // 'utf8-c8';
-    %rak<produce-many> := -> $io {
-        with try from-json $io.slurp(:$enc) -> \data {
-            Seq.new: data.iterator
-        }
-    }
-
-    prepare-needle;
     activate-output-options;
     run-rak;
     rak-results;
@@ -2896,12 +2964,7 @@ my sub action-json-per-line(--> Nil) {
     %rak<omit-item-number> := True
       unless %rak<unique frequencies omit-item-number>:k;
 
-    my $enc := %rak<encoding>:delete // 'utf8-c8';
-    %rak<produce-many> := -> $io {
-        with try $io.lines(:$enc) -> $seq {
-            $seq.map: { (try from-json($_)) // Empty }
-        }
-    }
+    $enc := %rak<encoding>:delete // 'utf8-c8';
 
     activate-output-options;
     run-rak;
@@ -2976,69 +3039,129 @@ my sub action-modify-files(--> Nil) {
     my constant no-changes =
       "\n*** no changes where made because of --dryrun ***";
 
-    my @changed-files;
-    my int $nr-files-seen;
-    my int $nr-lines-changed;
-    my int $nr-lines-removed;
+    %rak<sort-sources> := *.absolute;
 
-    %rak<with-line-endings> := True unless %rak<with-line-endings>:exists;
-    %rak<passthru-context>  := %listing<passthru-context>:delete  // True;
-    %rak<sort-sources>      := *.absolute;
-    %rak<mapper> := -> $io, @matches --> Empty {
-        ++$nr-files-seen;
+    # Producing haystacks per file
+    if %rak<produce-one> {
+        my @changed-files;
+        my int $nr-files-seen;
 
-        LAST {
-            my int $nr-files-changed = @changed-files.elems;
-            my $fb = "Processed $nr-files-seen file&s($nr-files-seen)";
-            $fb ~= ", $nr-files-changed file&s($nr-files-changed) changed"
-              if $nr-files-changed;
-            $fb ~= ", $nr-lines-changed line&s($nr-lines-changed) changed"
-              if $nr-lines-changed;
-            $fb ~= ", $nr-lines-removed line&s($nr-lines-removed) removed"
-              if $nr-lines-removed;
+        my &original-needle := $needle;
+        $needle := -> $before {
+            my $after := original-needle($before);
+            Pair.new:
+              $after.WHAT =:= $before.WHAT && !($after eqv $before),
+              $after
+        }
 
-            if $verbose {
-                $fb ~= "\n";
-                for @changed-files -> ($io, $changed, $removed) {
-                    $fb ~= "$io.relative():";
-                    $fb ~= " $changed change&s($changed)"  if $changed;
-                    $fb ~= " $removed removal&s($removed)" if $removed;
+        %rak<mapper> := -> $io, $matches --> Empty {
+            ++$nr-files-seen;
+
+            LAST {
+                my int $nr-files-changed = @changed-files.elems;
+                my $fb = "Processed $nr-files-seen file&s($nr-files-seen)";
+                $fb ~= ", $nr-files-changed file&s($nr-files-changed) changed"
+                  if $nr-files-changed;
+
+                if $verbose {
                     $fb ~= "\n";
+                    for @changed-files -> $io {
+                        $fb ~= "$io.relative()";
+                    }
+                    $fb ~= no-changes if $dryrun;
+                    $fb .= chomp;
                 }
-                $fb ~= no-changes if $dryrun;
-                $fb .= chomp;
-            }
-            elsif $dryrun {
-                $fb ~= no-changes;
+                elsif $dryrun {
+                    $fb ~= no-changes;
+                }
+
+                sayer $fb;
             }
 
-            sayer $fb;
-        }
+            # Get the result
+            $_ := $matches.head;
 
-        my int $lines-removed;
-        my int $lines-changed;
-        my int $index;
-        for @matches {
-            ++$index;
-            if .key - $index -> int $missing {
-                $lines-removed += $missing;
-                $index = .key;
+            # Changes were made
+            if .key {
+                unless $dryrun {
+                    if $backup {
+                        $io.spurt(.value)
+                          if $io.rename($io.sibling($io.basename ~ $backup));
+                    }
+                    else {
+                        $io.spurt: .value;
+                    }
+                }
+                @changed-files.push: $io;
             }
-            ++$lines-changed if .changed;
         }
-        if $lines-changed || $lines-removed {
-            unless $dryrun {
-                if $backup {
-                    $io.spurt(@matches.map(*.value).join)
-                      if $io.rename($io.sibling($io.basename ~ $backup));
+    }
+
+    # Producing haystacks per line
+    else {
+        my @changed-files;
+        my int $nr-files-seen;
+        my int $nr-lines-changed;
+        my int $nr-lines-removed;
+
+        %rak<with-line-endings> := True unless %rak<with-line-endings>:exists;
+        %rak<passthru-context> := %listing<passthru-context>:delete  // True;
+        %rak<mapper> := -> $io, @matches --> Empty {
+            ++$nr-files-seen;
+
+            LAST {
+                my int $nr-files-changed = @changed-files.elems;
+                my $fb = "Processed $nr-files-seen file&s($nr-files-seen)";
+                $fb ~= ", $nr-files-changed file&s($nr-files-changed) changed"
+                  if $nr-files-changed;
+                $fb ~= ", $nr-lines-changed line&s($nr-lines-changed) changed"
+                  if $nr-lines-changed;
+                $fb ~= ", $nr-lines-removed line&s($nr-lines-removed) removed"
+                  if $nr-lines-removed;
+
+                if $verbose {
+                    $fb ~= "\n";
+                    for @changed-files -> ($io, $changed, $removed) {
+                        $fb ~= "$io.relative():";
+                        $fb ~= " $changed change&s($changed)"  if $changed;
+                        $fb ~= " $removed removal&s($removed)" if $removed;
+                        $fb ~= "\n";
+                    }
+                    $fb .= chomp;
+                    $fb ~= no-changes if $dryrun;
                 }
-                else {
-                    $io.spurt: @matches.map(*.value).join;
+                elsif $dryrun {
+                    $fb ~= no-changes;
                 }
+
+                sayer $fb;
             }
-            $nr-lines-changed += $lines-changed;
-            $nr-lines-removed += $lines-removed;
-            @changed-files.push: ($io, $lines-changed, $lines-removed);
+
+            my int $lines-removed;
+            my int $lines-changed;
+            my int $index;
+            for @matches {
+                ++$index;
+                if .key - $index -> int $missing {
+                    $lines-removed += $missing;
+                    $index = .key;
+                }
+                ++$lines-changed if .changed;
+            }
+            if $lines-changed || $lines-removed {
+                unless $dryrun {
+                    if $backup {
+                        $io.spurt(@matches.map(*.value).join)
+                          if $io.rename($io.sibling($io.basename ~ $backup));
+                    }
+                    else {
+                        $io.spurt: @matches.map(*.value).join;
+                    }
+                }
+                $nr-lines-changed += $lines-changed;
+                $nr-lines-removed += $lines-removed;
+                @changed-files.push: ($io, $lines-changed, $lines-removed);
+            }
         }
     }
 
@@ -3113,10 +3236,6 @@ my sub action-per-file(--> Nil) {
     prepare-needle;
     move-filesystem-options-to-rak;
     move-result-options-to-rak;
-
-    %rak<produce-one> := $action<> =:= True
-      ?? *.slurp(:enc(%rak<encoding> // 'utf8-c8'))
-      !! $action;
 
     activate-output-options;
     run-rak;
@@ -3667,6 +3786,9 @@ my sub prepare-needle() {
     elsif @positionals {
         %rak<paths> := @positionals.splice;
     }
+
+    %rak<produce-one> := *.slurp(:enc(%rak<encoding> // 'utf8-c8'))
+      if %rak<produce-one><> =:= True;
 }
 
 # Return all options as a list of Pairs

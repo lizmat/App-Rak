@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Separate "producer" logic from "action" logic, to allow
+       e.g. --per-file and --modify-files to be combined
      - Fix issue with highlighting if :smartmark or :smartcase
        were specified, and the needle didn't match exactly
      - Up dependency on "highlighter" to get proper :smartcase
