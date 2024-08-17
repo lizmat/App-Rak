@@ -8,8 +8,8 @@ use rak:ver<0.0.59>:auth<zef:lizmat>;              # rak Rak
 use Backtrace::Files:ver<0.0.4>:auth<zef:lizmat> <
   backtrace-files
 >;
-use highlighter:ver<0.0.20>:auth<zef:lizmat> <
-  columns highlighter matches
+use highlighter:ver<0.0.21>:auth<zef:lizmat> <
+  columns highlighter
 >;
 use Needle::Compile:ver<0.0.7>:auth<zef:lizmat> <
   compile-needle implicit2explicit StrType Type
@@ -798,7 +798,9 @@ my sub show-results(--> Nil) {
     my &line-post-proc := do if $highlight && @highlights {
 
         my %nameds =
+          (:$smartcase  if $smartcase),
           (:$ignorecase if $ignorecase),
+          (:$smartmark  if $smartmark),
           (:$ignoremark if $ignoremark),
           (:summary-if-larger-than($_)
             with %listing<summary-if-larger-than>:delete),
@@ -2712,7 +2714,8 @@ my sub action-edit(--> Nil) {
             @files.append: @matches.map: {
                 $path => .key => (columns(
                   .value, $target,
-                  :$ignorecase, :$ignoremark, |(:$type if $type)
+                  :$ignorecase, :$smartcase, :$ignoremark, :$smartmark,
+                  |(:$type if $type)
                ).head // 0)
             }
         }
@@ -3495,7 +3498,8 @@ my sub action-vimgrep(--> Nil) {
           ~ ':' ~ .key
           ~ ':' ~ (columns(
                     .value, $target,
-                    :$ignorecase, :$ignoremark, |(:$type if $type)
+                    :$ignorecase, :$smartcase, :$ignoremark, :$smartmark,
+                    |(:$type if $type)
                   ).head // "0")
           ~ ':' ~ .value
           for @matches;

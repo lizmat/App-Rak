@@ -1,6 +1,10 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Fix issue with highlighting if :smartmark or :smartcase
+       were specified, and the needle didn't match exactly
+     - Up dependency on "highlighter" to get proper :smartcase
+       and :smartmark support
 
 0.3.4  2024-08-16T20:30:55+02:00
      - Complete migration to Needle::Compile, which introduces a

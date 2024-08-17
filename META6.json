@@ -9,7 +9,7 @@
     "as-cli-arguments:ver<0.0.8>:auth<zef:lizmat>",
     "Backtrace::Files:ver<0.0.4>:auth<zef:lizmat>",
     "CLI::Version:ver<0.0.9>:auth<zef:lizmat>",
-    "highlighter:ver<0.0.20>:auth<zef:lizmat>",
+    "highlighter:ver<0.0.21>:auth<zef:lizmat>",
     "IO::Path::AutoDecompress:ver<0.0.3>:auth<zef:lizmat>",
     "JSON::Fast::Hyper:ver<0.0.7>:auth<zef:lizmat>",
     "META::constants:ver<0.0.4>:auth<zef:lizmat>",

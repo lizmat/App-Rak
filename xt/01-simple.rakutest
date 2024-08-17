@@ -786,6 +786,57 @@ nine
 10:{BON}nine{BOFF}
 OK
 
+query-ok <v --and=n>, :head(2), ok => qq:to/OK/;
+seven
+8:se{BON}v{BOFF}e{BON}n{BOFF}
+
+eight
+8:se{BON}v{BOFF}e{BON}n{BOFF}
+
+nine
+8:se{BON}v{BOFF}e{BON}n{BOFF}
+OK
+
+query-ok <v --or=x --smartcase>, :head(2), ok => qq:to/OK/;
+five
+6:fi{BON}v{BOFF}e
+
+six
+6:fi{BON}v{BOFF}e
+7:SI{BON}X{BOFF}
+
+seven
+6:fi{BON}v{BOFF}e
+7:SI{BON}X{BOFF}
+8:se{BON}v{BOFF}en
+
+eight
+6:fi{BON}v{BOFF}e
+7:SI{BON}X{BOFF}
+8:se{BON}v{BOFF}en
+
+nine
+6:fi{BON}v{BOFF}e
+7:SI{BON}X{BOFF}
+8:se{BON}v{BOFF}en
+OK
+
+=finish
+
+query-ok <--not=e --andnot=o --andnot=^$>, :head(2), ok => qq:to/OK/;
+six
+7:SIX
+
+seven
+7:SIX
+
+eight
+7:SIX
+
+nine
+7:SIX
+OK
+
 done-testing;
 
 # vim: expandtab shiftwidth=4
