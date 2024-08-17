@@ -697,22 +697,7 @@ TEXT
         note .key ~ ': ' ~ .value.raku for %rak.sort(*.key);
     }
 
-    $rak := do if List.ACCEPTS($needle) {
-        my sub gatherer($haystack) {
-            for $needle -> &code {
-                my \result := Regex.ACCEPTS(&code)
-                  ?? $haystack.contains(&code)
-                  !! code($haystack);
-                return result
-                  if result
-                  || !(result =:= False || result =:= Empty || result =:= Nil)
-            }
-        }
-        rak &gatherer, %rak;
-    }
-    else {
-        rak $needle, %rak;
-    }
+    $rak := rak $needle, %rak;
     meh .message with $rak.exception;
     note "Unexpected leftovers: %rak.raku()" if %rak;
 }
