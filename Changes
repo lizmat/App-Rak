@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.3.5  2024-08-17T19:49:18+02:00
      - Separate "producer" logic from "action" logic, to allow
        e.g. --per-file and --modify-files to be combined
      - Fix issue with highlighting if :smartmark or :smartcase

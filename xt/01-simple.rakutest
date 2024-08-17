@@ -821,8 +821,6 @@ nine
 8:se{BON}v{BOFF}en
 OK
 
-=finish
-
 query-ok <--not=e --andnot=o --andnot=^$>, :head(2), ok => qq:to/OK/;
 six
 7:SIX
