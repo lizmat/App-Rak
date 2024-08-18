@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.3.7  2024-08-18T14:59:31+02:00
      - Allow --count-only and --unique to be used simultaneously
 
 0.3.6  2024-08-18T12:40:54+02:00
