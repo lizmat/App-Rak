@@ -845,6 +845,38 @@ eight
 {BON}nine{BOFF}
 OK
 
+query-ok </./ --unique --matches-only>, ok => qq:to/OK/;
+e
+f
+g
+h
+i
+I
+n
+o
+r
+S
+s
+t
+u
+v
+w
+X
+z
+OK
+
+query-ok </./ --unique --count-only>, ok => qq:to/OK/;
+9
+OK
+
+query-ok </./ --unique --count-only --matches-only>, ok => qq:to/OK/;
+17
+OK
+
+query-ok </./ --unique --count-only --matches-only --verbose>, ok => qq:to/OK/;
+17 unique occurrences in 10 files
+OK
+
 done-testing;
 
 # vim: expandtab shiftwidth=4

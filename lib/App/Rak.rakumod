@@ -2497,30 +2497,52 @@ my sub move-result-options-to-rak(--> Nil) {
 
             # Only interested in number of matches / files
             elsif %result<count-only>:delete {
-                # Set way to stringify paths
-                my &stringify :=
-                  IO::Path.^find_method(%listing<absolute>:delete
-                    ?? "absolute"
-                    !! "relative"
-                  );
-
-                my @files;
                 %rak<eager>  := True;
-                %rak<mapper> := -> $io, @matches --> Empty {
-                    LAST {
-                        if $verbose {
-                            sayer "$_.key() has $_.value() match{"es" if .value > 1}"
-                              for @files;
+
+                if %result<unique>:delete {
+                    %rak<sort>:delete;
+                    %rak<omit-item-number> := True;
+
+                    my int $nr-files;
+                    my @uniques;
+
+                    %rak<mapper> := -> $, @matches --> Empty {
+                        LAST {
+                            my int $nr-uniques = @uniques.unique.elems;
+                            sayer $verbose
+                              ?? "$nr-uniques unique occurrenc&es($nr-uniques) in $nr-files file&s($nr-files)"
+                              !! $nr-uniques;
                         }
-                        my int $nr-matches = @files.map(*.value).sum;
-                        my int $nr-files   = @files.elems;
-                        sayer $nr-files
-                          ?? "$nr-matches match&es($nr-matches) in $nr-files file&s($nr-files)"
-                          !! "No files with matches";
+
+                        ++$nr-files;
+                        @uniques.append: @matches.unique;
                     }
-                    @files.push: Pair.new:
-                      $reading-from-stdin ?? '<STDIN>' !! stringify($io),
-                      @matches.elems;
+                }
+                else {
+                    # Set way to stringify paths
+                    my &stringify :=
+                      IO::Path.^find_method(%listing<absolute>:delete
+                        ?? "absolute"
+                        !! "relative"
+                      );
+
+                    my @files;
+                    %rak<mapper> := -> $io, @matches --> Empty {
+                        LAST {
+                            if $verbose {
+                                sayer "$_.key() has $_.value() match{"es" if .value > 1}"
+                                  for @files;
+                            }
+                            my int $nr-matches = @files.map(*.value).sum;
+                            my int $nr-files   = @files.elems;
+                            sayer $nr-files
+                              ?? "$nr-matches match&es($nr-matches) in $nr-files file&s($nr-files)"
+                              !! "No files with matches";
+                        }
+                        @files.push: Pair.new:
+                          $reading-from-stdin ?? '<STDIN>' !! stringify($io),
+                          @matches.elems;
+                    }
                 }
             }
 
