@@ -835,6 +835,16 @@ nine
 7:SIX
 OK
 
+query-ok <--per-paragraph five --and=nine>, :!head, ok => qq:to/OK/;
+nine
+5:four
+{BON}five{BOFF}
+SIX
+seven
+eight
+{BON}nine{BOFF}
+OK
+
 done-testing;
 
 # vim: expandtab shiftwidth=4

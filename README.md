@@ -1392,6 +1392,11 @@ Optionally takes a `Callable` specification: this will be given an `IO::Path` ob
 $ rak foo --per-line='*.lines.tail(10)'
 ```
 
+--per-paragraph
+---------------
+
+Indicate whether matching should be done per paragraph. It will read lines with the indicated `--encoding`, combine them into paragraphs and present each paragraph to the matcher, with the line number of the start of the paragraphs associated with it.
+
 --progress
 ----------
 

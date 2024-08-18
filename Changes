@@ -2,6 +2,14 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.3.6  2024-08-18T12:40:54+02:00
+     - Add support for --per-paragraph to produce haystacks
+       per paragraph, rather than by line or the whole file
+     - Bump dependency on String::Utils to get "paragraphs"
+       with :Pair named argument
+     - Bump dependency on rak to get ":produce-many-pairs"
+       functionality
+
 0.3.5  2024-08-17T19:49:18+02:00
      - Separate "producer" logic from "action" logic, to allow
        e.g. --per-file and --modify-files to be combined
