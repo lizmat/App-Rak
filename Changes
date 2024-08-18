@@ -2,6 +2,10 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.3.8  2024-08-18T21:09:44+02:00
+     - Unbreak the --edit-files option: this probably got borked
+       in 0.3.4 .  This feature *is* hard to test!
+
 0.3.7  2024-08-18T14:59:31+02:00
      - Allow --count-only and --unique to be used simultaneously
 

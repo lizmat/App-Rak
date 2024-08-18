@@ -2718,7 +2718,7 @@ my sub action-ecosystem(--> Nil) {
 my sub action-edit(--> Nil) {
     %rak<progress>:delete;  # no progress indicator if editing
 
-    my $pattern := @patterns.head;
+    my $pattern := @patterns.head.value;
 
     my sub go-edit-error($error --> Nil) {
         if backtrace-files($error).map: -> (:key($file), :value(@line)) {
