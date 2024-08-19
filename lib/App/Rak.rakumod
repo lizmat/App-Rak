@@ -14,7 +14,7 @@ use highlighter:ver<0.0.21>:auth<zef:lizmat> <
 use Needle::Compile:ver<0.0.7>:auth<zef:lizmat> <
   compile-needle implicit2explicit StrType Type
 >;
-use String::Utils:ver<0.0.27+>:auth<zef:lizmat> <
+use String::Utils:ver<0.0.28+>:auth<zef:lizmat> <
   after before between has-marks is-sha1 non-word paragraphs regexify
 >;
 

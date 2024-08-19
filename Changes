@@ -1,6 +1,9 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Bump dependency on String::Utils to get "paragraphs" fix
+       so that --per-paragraph and --modify-files will work
+       properly
 
 0.3.9  2024-08-19T12:14:12+02:00
      - Add support for --also-first to produce the first N lines
