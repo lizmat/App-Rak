@@ -2,6 +2,9 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.3.11  2024-08-19T21:37:28+02:00
+     - Bump "rak" to get ParaSeq's exception handling fix
+
 0.3.10  2024-08-19T16:01:23+02:00
      - Make --per-paragraph and --modify-files work properly
        without eating whitespace between paragraphs

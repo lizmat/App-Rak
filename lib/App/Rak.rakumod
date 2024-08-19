@@ -3,7 +3,7 @@ use as-cli-arguments:ver<0.0.8>:auth<zef:lizmat>;  # as-cli-arguments
 use IO::Path::AutoDecompress:ver<0.0.3>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.7>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.4>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.61>:auth<zef:lizmat>;              # rak Rak
+use rak:ver<0.0.62>:auth<zef:lizmat>;              # rak Rak
 
 use Backtrace::Files:ver<0.0.4>:auth<zef:lizmat> <
   backtrace-files
@@ -3868,7 +3868,7 @@ TEXT
 # Prepare the executable needle
 my sub prepare-needle() {
     $needle := @patterns
-      # A full blown needled
+      # A full blown needle
       ?? compile-needle
             @patterns,
            :$ignorecase,
