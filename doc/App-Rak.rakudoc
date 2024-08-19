@@ -479,6 +479,18 @@ indicates that fields do not need to be quoted to be acceptable.
 Only applicable if C<--csv-per-line> has been specified.  Flag.  If specified,
 indicates that whitespace is allowed around separators.
 
+=head2 --also-first[=N]
+
+Indicates the number of lines from the start of the file that should be
+shown B<if> there is a match.  If not specified, B<0> will be assumed.
+If specified as a flag, B<1> will be assumed.
+
+=head2 --always-first[=N]
+
+Indicates the number of lines from the start of the file that will B<always>
+be shown, regardless of whether there is a match or not.  If not specified,
+B<0> will be assumed.  If specified as a flag, B<1> will be assumed.
+
 =head2 --auto-decompress
 
 Flag.  If specified with a True value, will accept compressed files

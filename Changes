@@ -2,6 +2,14 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.3.9  2024-08-19T12:14:12+02:00
+     - Add support for --also-first to produce the first N lines
+       if there is a match
+     - Add support for --always-first to always produce the first
+       N lines, regardless of whether there is a match or not
+     - Bump dependency on "rak" to get ":also-first" and
+       ":always-first" support
+
 0.3.8  2024-08-18T21:09:44+02:00
      - Unbreak the --edit-files option: this probably got borked
        in 0.3.4 .  This feature *is* hard to test!

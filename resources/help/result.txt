@@ -9,6 +9,17 @@ Many combinations of these options may or may not make sense.
 Also produce N items after any item with a match.  Defaults to *no*
 items after any item with a match.
 
+--also-first=N
+
+Also produce the first N items if there is an item with a match.
+Defaults to *no* items.  Assumes 1 if specified as a flag.
+
+--always-first=N
+
+Always produce the first N items regardles of whether there is an
+item with a match.  Defaults to *no* items.  Assumes 1 if specified as
+a flag.
+
 --before-context=N
 
 Also produce N items before any item with a match.  Defaults to *no*

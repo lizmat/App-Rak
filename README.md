@@ -369,6 +369,16 @@ Only applicable if `--csv-per-line` has been specified. Flag. If specified, indi
 
 Only applicable if `--csv-per-line` has been specified. Flag. If specified, indicates that whitespace is allowed around separators.
 
+--also-first[=N]
+----------------
+
+Indicates the number of lines from the start of the file that should be shown **if** there is a match. If not specified, **0** will be assumed. If specified as a flag, **1** will be assumed.
+
+--always-first[=N]
+------------------
+
+Indicates the number of lines from the start of the file that will **always** be shown, regardless of whether there is a match or not. If not specified, **0** will be assumed. If specified as a flag, **1** will be assumed.
+
 --auto-decompress
 -----------------
 

@@ -122,6 +122,8 @@ Filesystem filters:
  --uid=condition         File is owned by given uid
 
 Result modifiers:
+ --also-first=N            List first N lines if there is a match
+ --always-first=N          List first N lines always
  --context=N               List N lines around any line with a match
  --before-context=N        List N lines before any line with a match
  --after-context=N         List N lines after any line with a match
