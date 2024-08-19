@@ -3146,6 +3146,61 @@ my sub action-modify-files(--> Nil) {
     }
 
     # Producing haystacks per line
+    elsif %rak<produce-many-pairs> {
+        my @changed-files;
+        my int $nr-files-seen;
+        my int $nr-paragraphs-changed;
+
+        %rak<passthru-context> := %listing<passthru-context>:delete  // True;
+        %rak<mapper> := -> $io, @matches --> Empty {
+            ++$nr-files-seen;
+
+            LAST {
+                my int $nr-files-changed = @changed-files.elems;
+                my $fb = "Processed $nr-files-seen file&s($nr-files-seen)";
+                $fb ~= ", $nr-files-changed file&s($nr-files-changed) changed"
+                  if $nr-files-changed;
+                $fb ~= ", $nr-paragraphs-changed line&s($nr-paragraphs-changed) changed"
+                  if $nr-paragraphs-changed;
+
+                if $verbose {
+                    $fb ~= "\n";
+                    for @changed-files -> ($io, $changed) {
+                        $fb ~= "$io.relative():";
+                        $fb ~= " $changed change&s($changed)"  if $changed;
+                        $fb ~= "\n";
+                    }
+                    $fb .= chomp;
+                    $fb ~= no-changes if $dryrun;
+                }
+                elsif $dryrun {
+                    $fb ~= no-changes;
+                }
+
+                sayer $fb;
+            }
+
+            my int $paragraphs-changed;
+            for @matches {
+                ++$paragraphs-changed if .changed;
+            }
+            if $paragraphs-changed {
+                unless $dryrun {
+                    if $backup {
+                        $io.spurt(@matches.map(*.value).join("\n"))
+                          if $io.rename($io.sibling($io.basename ~ $backup));
+                    }
+                    else {
+                        $io.spurt: @matches.map(*.value).join("\n");
+                    }
+                }
+                $nr-paragraphs-changed += $paragraphs-changed;
+                @changed-files.push: ($io, $paragraphs-changed);
+            }
+        }
+    }
+
+    # Producing haystacks per line
     else {
         my @changed-files;
         my int $nr-files-seen;
