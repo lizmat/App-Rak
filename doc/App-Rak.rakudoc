@@ -1576,8 +1576,11 @@ Indicates whether the output of the pattern should be applied to the file
 in which it was found.  Defaults to C<False>.
 
 The C<Callable> will be called for each file (in sorted order) and each
-line of the file, giving the line (B<including> its line ending).  The
-C<$*N> dynamic variable is available inside the C<Callable> and is
+line of the file, giving the line.  By default, the line will be presented
+to the code B<without> its line ending.  You need to specify
+C<--with-line-endings> if you want to have the line ending also.
+
+The C<$*N> dynamic variable is available inside the C<Callable> and is
 initialized to 0 (in case modifications require keeping numeric state
 between calls).  It is then up to the C<Callable> to return:
 

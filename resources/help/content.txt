@@ -25,12 +25,15 @@ Else it will be kept unchanged because of an implicit --passthru-context
 argument being active.
 
 Files are presented in a sorted order, allowing for repeatable and
-ordered renaming.  The $*N dynamic variable (initialized to 0) is
+ordered modification.  The $*N dynamic variable (initialized to 0) is
 available to the pattern, to allow keeping state between files.
 
 Defaults to False, indicating that files should **not** be changed.  Can
 also specify --dryrun to see which files would be changed without actually
 making any changes.
+
+By default, lines will be presented **without** their line ending.
+If you want to have them included, specify --with-line-endings.
 
 --rename-files
 

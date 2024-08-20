@@ -3207,7 +3207,7 @@ my sub action-modify-files(--> Nil) {
         my int $nr-lines-changed;
         my int $nr-lines-removed;
 
-        %rak<with-line-endings> := True unless %rak<with-line-endings>:exists;
+        my $joiner := %rak<with-line-endings> ?? "" !! "\n";
         %rak<passthru-context> := %listing<passthru-context>:delete  // True;
         %rak<mapper> := -> $io, @matches --> Empty {
             ++$nr-files-seen;
@@ -3254,11 +3254,11 @@ my sub action-modify-files(--> Nil) {
             if $lines-changed || $lines-removed {
                 unless $dryrun {
                     if $backup {
-                        $io.spurt(@matches.map(*.value).join)
+                        $io.spurt(@matches.map(*.value).join($joiner)) ~ $joiner
                           if $io.rename($io.sibling($io.basename ~ $backup));
                     }
                     else {
-                        $io.spurt: @matches.map(*.value).join;
+                        $io.spurt: @matches.map(*.value).join($joiner) ~ $joiner;
                     }
                 }
                 $nr-lines-changed += $lines-changed;

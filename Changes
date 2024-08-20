@@ -2,6 +2,11 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.3.12  2024-08-20T16:21:00+02:00
+     - Make --modify-files present the target without line endings
+       by default.  Specify --with-line-endings if you want them
+       included
+
 0.3.11  2024-08-19T21:37:28+02:00
      - Bump "rak" to get ParaSeq's exception handling fix
 
