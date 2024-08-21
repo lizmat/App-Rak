@@ -1,9 +1,9 @@
 # The modules that we need here, with their full identities
-use as-cli-arguments:ver<0.0.8>:auth<zef:lizmat>;  # as-cli-arguments
+use as-cli-arguments:ver<0.0.8>:auth<zef:lizmat>;   # as-cli-arguments
 use IO::Path::AutoDecompress:ver<0.0.3>:auth<zef:lizmat>; # IOAD
-use JSON::Fast::Hyper:ver<0.0.7>:auth<zef:lizmat>; # from-json to-json
+use JSON::Fast::Hyper:ver<0.0.9+>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.4>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.62>:auth<zef:lizmat>;              # rak Rak
+use rak:ver<0.0.63>:auth<zef:lizmat>;               # rak Rak
 
 use Backtrace::Files:ver<0.0.4>:auth<zef:lizmat> <
   backtrace-files
@@ -11,7 +11,7 @@ use Backtrace::Files:ver<0.0.4>:auth<zef:lizmat> <
 use highlighter:ver<0.0.21>:auth<zef:lizmat> <
   columns highlighter
 >;
-use Needle::Compile:ver<0.0.7>:auth<zef:lizmat> <
+use Needle::Compile:ver<0.0.9>:auth<zef:lizmat> <
   compile-needle implicit2explicit StrType Type
 >;
 use String::Utils:ver<0.0.28+>:auth<zef:lizmat> <
@@ -3583,7 +3583,7 @@ my sub action-unicode(--> Nil) {
 
     class Unicodes {
         method lines() {
-            (0..0x10FFFF).hyper(batch => 2048).map: {
+            (0..0x10FFFF).map: {
                 my $uniname := .uniname;
                 $uniname
                   unless $uniname.starts-with('<') && $uniname.ends-with('>')

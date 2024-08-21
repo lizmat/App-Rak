@@ -2,6 +2,11 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.3.13  2024-08-21T21:12:20+02:00
+     - Remove unnecessary hypering from --unicode
+     - Bump "Needle::Compile" to get several regex / $/ fixes
+     - Bump "rak" to get several ParaSeq fixes
+
 0.3.12  2024-08-20T16:21:00+02:00
      - Make --modify-files present the target without line endings
        by default.  Specify --with-line-endings if you want them
