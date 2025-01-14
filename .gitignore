@@ -1,6 +1,7 @@
 .precomp/
 /App-Rack-*
 /releases/
+*.rakucov
 1
 2
 HN

@@ -36,7 +36,7 @@ in --patterns-from=file option.
  --and=bar           Must ALSO match anywhere in line
  --andnot=bar        Must ALSO NOT match anywhere in line
  --or=bar            May ALSO match anywhere in line
- --ornot=bar         May ALSO NOT match annywhere in line
+ --ornot=bar         May ALSO NOT match anywhere in line
 
 String search pattern modifiers:
  --ignorecase  Ignore distinction between upper, lower and title case letters
