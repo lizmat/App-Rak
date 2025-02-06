@@ -77,6 +77,10 @@ Haystack specification:
  --under-version-control  Select paths that are under version control
  --recurse-symlinked-dir  Recurse into symlinked directories? (default: don't)
  --recurse-unmatched-dir  Recurse into directories not matching (default: don't)
+ --code-from              All code in local ecosystem cache
+ --provides-from          All code in modules in local ecosystem cache
+ --scripts-from           All code in scripts in local ecosystem cache
+ --tests-from             All code in test files in local ecosystem cache
 
 Filesystem filters:
  --accessed=condition    Check on epoch when file was last accessed

@@ -1,6 +1,9 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Add support for --code-from, --provides-from,
+       --scripts-from and --tests-from arguments
+     - Update copyright year
 
 0.3.13  2024-08-21T21:12:20+02:00
      - Remove unnecessary hypering from --unicode
