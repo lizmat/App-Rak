@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.3.14  2025-02-06T21:04:37+01:00
      - Add support for --code-from, --provides-from,
        --scripts-from and --tests-from arguments
      - Update copyright year

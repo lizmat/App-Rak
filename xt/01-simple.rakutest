@@ -41,6 +41,7 @@ my sub query-ok(
   :$add-degree = True,  # add degree specification
   :$ERR        = "",    # expected output on STDERR
   :$add-absolute,       # add absolute specification
+  :$todo,               # mark tests as todo
 ) is test-assertion {
     my @args = $*EXECUTABLE.absolute, "-I$dot", $rak, @query.Slip;
     @args.push: "--paths-from=$paths" if $add-paths;
@@ -54,6 +55,7 @@ my sub query-ok(
         my $proc := run @args, :out, :err;
         my $key = "huh?";
 
+        todo($todo) if $todo;
         is $proc.err.slurp(:close), $ERR, "is '@query[]' STDERR correct?";
         $add-absolute
           ?? $proc.out.lines.join("\n")
@@ -61,13 +63,17 @@ my sub query-ok(
     }
 
     # Base query
-    is run-query, $ok, "is '@query[]' result ok?";
+    my $result := run-query;
+    todo($todo) if $todo;
+    is $result, $ok, "is '@query[]' result ok?";
 
     # If there was a result, try for only the first result
     if $ok && $head {
         @query.push: '--only-first';
         @args.push:  '--only-first';
-        is run-query, $ok.lines.head($head).join("\n"),
+        my $result := run-query;
+        todo($todo) if $todo;
+        is $result, $ok.lines.head($head).join("\n"),
           "is '@query[]' result ok?";
     }
 }
@@ -649,6 +655,7 @@ OK
 
 # This check is a little brittle
 query-ok '--ecosystem=fez', q/{ .<name> eq "eigenstates" && .<version> }/,
+  :todo<need to fix order, or fix test without order being significant>,
   :!add-paths, ok => q:to/OK/;
 0.0.6
 0.0.7
@@ -665,6 +672,7 @@ query-ok '--sourcery', 'say "foo"', <--/show-item-number --/show-filename>,
 
 # This check is a little brittle
 query-ok '--json-per-elem', q/{ .<version> if .<name> eq 'eigenstates' }/,
+  :todo<need to fix order, or fix test without order being significant>,
   <https://360.zef.pm --show-filename>, :!add-paths, :head(2), ok => q:to/OK/;
 https://360.zef.pm
 0.0.6
