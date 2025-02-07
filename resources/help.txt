@@ -77,10 +77,10 @@ Haystack specification:
  --under-version-control  Select paths that are under version control
  --recurse-symlinked-dir  Recurse into symlinked directories? (default: don't)
  --recurse-unmatched-dir  Recurse into directories not matching (default: don't)
- --code-from              All code in local ecosystem cache
- --provides-from          All code in modules in local ecosystem cache
- --scripts-from           All code in scripts in local ecosystem cache
- --tests-from             All code in test files in local ecosystem cache
+ --eco-all                All code in local ecosystem cache
+ --eco-provides           All code in modules in local ecosystem cache
+ --eco-scripts            All code in scripts in local ecosystem cache
+ --eco-tests              All code in test files in local ecosystem cache
 
 Filesystem filters:
  --accessed=condition    Check on epoch when file was last accessed
@@ -172,6 +172,7 @@ Content modifiers:
  --backup[=extension]  Make backup of file with extension (default: .bak)
  --rename-files        Rename files using the Callable pattern
  --dryrun              Don't actually make any changes, just run the process
+ --no-modifications    Do not allow any modifications to be made
 
 Resource usage:
  --batch[=N]          Max number of files to process in a thread (default: 64)

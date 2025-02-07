@@ -31,9 +31,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2025-02-06T18:36:46+01:00 by tools/makeOPTIONS.raku
+#- Generated on 2025-02-07T11:17:29+01:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed ack after-context allow-loose-escapes allow-loose-quotes allow-whitespace also-first always-first and andnot auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break categorize checkout classify code-from context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file mbc mbc-frames mbc-strings meta-modified mode modified modify-files module not only-first or ornot output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line per-paragraph progress provides-from proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer scripts-from sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than tests-from trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed ack after-context allow-loose-escapes allow-loose-quotes allow-whitespace also-first always-first and andnot auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break categorize checkout classify context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem eco-all eco-provides eco-scripts eco-tests edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file mbc mbc-frames mbc-strings meta-modified mode modifications modified modify-files module not only-first or ornot output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line per-paragraph progress proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -254,6 +254,7 @@ my $smartcase;     # --smartcase
 my $smartmark;     # --smartmark
 my $ignorecase;    # --ignorecase
 my $ignoremark;    # --ignoremark
+my $modifications := True;  # --modifications
 
 my $type;  # --type (implicitely) specified
 
@@ -1409,9 +1410,9 @@ my sub set-additional-pattern(str $name, $value, str $prefix) {
       !! add-pattern($prefix ~ $value)
 }
 
-# Set xxx-from option in ecosystem cache
-my sub set-xxx-from($value, str $type --> Nil) {
-    my str $parameter = $type ~ '-from';
+# Set eco-xxx option in ecosystem cache
+my sub set-eco-xxx($value, str $type --> Nil) {
+    my str $parameter = "eco-$type";
     if Bool.ACCEPTS($value) {
         set-source($parameter, ecosystem-cache("rea", $type), 'files-from')
           if $value;
@@ -1551,10 +1552,6 @@ my sub option-classify($value --> Nil) {
     set-result-Callable('classify', $value);
 }
 
-my sub option-code-from($value --> Nil) {
-    set-xxx-from($value, "code");
-}
-
 my sub option-context($value --> Nil) {
     set-result-Int('context', $value);
 }
@@ -1635,6 +1632,22 @@ my sub option-ecosystem($value --> Nil) {
         ?? @ecos
         !! meh "Must specify one of p6c cpan fez rea with --ecosystem, not: $value";
     set-action('ecosystem', True);
+}
+
+my sub option-eco-all($value --> Nil) {
+    set-eco-xxx($value, "all");
+}
+
+my sub option-eco-provides($value --> Nil) {
+    set-eco-xxx($value, "provides");
+}
+
+my sub option-eco-scripts($value --> Nil) {
+    set-eco-xxx($value, "scripts");
+}
+
+my sub option-eco-tests($value --> Nil) {
+    set-eco-xxx($value, "tests");
 }
 
 my sub option-edit($value --> Nil) {
@@ -1979,11 +1992,25 @@ my sub option-mode($value --> Nil) {
     set-filesystem-Int('mode', $value);
 }
 
+my sub option-modifications($value --> Nil) {
+    if Bool.ACCEPTS($value) {
+        $modifications := $value;
+        if $action-for -> $_ {
+            meh "Not allowed to make modify files" when 'modify-files';
+            meh "Not allowed to rename files"      when 'rename-files';
+        }
+    }
+    else {
+        meh "--modifications must be specified as a flag";
+    }
+}
+
 my sub option-modified($value --> Nil) {
     set-filesystem-Instant('modified', $value);
 }
 
 my sub option-modify-files($value --> Nil) {
+    meh "Not allowed to make modifications" unless $modifications;
     set-action('modify-files', $value);
 }
 
@@ -2165,15 +2192,12 @@ my sub option-progress($value --> Nil) {
       !! meh "'--progress' must be a flag"
 }
 
-my sub option-provides-from($value --> Nil) {
-    set-xxx-from($value, "provides");
-}
-
 my sub option-proximate($value --> Nil) {
     set-listing-flag-or-Int('proximate', $value);
 }
 
 my sub option-rename-files($value --> Nil) {
+    meh "Not allowed to rename files" unless $modifications;
     set-action('rename-files', $value);
 }
 
@@ -2213,10 +2237,6 @@ my sub option-save($value --> Nil) {
 
 my sub option-sayer($value --> Nil) {
     meh "--sayer option NYI";
-}
-
-my sub option-scripts-from($value --> Nil) {
-    set-xxx-from($value, "scripts");
 }
 
 my sub option-sep($value --> Nil) {
@@ -2275,10 +2295,6 @@ my sub option-strict($value --> Nil) {
 
 my sub option-summary-if-larger-than($value --> Nil) {
     set-listing-Int('summary-if-larger-than', $value);
-}
-
-my sub option-tests-from($value --> Nil) {
-    set-xxx-from($value, "tests");
 }
 
 my sub option-trim($value --> Nil) {

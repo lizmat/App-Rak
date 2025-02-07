@@ -15,6 +15,13 @@ Only makes sense when either the --modify-files or --rename-files is
 also specified.  Indicates that *no* actual changes should be performed.
 Defaults to False, allowing for changes to be made.
 
+--modifications
+
+Indicate whether modifications with --modify-files and --rename-files
+are allowed.  Defaults to True, hence it will probably only be actually
+used in the negation case: --no-modifications or --/modifications to
+disallow making any modifications.
+
 --modify-files
 
 Only makes sense with a Callable pattern.  Indicates that the inspected

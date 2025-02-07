@@ -2,6 +2,13 @@ Revision history for App-Rak
 
 {{$NEXT}}
 
+0.3.16  2025-02-07T11:39:45+01:00
+     - Rename option --code-from to --eco-all
+     - Rename option --provides-from to --eco-provides
+     - Rename option --scripts-from to --eco-scripts
+     - Rename option --tests-from to --eco-tests
+     - Added support for --no-modifications
+
 0.3.14  2025-02-06T21:04:37+01:00
      - Add support for --code-from, --provides-from,
        --scripts-from and --tests-from arguments
