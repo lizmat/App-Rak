@@ -31,9 +31,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2025-02-08T14:45:50+01:00 by tools/makeOPTIONS.raku
+#- Generated on 2025-02-08T19:26:39+01:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed ack after-context allow-loose-escapes allow-loose-quotes allow-whitespace also-first always-first and andnot auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break categorize checkout classify context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun eco-meta eco-all eco-provides eco-scripts eco-tests edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file mbc mbc-frames mbc-strings meta-modified mode modifications modified modify-files module not only-first or ornot output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line per-paragraph progress proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed ack after-context allow-loose-escapes allow-loose-quotes allow-whitespace also-first always-first and andnot auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break categorize checkout classify context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun eco-code eco-doc eco-meta eco-provides eco-scripts eco-tests edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file mbc mbc-frames mbc-strings meta-modified mode modifications modified modify-files module not only-first or ornot output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line per-paragraph progress proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -1616,6 +1616,14 @@ my sub option-dryrun($value --> Nil) {
       !! meh "'--dryrun' can only be specified as a flag";
 }
 
+my sub option-eco-code($value --> Nil) {
+    set-eco-xxx($value, "code");
+}
+
+my sub option-eco-doc($value --> Nil) {
+    set-eco-xxx($value, "doc");
+}
+
 my sub option-eco-meta($value --> Nil) {
     set-producer(
       'eco-meta',
@@ -1632,10 +1640,6 @@ my sub option-eco-meta($value --> Nil) {
         ?? @ecos
         !! meh "Must specify one of p6c cpan fez rea with --eco-meta, not: $value";
     set-action('eco-meta', True);
-}
-
-my sub option-eco-all($value --> Nil) {
-    set-eco-xxx($value, "code");
 }
 
 my sub option-eco-provides($value --> Nil) {
