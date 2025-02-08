@@ -1,6 +1,8 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.3.17  2025-02-08T19:36:55+01:00
      - Add support for --eco-doc option
      - Rename --eco-all option to --eco-code
      - Rename --ecosystem option to --eco-meta
