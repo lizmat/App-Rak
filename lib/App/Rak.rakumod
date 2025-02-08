@@ -31,9 +31,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2025-02-07T11:17:29+01:00 by tools/makeOPTIONS.raku
+#- Generated on 2025-02-08T14:45:50+01:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed ack after-context allow-loose-escapes allow-loose-quotes allow-whitespace also-first always-first and andnot auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break categorize checkout classify context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun ecosystem eco-all eco-provides eco-scripts eco-tests edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file mbc mbc-frames mbc-strings meta-modified mode modifications modified modify-files module not only-first or ornot output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line per-paragraph progress proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed ack after-context allow-loose-escapes allow-loose-quotes allow-whitespace also-first always-first and andnot auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break categorize checkout classify context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun eco-meta eco-all eco-provides eco-scripts eco-tests edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file mbc mbc-frames mbc-strings meta-modified mode modifications modified modify-files module not only-first or ornot output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line per-paragraph progress proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -992,7 +992,7 @@ my sub show-results(--> Nil) {
 
                     # in case of --always-first without matches
                     ++$seen;
-            }
+                }
             }
 
             # looks like frequencies output
@@ -1004,7 +1004,7 @@ my sub show-results(--> Nil) {
 
         # anything else
         else {
-            sayer stringify $outer;
+            sayer (stringify $outer).substr($source-offset);
             last RESULT if ++$seen == $stop-after;
         }
     }
@@ -1616,9 +1616,9 @@ my sub option-dryrun($value --> Nil) {
       !! meh "'--dryrun' can only be specified as a flag";
 }
 
-my sub option-ecosystem($value --> Nil) {
+my sub option-eco-meta($value --> Nil) {
     set-producer(
-      'ecosystem',
+      'eco-meta',
       -> $io {
           with try from-json $io.slurp(:$enc) -> \data {
               Seq.new: data.iterator
@@ -1626,16 +1626,16 @@ my sub option-ecosystem($value --> Nil) {
       },
       'produce-many'
     );
-    %result<ecosystem> := $value<> =:= True
+    %result<eco-meta> := $value<> =:= True
       ?? ("rea",)
       !! (my @ecos is List = $value.split(',')).all (elem) <p6c cpan fez rea>
         ?? @ecos
-        !! meh "Must specify one of p6c cpan fez rea with --ecosystem, not: $value";
-    set-action('ecosystem', True);
+        !! meh "Must specify one of p6c cpan fez rea with --eco-meta, not: $value";
+    set-action('eco-meta', True);
 }
 
 my sub option-eco-all($value --> Nil) {
-    set-eco-xxx($value, "all");
+    set-eco-xxx($value, "code");
 }
 
 my sub option-eco-provides($value --> Nil) {
@@ -2762,11 +2762,11 @@ my sub action-csv-per-line(--> Nil) {
     rak-stats;
 }
 
-my sub action-ecosystem(--> Nil) {
-    meh-for 'ecosystem', <csv modify filesystem>;
+my sub action-eco-meta(--> Nil) {
+    meh-for 'eco-meta', <csv modify filesystem>;
 
     my $dir := ($*HOME // $*TMPDIR).add('.zef').add('store');
-    %rak<sources> := %result<ecosystem>:delete.map: {
+    %rak<sources> := %result<eco-meta>:delete.map: {
         $dir.add($_).add("$_.json")
     }
     %listing<show-filename> := False

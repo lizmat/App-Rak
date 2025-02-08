@@ -1,6 +1,10 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Rename --ecosystem option to --eco-meta
+     - Fix thinko with --eco-all option
+     - Fix output of --eco-xxx in conjunction with
+       --files-with(out)-matches
 
 0.3.16  2025-02-07T11:39:45+01:00
      - Rename option --code-from to --eco-all

@@ -638,7 +638,7 @@ nine
 OK
 
 # This check is a little brittle
-query-ok '--ecosystem', q/{ .<name> eq "eigenstates" && .<version> }/,
+query-ok '--eco-meta', q/{ .<name> eq "eigenstates" && .<version> }/,
   :!add-paths, ok => q:to/OK/;
 0.0.11
 0.0.10
@@ -654,7 +654,7 @@ query-ok '--ecosystem', q/{ .<name> eq "eigenstates" && .<version> }/,
 OK
 
 # This check is a little brittle
-query-ok '--ecosystem=fez', q/{ .<name> eq "eigenstates" && .<version> }/,
+query-ok '--eco-meta=fez', q/{ .<name> eq "eigenstates" && .<version> }/,
   :todo<need to fix order, or fix test without order being significant>,
   :!add-paths, ok => q:to/OK/;
 0.0.6

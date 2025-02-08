@@ -81,26 +81,3 @@ with the --edit, --vimgrep and the implicit per-line option.
 Example:
 # edit the location(s) of the "say" sub handling a single string
 $ rak --sourcery 'say "foo"' --edit
-
---ecosystem[=name,name2]
-
-Intended to be used by Raku ecosystem maintainers.  Indicates the
-name of one or more Raku ecosystems (separated by commmas) of
-which to inspect the META6.json information of all its modules.
-Currently supported names are:
-
- - p6c  - the original git ecosystem (deprecated)
- - cpan - the ecosystem piggybacking on PAUSE / CPAN (deprecated)
- - fez  - the currently recommended ecosystem for new modules / updates
- - rea  - the Raku Ecosystem Archive
-
-Defaults to "rea" if specified as a flag.  Implies --json-per-elem.
-
-Examples:
-# show all unique module names by an author from the REA
-$ rak '{ .author eq "Scooby Doo" }' --ecosystem
-
-# same, but now from the p6c and cpan ecosystems
-$ rak '{ .author eq "Scooby Doo" }' --ecosystem=p6c,cpan
-
-Assumes "zef" is installed and its meta information is available.
