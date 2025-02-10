@@ -1,20 +1,20 @@
 # The modules that we need here, with their full identities
-use as-cli-arguments:ver<0.0.8>:auth<zef:lizmat>;   # as-cli-arguments
-use IO::Path::AutoDecompress:ver<0.0.3>:auth<zef:lizmat>; # IOAD
+use as-cli-arguments:ver<0.0.8+>:auth<zef:lizmat>;   # as-cli-arguments
+use IO::Path::AutoDecompress:ver<0.0.3+>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.9+>:auth<zef:lizmat>; # from-json to-json
-use META::constants:ver<0.0.4>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.63>:auth<zef:lizmat>;               # rak Rak
+use META::constants:ver<0.0.5+>:auth<zef:lizmat> $?DISTRIBUTION;
+use rak:ver<0.0.64+>:auth<zef:lizmat>;              # rak Rak
 
-use Backtrace::Files:ver<0.0.4>:auth<zef:lizmat> <
+use Backtrace::Files:ver<0.0.4+>:auth<zef:lizmat> <
   backtrace-files
 >;
-use highlighter:ver<0.0.21>:auth<zef:lizmat> <
+use highlighter:ver<0.0.21+>:auth<zef:lizmat> <
   columns highlighter
 >;
-use Needle::Compile:ver<0.0.9>:auth<zef:lizmat> <
+use Needle::Compile:ver<0.0.9+>:auth<zef:lizmat> <
   compile-needle implicit2explicit StrType Type
 >;
-use String::Utils:ver<0.0.28+>:auth<zef:lizmat> <
+use String::Utils:ver<0.0.32+>:auth<zef:lizmat> <
   after before between has-marks is-sha1 non-word paragraphs regexify
 >;
 
@@ -3690,7 +3690,7 @@ my sub action-version(--> Nil) {
 
     activate-output-options;
     my proto sub MAIN(|) {*}
-    use CLI::Version:ver<0.0.9>:auth<zef:lizmat> $?DISTRIBUTION, &MAIN, 'long';
+    use CLI::Version:ver<0.0.9+>:auth<zef:lizmat> $?DISTRIBUTION, &MAIN, 'long';
     MAIN(:version, :$verbose);
 }
 

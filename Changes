@@ -1,6 +1,7 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Bump dependencies, because we can
 
 0.3.17  2025-02-08T19:36:55+01:00
      - Add support for --eco-doc option
