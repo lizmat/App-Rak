@@ -83,6 +83,17 @@ Haystack specification:
  --eco-provides[=name]    All code in modules in local ecosystem cache
  --eco-scripts[=name]     All code in scripts in local ecosystem cache
  --eco-tests[=name]       All code in test files in local ecosystem cache
+ --rakudo-all             All files in Rakudo
+ --rakudo-c               All C programming language files in Rakudo
+ --rakudo-doc             All documentation files
+ --rakudo-java            All Java programming language files in Rakudo
+ --rakudo-js              All Javascript programming language files in Rakudo
+ --rakudo-nqp             All NQP related files in Rakudo
+ --rakudo-perl            All Perl programming language files in Rakudo
+ --rakudo-raku            All Raku Programming Language files in Rakudo
+ --rakudo-shell           All shell scripts / batch files in Rakudo
+ --rakudo-test            All testing related files in Rakudo
+ --rakudo-yaml            All files containing YAML of some sort in Rakudo
 
 Filesystem filters:
  --accessed=condition    Check on epoch when file was last accessed

@@ -1,6 +1,10 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Added support for options: --rakudo-all, --rakudo-c,
+       --rakudo-doc, --rakudo-java, --rakudo-js, --rakudo-nqp,
+       --rakudo-perl, --rakudo-raku, --rakudo-shell,
+       -- rakudo-test, --rakudo-yaml
      - Bump dependencies, because we can
 
 0.3.17  2025-02-08T19:36:55+01:00

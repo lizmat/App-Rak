@@ -31,9 +31,9 @@ my constant BON  = "\e[1m";   # BOLD ON
 my constant BOFF = "\e[22m";  # BOLD OFF
 
 #- start of available options --------------------------------------------------
-#- Generated on 2025-02-08T19:26:39+01:00 by tools/makeOPTIONS.raku
+#- Generated on 2025-02-11T21:05:15+01:00 by tools/makeOPTIONS.raku
 #- PLEASE DON'T CHANGE ANYTHING BELOW THIS LINE
-my str @options = <absolute accept accessed ack after-context allow-loose-escapes allow-loose-quotes allow-whitespace also-first always-first and andnot auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break categorize checkout classify context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun eco-code eco-doc eco-meta eco-provides eco-scripts eco-tests edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file mbc mbc-frames mbc-strings meta-modified mode modifications modified modify-files module not only-first or ornot output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line per-paragraph progress proximate rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
+my str @options = <absolute accept accessed ack after-context allow-loose-escapes allow-loose-quotes allow-whitespace also-first always-first and andnot auto-decompress auto-diag backtrace backup batch before-context blame-per-file blame-per-line blocks break categorize checkout classify context count-only created csv-per-line degree deny description device-number dir dont-catch dryrun eco-code eco-doc eco-meta eco-provides eco-scripts eco-tests edit encoding eol escape exec execute-raku extensions file file-separator-null files-from files-with-matches files-without-matches filesize find formula frequencies gid group group-matches hard-links has-setgid has-setuid headers help highlight highlight-after highlight-before human ignorecase ignoremark inode invert-match is-empty is-executable is-group-executable is-group-readable is-group-writable is-moarvm is-owned-by-group is-owned-by-user is-owner-executable is-owner-readable is-owner-writable is-pdf is-readable is-sticky is-symbolic-link is-text is-world-executable is-world-readable is-world-writable is-writable json-per-elem json-per-file json-per-line keep-meta list-custom-options list-expanded-options list-known-extensions matches-only max-matches-per-file mbc mbc-frames mbc-strings meta-modified mode modifications modified modify-files module not only-first or ornot output-dir output-file pager paragraph-context passthru passthru-context paths paths-from pattern patterns-from pdf-info pdf-per-file pdf-per-line per-file per-line per-paragraph progress proximate rakudo-all rakudo-doc rakudo-java rakudo-js rakudo-nqp rakudo-perl rakudo-raku rakudo-shell rakudo-test rakudo-yaml rename-files quietly quote rak recurse-symlinked-dir recurse-unmatched-dir repository save sayer sep shell show-blame show-filename show-item-number silently smartcase smartmark sourcery stats stats-only strict summary-if-larger-than trim type uid under-version-control unicode unique user verbose version vimgrep with-line-endings>;
 #- PLEASE DON'T CHANGE ANYTHING ABOVE THIS LINE
 #- end of available options ----------------------------------------------------
 
@@ -684,6 +684,16 @@ my sub ecosystem-cache(str $ecosystem, str $dir) {
 
     $source-offset = $io.relative.chars + 3;
     $io.add($dir).absolute
+}
+
+# Return absolute path to rakudo cache
+my sub rakudo-cache(str $type) {
+    # This is a little brittle
+    $source-offset = $*EXECUTABLE.parent(3).absolute.chars + 1;
+    %listing<absolute> := True;
+
+    ((%*ENV<RAKU_RAKUDO> andthen .IO) // ($*HOME // $*TMPDIR))
+      .add(".raku").add("cache").add("rakudo-$type").absolute
 }
 
 #-------------------------------------------------------------------------------
@@ -1422,6 +1432,18 @@ my sub set-eco-xxx($value, str $type --> Nil) {
     }
     else {
         meh "'--$parameter' must be either 'rea' or 'fez'";
+    }
+}
+
+# Set rakudo-xxx option in ecosystem cache
+my sub set-rakudo-xxx($value, str $type --> Nil) {
+    my str $parameter = "rakudo-$type";
+    if Bool.ACCEPTS($value) {
+        set-source($parameter, rakudo-cache($type), 'files-from')
+          if $value;
+    }
+    else {
+        meh "'--$parameter' can only be specified as a flag"; 
     }
 }
 
@@ -2198,6 +2220,46 @@ my sub option-progress($value --> Nil) {
 
 my sub option-proximate($value --> Nil) {
     set-listing-flag-or-Int('proximate', $value);
+}
+
+my sub option-rakudo-all($value --> Nil) {
+    set-rakudo-xxx($value, "all");
+}
+
+my sub option-rakudo-doc($value --> Nil) {
+    set-rakudo-xxx($value, "doc");
+}
+
+my sub option-rakudo-java($value --> Nil) {
+    set-rakudo-xxx($value, "java");
+}
+
+my sub option-rakudo-js($value --> Nil) {
+    set-rakudo-xxx($value, "js");
+}
+
+my sub option-rakudo-nqp($value --> Nil) {
+    set-rakudo-xxx($value, "nqp");
+}
+
+my sub option-rakudo-perl($value --> Nil) {
+    set-rakudo-xxx($value, "perl");
+}
+
+my sub option-rakudo-raku($value --> Nil) {
+    set-rakudo-xxx($value, "raku");
+}
+
+my sub option-rakudo-shell($value --> Nil) {
+    set-rakudo-xxx($value, "shell");
+}
+
+my sub option-rakudo-test($value --> Nil) {
+    set-rakudo-xxx($value, "test");
+}
+
+my sub option-rakudo-yaml($value --> Nil) {
+    set-rakudo-xxx($value, "java");
 }
 
 my sub option-rename-files($value --> Nil) {
