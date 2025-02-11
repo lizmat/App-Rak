@@ -1,6 +1,7 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Actually activate --rakudo-c option
 
 0.3.18  2025-02-11T21:51:46+01:00
      - Added support for options: --rakudo-all, --rakudo-c,
