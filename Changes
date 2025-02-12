@@ -1,6 +1,10 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+
+0.3.19  2025-02-12T17:08:38+01:00
+     - Bump dependency on rak to get rid of implicit ParaSeq
+       dependency, as that is apparently not ready for prime time
      - Actually activate --rakudo-c option
 
 0.3.18  2025-02-11T21:51:46+01:00

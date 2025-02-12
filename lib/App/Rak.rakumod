@@ -3,7 +3,7 @@ use as-cli-arguments:ver<0.0.8+>:auth<zef:lizmat>;   # as-cli-arguments
 use IO::Path::AutoDecompress:ver<0.0.3+>:auth<zef:lizmat>; # IOAD
 use JSON::Fast::Hyper:ver<0.0.9+>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.5+>:auth<zef:lizmat> $?DISTRIBUTION;
-use rak:ver<0.0.64+>:auth<zef:lizmat>;              # rak Rak
+use rak:ver<0.0.65+>:auth<zef:lizmat>;              # rak Rak
 
 use Backtrace::Files:ver<0.0.4+>:auth<zef:lizmat> <
   backtrace-files
