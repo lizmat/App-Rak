@@ -74,7 +74,7 @@ If the pattern starts with `^` and ends with `$`, then it indicates that the str
 
 ### §string
 
-If the pattern starts with `§`, then it indicates that the string should occur as a word (with word-boundaris on both ends) in the item. Basically a shortcut to specifying `--type=words string`. Any `--smartcase`, `--smartmark`, `--ignorecase` or `--ignoremark` arguments will be honoured.
+If the pattern starts with `§`, then it indicates that the string should occur as a word (with word-boundaries on both ends) in the item. Basically a shortcut to specifying `--type=words string`. Any `--smartcase`, `--smartmark`, `--ignorecase` or `--ignoremark` arguments will be honoured.
 
 ### !specification
 
