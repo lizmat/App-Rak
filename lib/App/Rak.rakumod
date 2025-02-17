@@ -99,7 +99,8 @@ my constant %falsies =
   unrestricted     => 'dir',
 ;
 
-# The JSON config to map "ack" arguments to "rak" arguments as closely as possible
+# The JSON config to map "ack" arguments to "rak" arguments as closely as
+# possible
 my constant %ack-interface-config =
   "1"                => (:only-first,),
   "A"                => (:after-context<!>,),
@@ -141,6 +142,7 @@ my constant %ack-interface-config =
   "type"             => (:extensions<!>,),
   "TYPE"             => (:extensions<!>,),
   "v"                => (:invert-match,),
+  "w"                => (:type<words>,),
   "with-filename"    => (:show-filename,),
   "x"                => (:files-from<->,),
 ;

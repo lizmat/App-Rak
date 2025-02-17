@@ -107,7 +107,7 @@ arguments will be honoured.
 =head3 §string
 
 If the pattern starts with C<§>, then it indicates that the string should
-occur as a word (with word-boundaris on both ends) in the item.  Basically a
+occur as a word (with word-boundaries on both ends) in the item.  Basically a
 shortcut to specifying C<--type=words string>.  Any C<--smartcase>,
 C<--smartmark>, C<--ignorecase> or C<--ignoremark> arguments will be honoured.
 
