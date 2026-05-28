@@ -1,6 +1,9 @@
 Revision history for App-Rak
 
 {{$NEXT}}
+     - Update dependencies
+     - Modernize META
+     - Update copyright year
 
 0.3.19  2025-02-12T17:08:38+01:00
      - Bump dependency on rak to get rid of implicit ParaSeq

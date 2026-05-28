@@ -7,7 +7,6 @@ App::Rak - 21st century grep / find / ack / ag / rg on steroids
 =head1 SYNOPSIS
 
 =begin code :lang<bash>
-
 # look for "foo" in current directory recursively
 $ rak foo
 
@@ -25,7 +24,6 @@ $ rak foo --before=2 --after=2
 
 # lines with foo AND bar
 $ rak foo --and=bar
-
 =end code
 
 =head1 DESCRIPTION
@@ -235,13 +233,11 @@ L<loop phasers|https://docs.raku.org/language/phasers#FIRST>:
 These phasers will be called in a B<thread-safe> manner.
 
 =begin code :lang<bash>
-
 # show number of files inspected before the search result
 $ rak '{ state $s = 0; NEXT $s++; LAST say "$s files"; .contains("foo")}'
 
 # show number of files inspected after of the search result
 $ rak '{ state $s = 0; NEXT $s++; END say "$s files"; .contains("foo")}'
-
 =end code
 
 Note that the use of the C<LAST> phaser will make the search run eagerly,
@@ -337,7 +333,6 @@ for a certain workflow, You can use the C<--save> option to save that set
 of options and than later access them with the given name:
 
 =begin code :lang<bash>
-
 # create -i shortcut for ignoring case
 $ rak --ignorecase --save=i
 Saved option '-i' as: --ignorecase
@@ -348,7 +343,6 @@ Saved option '-m' as: --ignoremark
 
 # same as --ignorecase --ignoremark
 $ rak foo -im
-
 =end code
 
 Generally speaking, the most used boolean options can be saved as single
@@ -359,7 +353,6 @@ To better document / remember what a particular custom option is meant to
 do, you can add a description with the C<--description> option.
 
 =begin code :lang<bash>
-
 # add a description to the -i custom option
 $ rak --description='Search without caring for uppercase' --save=i
 Saved '--description='Search without caring for uppercase'' as: -i
@@ -367,18 +360,15 @@ Saved '--description='Search without caring for uppercase'' as: -i
 # add an option -g for searching only git files
 $ rak --description='Committed files only' --under-version-control --save=g
 Saved '--description='Committed files only' --under-version-control' as: -g
-
 =end code
 
 There is also a special named option that indicates the options that will
 be automatically activated on any invocation: C<(default)>.
 
 =begin code :lang<bash>
-
 # enable --smartcase by default on every run
 $ rak --smartcase --save='(default)'
 Saved '--smartcase' as: (default)
-
 =end code
 
 You can use the C<--list-custom-options> to see what options you have saved
@@ -388,20 +378,16 @@ Custom options are saved in C<~/.rak-config.json>.  You can override this
 by specifying the C<RAK_CONFIG> environment variable.
 
 =begin code :lang<bash>
-
 # read custom options from ".custom.json" (in the current directory)
 $ RAK_CONFIG=.custom.json rak foo
-
 =end code
 
 You can also use the C<RAK_CONFIG> variable to disable loading any
 configuration by not specifying a value:
 
 =begin code :lang<bash>
-
 # start rak without any custom configuration
 $ RAK_CONFIG= rak foo
-
 =end code
 
 =head1 SUPPORTED OPTIONS
@@ -424,10 +410,8 @@ the path is acceptable, given an C<IO::Path> object of the path.  See also
 C<--deny>.
 
 =begin code :lang<bash>
-
 # Include files that have "use Test" in them
 $ rak --accept='*.slurp.contains("use Test")'
-
 =end code
 
 =head2 --accessed=condition
@@ -453,10 +437,8 @@ If you'd like a list of the option configuration, you can use the
 C<--list-custom-options> argument.
 
 =begin code :lang<bash>
-
 # Show the current mappinng of "ack" to "rak" options
 $ rak --ack --list-custom-options
-
 =end code
 
 =head2 --after-context=N
@@ -524,7 +506,6 @@ for highlighting.  If B<not> used in combination with C<--edit> or
 C<--vimgrep>, will assume a context of 2 lines.
 
 =begin code :lang<bash>
-
 # look at source of a stacktrace
 $ raku script 2>&1 | rak --backtrace
 
@@ -533,7 +514,6 @@ $ raku script 2>&1 | rak --backtrace --edit
 
 # inspect a backtrace stored in a file
 $ rak --backtrace filename
-
 =end code
 
 =head2 --backup[=extension]
@@ -570,10 +550,8 @@ Requires the L<C<Git::Blame::File>|https://raku.land/zef:lizmat/Git::Blame::File
 Raku module to be installed.
 
 =begin code :lang<bash>
-
 # show files with more than 10 commits
 $ rak '*.commits > 10' --blame-per-file --files-with-matches
-
 =end code
 
 =head2 --blame-per-line
@@ -591,10 +569,8 @@ C<git blame> information will be produced.  If the returned value is anything
 else, then the stringification of that object will be produced.
 
 =begin code :lang<bash>
-
 # show git blame on lines of which the author is "Scooby Doo"
 $ rak '{ .author eq "Scooby Doo" }' --blame-per-line
-
 =end code
 
 Requires that the L<C<Git::Blame::File>|https://raku.land/zef:lizmat/Git::Blame::File> module is installed.
@@ -606,10 +582,8 @@ file in the selection of files to be checked.  The number of logical blocks
 that a file takes up in the filesystem, will be passed as the only argument.
 
 =begin code :lang<bash>
-
 # show files that consist of at least 3 blocks
 $ rak --find --blocks='* >= 3'
-
 =end code
 
 =head2 --break[=string]
@@ -633,10 +607,8 @@ keys for a given line to have it categorized.  This effectively replaces
 the filename if a line by its key in the result.  See also C<--classify>.
 
 =begin code :lang<bash>
-
 # categorize by the first two letters of a line
 $ rak --categorize='*.substr(0,2).comb'
-
 =end code
 
 =head2 --classify=classifier
@@ -646,10 +618,8 @@ given line to have it classified.  This effectively replaces the filename
 if a line by its key in the result.  See also C<--categorize>.
 
 =begin code :lang<bash>
-
 # classify by the last letter of a line
 $ rak --classify='*.substr(*-1)'
-
 =end code
 
 =head2 --context=N
@@ -691,7 +661,6 @@ More documentation can be found with the
 L<Text::CSV|https://raku.land/github:Tux/Text::CSV> module itself.
 
 =begin code :lang<bash>
-
 # Show the values of the column named "foo" of the rows in the "info.csv"
 # file if the column named "bar" is equal to "foo"
 $ rak --csv-per-line '{.<foo> if .<bar> eq "foo"}' info.csv
@@ -699,7 +668,6 @@ $ rak --csv-per-line '{.<foo> if .<bar> eq "foo"}' info.csv
 # Show the values of the first column of the rows in the "info.csv" file
 # if the second column is equal to "foo"
 $ rak --csv-per-line --/headers '{.[0] if .[1] eq "foo"}' info.csv
-
 =end code
 
 =head2 --degree[=N | code]
@@ -717,10 +685,8 @@ the path is B<NOT> acceptable, given an C<IO::Path> object of the path.
 See also C<--accept>.
 
 =begin code :lang<bash>
-
 # Include files that **NOT** have "use Test" in them
 $ rak --deny='*.slurp.contains("use Test")'
-
 =end code
 
 =head2 --description=text
@@ -789,13 +755,11 @@ information of all its modules.  Currently supported names are:
 Defaults to C<rea> if specified as a flag.  Implies C<--json-per-elem>.
 
 =begin code :lang<bash>
-
 # show all unique module names by an author from the REA
 $ rak '{ .author eq "Scooby Doo" }' --eco-meta
 
 # same, but now from the p6c and cpan ecosystems
 $ rak '{ .author eq "Scooby Doo" }' --eco-meta=p6c,cpan
-
 =end code
 
 Assumes C<zef> is installed and its meta information is available.
@@ -879,7 +843,6 @@ If C<--verbose> is specified, will try to create an extended (--ll-exception)
 backtrace.
 
 =begin code :lang<bash>
-
 # look at source of a stacktrace after running script
 $ rak --execute-raku script
 
@@ -888,7 +851,6 @@ $ rak --execute-raku script --edit
 
 # inspect a backtrace from execution of code read from STDIN
 $ cat script | rak --execute-raku=-
-
 =end code
 
 =head2 --extensions=spec
@@ -901,7 +863,6 @@ a predefined group of extensions (indicated by C<#name>), a single
 extension, or C<*> to indicate all known extensions.
 
 =begin code :lang<bash>
-
 # inspect files with extensions used by Raku and Perl
 $ rak foo --extensions=#raku,#perl
 
@@ -913,7 +874,6 @@ $ rak foo --extensions=
 
 # inspect files without extension or with the extension "foo"
 $ rak foo --extensions=,foo
-
 =end code
 
 Predefined groups are C<#raku>, C<#perl>, C<#cro>, C<#text>, C<#c>, C<#c++>,
@@ -962,10 +922,8 @@ file in the selection of files to be checked.  The number of bytes of data
 in the file, will be passed as the only argument.  See also C<--is-empty>.
 
 =begin code :lang<bash>
-
 # show files that consist of at 30 bytes
 $ rak --find --filesize='* >= 30'
-
 =end code
 
 =head2 --find
@@ -1014,13 +972,11 @@ will be passed as the only argument.  Can also be specified as a single
 numeric argument.  See also C<--group>.
 
 =begin code :lang<bash>
-
 # show files of which the numeric group id is greater than 20
 $ rak --find --gid='* > 20'
 
 # show files of which the numeric group id is 20
 $ rak --find --gid=20
-
 =end code
 
 NOTE: support of this feature depends on Raku supporting that feature on
@@ -1039,7 +995,6 @@ See also C<--gid>.  Requires the
 L<P5getgrnam|https://raku.land/zef:lizmat/P5getgrnam> module to be installed.
 
 =begin code :lang<bash>
-
 # files of which the name associated with the user id starts with underscore
 $ rak --find --group='*.starts-with("_")'
 
@@ -1048,7 +1003,6 @@ $ rak --find --group=staff
 
 # show files of which the group is NOT "staff"
 $ rak --find --group='!staff'
-
 =end code
 
 NOTE: support of this feature depends on Raku supporting that feature on
@@ -1133,7 +1087,6 @@ Any Raku code that produces one of the above values.  Also supports a
 C<Map> or C<Hash> instead of a list of C<Pair>s.
 
 =begin code :lang<bash>
-
 # Use uppercase column names
 $ rak --csv-per-line --headers=uc '{.<FOO> if .<BAR> eq "foo"}' info.csv
 
@@ -1142,7 +1095,6 @@ $ rak --csv-per-line --headers='<a b>' '{.<a> if .<n> eq "foo"}' info.csv
 
 # Use alternate column names using mapping
 $ rak --csv-per-line --headers=':foo<a>, :bar<b>' '{.<a> if .<n> eq "foo"}' info.csv
-
 =end code
 
 =head2 --help[=area-of-interest]
@@ -1415,10 +1367,8 @@ For example when searching the list of modules in the zef ecosystem (which
 consists of an array of hashes):
 
 =begin code :lang<bash>
-
 # Show all defined "auth" values of top elemens in JSON file
 $ rak '{ .<auth> // False }' META.json --json-per-elem
-
 =end code
 
 =head2 --json-per-file
@@ -1431,10 +1381,8 @@ returned, then the stringification of that object will be produced.  For
 example:
 
 =begin code :lang<bash>
-
 # show the "auth" value from all JSON files
 $ rak '*<auth> // False' --json-per-file
-
 =end code
 
 =head2 --json-per-line
@@ -1475,12 +1423,10 @@ Flag.  If specified as the only option, will list all additional options
 previously saved with C<--save>.
 
 =begin code :lang<bash>
-
 # show all of the custom options
 $ rak --list-custom-options
 fs: --'follow-symlinks'
 im: --ignorecase --ignoremark
-
 =end code
 
 =head2 --list-expanded-options
@@ -1490,11 +1436,9 @@ having been recursively expanded, and then exit.  Intended as a debugging
 aid if you have many custom options defined.
 
 =begin code :lang<bash>
-
 # show how custom option "--im" expands
 $ rak --im --list-expanded-options
 --ignorecase --ignoremark
-
 =end code
 
 =head2 --list-known-extensions
@@ -1503,7 +1447,6 @@ Flag.  If specified, will show all known extension groups and the extensions
 they represent.  Intended as an informational aid.
 
 =begin code :lang<bash>
-
 # show the filename extensions that "rak" knows about
 $ rak --list-known-extensions
        #c: c h hdl
@@ -1524,7 +1467,6 @@ $ rak --list-known-extensions
     #text: (none) txt
       #wl: (none) wl m wlt mt nb
     #yaml: yaml yml
-
 =end code
 
 =head2 --matches-only
@@ -1653,13 +1595,11 @@ This is typically returned as the result of a failed condition.  For example,
 only change the string "foo" into "bar" if the line starts with "#":
 
 =begin code :lang<bash>
-
 # replace "foo" by "bar" in all files
 $ rak '*.subst("foo","bar")' --modify-files
 
 # replace "foo" by "bar" in all comment lines
 $ rak '{ .subst("foo","bar") if .starts-with("#") }' --modify-files
-
 =end code
 
 =head3 any other value
@@ -1706,13 +1646,11 @@ variable.  If that isn't specified either, then no pager program will be
 run.
 
 =begin code :lang<bash>
-
 # use the "more" pager to page the output
 $ RAK_PAGER='more -r' rak foo
 
 # use the "less" pager to page the output
 $ rak foo --pager='less -r'
-
 =end code
 
 =head2 --paragraph-context
@@ -1730,10 +1668,8 @@ Flag.  Indicate whether B<all> lines from source should be shown always.
 Highlighting will still be performed, if so (implicitely) specified.
 
 =begin code :lang<bash>
-
 # watch a log file, and highlight a IP address 123.45.67.89
 $ tail -f ~/access.log | rak --passthru 123.45.67.89
-
 =end code
 
 =head2 --passthru-context
@@ -1806,10 +1742,8 @@ whatever it produces will be presented to the matcher.  Usually used in
 conjunction with C<--matches-only> and/or C<count-only>.
 
 =begin code :lang<bash>
-
 # look for foo in only the first 10 lines of each file
 $ rak foo --per-file='*.lines(:!chomp).head(10).join'
-
 =end code
 
 =head2 --per-line[=code]
@@ -1823,10 +1757,8 @@ object of the file: that is then expected to produce lines that will be
 presented to the matcher.
 
 =begin code :lang<bash>
-
 # look for foo in only the last 10 lines of each file
 $ rak foo --per-line='*.lines.tail(10)'
-
 =end code
 
 =head2 --per-paragraph
@@ -2002,13 +1934,11 @@ on the user, any C<Str> returned, will be automatically converted to an
 C<IO::Path> object before being compared using C<eqv>.
 
 =begin code :lang<bash>
-
 # change the extension of all .t files to .rakutest
 $ rak '*.subst(/ \.t $/,".rakutest")' --rename-files
 
 # Rename files with 3 digits word bounded with an interval of 10
 $ rak '*.subst(/ << \d ** 3 >> /, { ($*N += 10).fmt("%03d") })' --rename-files
-
 =end code
 
 Note that files that are under git revision control will be renamed using
@@ -2029,7 +1959,6 @@ This feature can used to both create shortcuts for specific (long) options,
 or just as a convenient way to combine often used options, or both.
 
 =begin code :lang<bash>
-
 # save options as "--im"
 $ rak --ignorecase --ignoremark --save=im
 Saved option '--im' as: --ignorecase --ignoremark
@@ -2052,7 +1981,6 @@ Saved option '--P' as: --pattern='!'
 # remove shortcut "--foo"
 $ rak --save=foo
 Removed configuration for 'foo'
-
 =end code
 
 Any options can be accessed as if it is a standard option.  Please note
@@ -2132,10 +2060,8 @@ Compatible with the C<--edit>, C<--vimgrep> and the implicit C<per-line>
 option.
 
 =begin code :lang<bash>
-
 # edit the location(s) of the "say" sub handling a single string
 $ rak --sourcery 'say "foo"' --edit
-
 =end code
 
 Requires the L<C<sourcery>|https://raku.land/zef:lizmat/sourcery> module
@@ -2243,13 +2169,11 @@ file will be passed as the only argument.  Can also be specified as a single
 numeric argument.  See also C<--user>.
 
 =begin code :lang<bash>
-
 # select files of which the numeric user id is greater than 500
 $ rak --find --uid='* > 500'
 
 # select files of which the numeric user id is 501
 $ rak --find --uid=501
-
 =end code
 
 NOTE: support of this feature depends on Raku supporting that feature on
@@ -2285,7 +2209,6 @@ See also C<--uid>.  Requires the
 L<P5getpwnam|https://raku.land/zef:lizmat/P5getpwnam> module to be installed.
 
 =begin code :lang<bash>
-
 # files of which the name associated with the user id starts with underscore
 $ rak --find --user='*.starts-with("_")'
 
@@ -2294,7 +2217,6 @@ $ rak --find --user=liz,wendy
 
 # select files of which the owner is NOT liz or wendy
 $ rak --find --user='!liz,wendy'
-
 =end code
 
 NOTE: support of this feature depends on Raku supporting that feature on
@@ -2354,7 +2276,6 @@ C<.changed> as methods.
 =head2 Examples
 
 =begin code :lang<bash>
-
 # select all files that were modified later than an hour ago
 $ rak --find --modified='* > "1h".ago'
 
@@ -2363,7 +2284,6 @@ $ rak --find --created='* < "2h30m".ago'
 
 # select all files that were modified after "Changes" was created
 $ rak --find --modified='* > "Changes".IO.created'
-
 =end code
 
 =head1 JSON PATH SUPPORT
@@ -2399,18 +2319,14 @@ argument, and returns an instantiated C<JP> object.
 This means that:
 
 =begin code :lang<bash>
-
 $ rak --json-per-file jp:foo
 $ rak --json-per-file --type=json-path foo
-
 =end code
 
 are a different way of saying:
 
 =begin code :lang<bash>
-
 $ rak --json-per-file '{ jp("path").Slip }'
-
 =end code
 
 using the "pattern is Raku code" syntax.
@@ -2442,7 +2358,7 @@ deal to me!
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2022, 2023, 2024, 2025 Elizabeth Mattijsen
+Copyright 2022, 2023, 2024, 2025, 2026 Elizabeth Mattijsen
 
 This library is free software; you can redistribute it and/or modify it under
 the Artistic License 2.0.
