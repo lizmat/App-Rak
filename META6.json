@@ -3,6 +3,8 @@
   "authors": [
     "Elizabeth Mattijsen"
   ],
+  "build-depends": [
+  ],
   "depends": {
     "runtime": {
       "requires": [
@@ -47,6 +49,7 @@
     "help/special.txt",
     "help/string.txt"
   ],
+  "source-url": "https://github.com/lizmat/App-Rak.git",
   "support": {
     "bugtracker": "https://github.com/lizmat/App-Rak/issues",
     "email": "liz@raku.rocks",
@@ -63,5 +66,7 @@
     "CSV",
     "GIT"
   ],
-  "version": "0.3.19"
+  "test-depends": [
+  ],
+  "version": "0.3.20"
 }

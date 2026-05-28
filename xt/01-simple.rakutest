@@ -640,6 +640,7 @@ OK
 # This check is a little brittle
 query-ok '--eco-meta', q/{ .<name> eq "eigenstates" && .<version> }/,
   :!add-paths, ok => q:to/OK/;
+0.0.12
 0.0.11
 0.0.10
 0.0.9
@@ -663,6 +664,7 @@ query-ok '--eco-meta=fez', q/{ .<name> eq "eigenstates" && .<version> }/,
 0.0.9
 0.0.10
 0.0.11
+0.0.12
 OK
 
 # This check is a little brittle
@@ -681,6 +683,7 @@ https://360.zef.pm
 0.0.9
 0.0.10
 0.0.11
+0.0.12
 OK
 
 query-ok '*.substr(0,1) eq "f"', '--classify=*.substr(0,1)', :head(2),
