@@ -2,8 +2,8 @@ use v6.*;
 
 # The modules that we need here, with their full identities
 use as-cli-arguments:ver<0.0.10+>:auth<zef:lizmat>;   # as-cli-arguments
-use IO::Path::AutoDecompress:ver<0.0.3+>:auth<zef:lizmat>; # IOAD
-use JSON::Fast::Hyper:ver<0.0.10+>:auth<zef:lizmat>; # from-json to-json
+use IO::Path::AutoDecompress:ver<0.0.4+>:auth<zef:lizmat>; # IOAD
+use JSON::Fast::Hyper:ver<0.0.12+>:auth<zef:lizmat>; # from-json to-json
 use META::constants:ver<0.0.6+>:auth<zef:lizmat> $?DISTRIBUTION;
 use rak:ver<0.0.40+>:auth<zef:lizmat>;              # rak Rak
 
@@ -13,7 +13,7 @@ use Backtrace::Files:ver<0.0.4+>:auth<zef:lizmat> <
 use highlighter:ver<0.0.23+>:auth<zef:lizmat> <
   columns highlighter
 >;
-use Needle::Compile:ver<0.0.11+>:auth<zef:lizmat> <
+use Needle::Compile:ver<0.0.13+>:auth<zef:lizmat> <
   compile-needle implicit2explicit StrType Type
 >;
 use String::Utils:ver<0.0.40+>:auth<zef:lizmat> <
@@ -224,7 +224,7 @@ my constant %exts =
 ;
 
 # Known extensions
-my constant @known-extensions = %exts.values.flat.unique.sort;
+my constant @known-extensions = eager %exts.values.flat.unique.sort;
 
 # Place to keep tagged configurations
 my $config-file := do if %*ENV<RAK_CONFIG> -> $rak-config {
@@ -3387,7 +3387,7 @@ my sub action-modify-files(--> Nil) {
             if $lines-changed || $lines-removed {
                 unless $dryrun {
                     if $backup {
-                        $io.spurt(@matches.map(*.value).join($joiner)) ~ $joiner
+                        $io.spurt(@matches.map(*.value).join($joiner) ~ $joiner)
                           if $io.rename($io.sibling($io.basename ~ $backup));
                     }
                     else {
